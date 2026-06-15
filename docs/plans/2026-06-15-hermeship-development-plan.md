@@ -537,21 +537,61 @@ hermeship uninstall
 
 ## 21. 测试策略
 
-测试矩阵：
+Hermeship 的测试策略按“契约先行、纯逻辑优先、集成可重复、live 单独记录”组织。默认测试不能依赖真实 Hermes gateway、真实 Discord、真实 GitHub 或真实 tmux session；这些外部依赖只进入 live verification。
+
+### 21.1 测试分层
+
+| 层 | 目的 | 运行环境 |
+| --- | --- | --- |
+| 单元测试 | 验证纯逻辑正确性 | 默认 `cargo test` |
+| 契约测试 | 锁定 CLI、HTTP API、Hermes hook payload、配置 schema | 默认 `cargo test` |
+| 集成测试 | 验证 daemon、队列、router、renderer、sink 串联 | 默认 `cargo test`，使用 fake sink/fake HTTP |
+| E2E smoke | 验证本地 binary、daemon、hook bridge 的最小闭环 | 本地可重复，不能需要真实凭据 |
+| Live verification | 验证真实 Discord/Hermes gateway 投递 | 手动或显式 opt-in，结果写入文档 |
+
+### 21.2 测试矩阵
 
 | 层 | 必测内容 |
 | --- | --- |
-| CLI | subcommand parse、help、错误参数 |
-| config | 默认值、legacy 兼容、非法 TOML、env override |
-| events | normalize、canonical kind、typed conversion |
-| Hermes hook | gateway payload、session/agent payload、隐私过滤 |
-| router | glob、filter、多 delivery、explain |
-| renderer | compact/inline/alert/raw |
-| sink | fake sink、Discord payload、失败语义 |
-| daemon | `/health`、`/event`、`/api/hermes/hook` |
-| bridge | `HOOK.yaml`、handler fail-open、binary missing |
-| install | config scaffold、hook install、service 文件、回滚 |
-| live | daemon status、Discord delivery、Hermes gateway hook smoke |
+| CLI | subcommand parse、help、错误参数、README/runbook 命令不漂移 |
+| config | 默认值、非法 TOML、env override、未知 key、空值归一化、向后兼容 |
+| events | normalize、canonical kind、typed conversion、未知事件降级 |
+| privacy | 敏感 key 递归脱敏、短正文不泄漏、摘录 opt-in、原始 payload 不被原地修改 |
+| Hermes hook | gateway payload、session/agent payload、失败 context、隐私过滤、防递归 |
+| daemon | `/health`、`/event`、`/api/hermes/hook`、非法 payload、daemon unavailable |
+| router | glob、filter、多 delivery、无 route、`explain` 匹配/未匹配原因 |
+| renderer | compact/inline/alert/raw、template token、缺字段降级 |
+| dispatcher | queue -> route -> render -> sink，单个 delivery 失败不阻断其他 delivery |
+| sink | fake sink、Discord payload、非 2xx、rate limit、token 缺失、channel 缺失 |
+| bridge | `HOOK.yaml`、Python handler fail-open、binary missing、timeout、stdin payload |
+| install | config scaffold、hook install、service 文件、dry-run、force、不误删、回滚 |
+| live | daemon status、Discord delivery、Hermes gateway hook smoke、回滚记录 |
+
+### 21.3 必备测试夹具
+
+MVP 必须先实现以下测试夹具，再依赖相关功能验收：
+
+- **fake sink**：保存每个 delivery 的 target、format、rendered message、metadata，用于 daemon 到 sink 的 E2E。
+- **fake HTTP server**：模拟 Discord webhook/bot API，覆盖 2xx、4xx、5xx、rate limit。
+- **fake Hermes home**：临时 `HERMES_HOME`，用于安装/卸载 `HOOK.yaml` 和 `handler.py`。
+- **fake hermeship binary**：用于 Python `handler.py` smoke test，确认 handler 会把 JSON payload 写入 stdin。
+- **fixture payloads**：固定 Hermes gateway hook 样例、非法 payload、敏感字段 payload、路由 payload。
+
+### 21.4 不变量回归
+
+以下行为任何阶段都不能破坏，必须用测试覆盖：
+
+- Hermes hook bridge 失败不能向 Hermes 抛异常。
+- 默认不发送完整 message、response、conversation history、provider request/response、tool result body。
+- 敏感 key 在任意嵌套层级都必须脱敏。
+- 一个 sink 或 route 失败不能阻断其他 delivery。
+- `cargo test` 不能依赖真实 Discord token、真实 Hermes gateway、真实 GitHub、真实 tmux。
+- `explain` 结果必须能说明 route 命中和 filter 失败原因。
+- 文档中的公开命令必须能被 CLI parse 测试或 smoke 测试覆盖。
+
+### 21.5 CI 与 Live 分离
+
+默认 CI 或本地常规验证运行：
 
 基础验证命令：
 
@@ -563,6 +603,15 @@ cargo run -- --help
 cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'
 cargo run -- explain hermes.agent.started --payload '{"session_id":"demo"}'
 ```
+
+这些命令必须不需要外部凭据。真实网络验证只通过 live runbook 执行，并且必须记录：
+
+- 执行日期。
+- daemon 版本或 commit。
+- 测试频道。
+- 触发事件。
+- 实际消息形态。
+- 未执行项、原因和剩余风险。
 
 ## 22. Live Verification
 

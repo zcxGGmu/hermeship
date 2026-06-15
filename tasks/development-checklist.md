@@ -18,11 +18,23 @@
 - [ ] Hermes plugin/observer 必须等 gateway hook bridge MVP 完成 live verification 后再启动。
 - [ ] 未执行的 live check 必须记录原因和剩余风险。
 
+## 测试执行规则
+
+- [ ] 默认测试只使用本地 deterministic fixture，不依赖真实 Discord token、真实 Hermes gateway、真实 GitHub、真实 tmux session 或外网状态。
+- [ ] 单元测试优先覆盖纯逻辑：CLI parse、配置加载、事件规范化、隐私清洗、路由匹配、渲染、payload 构造。
+- [ ] 契约测试必须锁定公开边界：CLI help/subcommand、HTTP ingress schema、Hermes hook payload、配置 schema、文档中的公开命令。
+- [ ] 集成测试必须使用 fake sink、fake HTTP server、fake Hermes home、fake hermeship binary 和 fixture payloads。
+- [ ] E2E smoke 只验证本地 binary/daemon/hook bridge 的最小闭环，不要求外部凭据。
+- [ ] Live verification 与默认 CI 分离，真实 Discord/Hermes 结果只写入 `docs/live-verification.md`。
+- [ ] 每个 bug fix 或行为变更都先补回归测试，再修实现，并确认测试在修复前能暴露问题或至少覆盖原始风险。
+- [ ] 每个阶段完成前运行该阶段验证命令；发布前运行全局完成定义。
+
 ## 全局完成定义
 
 - [ ] `cargo fmt --all -- --check` 通过。
 - [ ] `cargo clippy --all-targets -- -D warnings` 通过。
 - [ ] `cargo test` 通过。
+- [ ] `cargo test` 不要求外部凭据、真实 Hermes、真实 Discord、真实 GitHub、真实 tmux 或非本地网络。
 - [ ] `cargo run -- --help` 退出码为 0。
 - [ ] `cargo run -- status` 能在 daemon 运行时返回健康信息。
 - [ ] `cargo run -- send --channel <test-channel> --message "..."` 已通过 fake sink 或 live sink 验证。
@@ -30,8 +42,12 @@
 - [ ] `cargo run -- explain hermes.agent.started --payload '{"session_id":"demo"}'` 能展示 route 匹配结果。
 - [ ] `hermeship hermes install-hooks --home /tmp/hermeship-test-home --force` 写入 hook 文件。
 - [ ] 在一次性 `HERMES_HOME` 中测试过 hook 加载和回滚路径。
+- [ ] fake sink 记录过 daemon -> router -> renderer -> sink 的端到端 delivery。
+- [ ] fake HTTP 覆盖过 Discord 2xx、4xx、5xx、rate limit、token 缺失、channel 缺失。
+- [ ] fake Hermes home 与 fake hermeship binary 覆盖过 Python `handler.py` 的 stdin payload、binary missing、timeout、fail-open。
 - [ ] Discord live delivery 已验证，或明确记录未验证原因。
 - [ ] 日志和测试 fixture 中没有完整对话、prompt、provider 请求/响应、token、cookie 或 secret。
+- [ ] 文档中的公开命令已被 CLI parse 测试、smoke 测试或 release preflight 覆盖。
 - [ ] README、operations 文档和实际 CLI 一致。
 
 ## Milestone 0：契约与仓库基线
@@ -83,6 +99,10 @@
 - [ ] 增加 CLI parse 单元测试。
   - 文件：`src/cli.rs`
   - 覆盖：`send`、`emit --payload`、`hermes hook --payload`、`hermes install-hooks`。
+- [ ] 增加 CLI 合约测试 fixture。
+  - 新建：`tests/fixtures/cli/public_commands.txt`
+  - 覆盖：`start`、`status`、`send`、`emit`、`explain`、`config`、`hermes hook`、`hermes install-hooks`、`install`、`uninstall`、`release preflight`。
+  - 完成标准：fixture 中每条公开命令都能被 clap parse 或返回预期 help/error，不因文档漂移而静默失效。
 - [ ] 验证任务 1.1。
   - 命令：`cargo fmt --all -- --check`
   - 命令：`cargo test cli`
@@ -118,6 +138,13 @@
   - 包含：`target/`、临时日志、测试输出。
 - [ ] 增加 rustfmt/clippy 约束说明。
   - 文件：`README.md` 或 `docs/development.md`
+- [ ] 增加测试 fixture 目录。
+  - 新建：`tests/fixtures/hermes/`
+  - 新建：`tests/fixtures/privacy/`
+  - 新建：`tests/fixtures/routes/`
+  - 新建：`tests/fixtures/discord/`
+  - 新建：`tests/fixtures/cli/`
+  - 完成标准：fixture 不包含真实 token、cookie、prompt、完整对话或 provider request/response body。
 - [ ] 确认基础门禁通过。
   - 命令：`cargo fmt --all -- --check`
   - 命令：`cargo clippy --all-targets -- -D warnings`
@@ -140,6 +167,11 @@
   - 支持：`--channel`、`--mention`、`--format`、`--template`、`--payload`、任意 `--key value`。
 - [ ] 编写测试。
   - 覆盖：payload JSON 合并、非法 format、奇数 key/value 拒绝、字段别名。
+- [ ] 增加事件 fixture。
+  - 新建：`tests/fixtures/hermes/agent_start.json`
+  - 新建：`tests/fixtures/hermes/session_end.json`
+  - 新建：`tests/fixtures/hermes/invalid_payload.json`
+  - 完成标准：fixture 能驱动 CLI emit、daemon ingress 和 hook normalization 测试。
 - [ ] 验证任务 2.1。
   - 命令：`cargo test events`
   - 命令：`cargo test cli`
@@ -193,6 +225,9 @@
   - 要求：先脱敏，再截断。
 - [ ] 编写隐私测试。
   - 覆盖：短文本不原样泄漏、嵌套 secret、list、非字符串、原始 payload 不被原地修改。
+- [ ] 增加隐私回归 fixture。
+  - 新建：`tests/fixtures/privacy/sensitive_payload.json`
+  - 完成标准：测试断言输出不包含原始 `message`、`response`、`conversation_history`、`request`、`provider_response`、`tool_result`、token、cookie、secret。
 - [ ] 验证任务 2.3。
   - 命令：`cargo test privacy`
 - [ ] 提交任务 2.3。
@@ -215,6 +250,7 @@
   - 调用 daemon `/health`。
 - [ ] 编写 daemon health 测试。
   - 使用随机端口或 test server。
+  - 覆盖：健康响应 schema、队列状态、configured sinks、daemon 未运行时 client 错误。
 - [ ] 验证任务 3.1。
   - 命令：`cargo test daemon`
   - 命令：`cargo run -- status`
@@ -234,6 +270,7 @@
   - 作为 custom event 发送。
 - [ ] 编写 ingress 测试。
   - 覆盖：有效事件入队、非法 payload 4xx、daemon unavailable 错误。
+  - 要求：使用随机端口和本地 test queue，不绑定固定端口。
 - [ ] 验证任务 3.2。
   - 命令：`cargo test daemon event`
   - 命令：`cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'`
@@ -249,6 +286,7 @@
   - 支持 stdin `--payload -`。
 - [ ] 编写 Hermes hook normalization 测试。
   - 覆盖：`gateway:startup`、`session:start`、`session:end`、`session:reset`、`agent:start`、`agent:end`。
+  - 要求：复用 `tests/fixtures/hermes/`，并断言隐私清洗发生在入队前。
 - [ ] 验证任务 3.3。
   - 命令：`cargo test hermes`
   - 命令：`printf '%s' '{"event":"agent:start","context":{"session_id":"demo"}}' | cargo run -- hermes hook --payload -`
@@ -274,6 +312,9 @@
   - 展示 matched routes、failed filters、delivery target。
 - [ ] 编写 router 测试。
   - 覆盖：多 route、filter 命中/未命中、缺 channel、template/format/mention 继承。
+- [ ] 编写 `explain` 合约测试。
+  - 覆盖：route 命中原因、filter 失败原因、无 route、delivery target。
+  - 完成标准：`explain` 输出可用于定位配置问题，不只返回布尔结果。
 - [ ] 验证任务 4.1。
   - 命令：`cargo test router`
   - 命令：`cargo run -- explain hermes.agent.started --payload '{"platform":"telegram","session_id":"demo"}'`
@@ -313,6 +354,9 @@
   - 单个 delivery 失败不影响其他 delivery。
 - [ ] 编写 dispatcher 测试。
   - 覆盖：多投递、单 sink failure、无 route、render failure。
+- [ ] 编写 dispatcher E2E 测试。
+  - 使用：`tests/fixtures/hermes/agent_start.json` + fake sink。
+  - 断言：daemon 入队事件经过 route -> render -> fake sink 后保存 delivery，且 message 不泄漏敏感字段。
 - [ ] 验证任务 4.3。
   - 命令：`cargo test dispatch sink`
 - [ ] 提交任务 4.3。
@@ -334,6 +378,7 @@
   - allowed mentions 策略。
 - [ ] 编写 Discord sink 单元测试。
   - 使用 fake HTTP 或 request builder 测试。
+  - 覆盖：webhook payload、bot channel payload、allowed mentions、消息长度截断。
 - [ ] 验证任务 5.1。
   - 命令：`cargo test discord`
 - [ ] 提交任务 5.1。
@@ -347,6 +392,9 @@
   - 预期：记录 status/body tail。
 - [ ] 测试 rate limit。
   - 预期：尊重 retry 信息或记录明确诊断。
+- [ ] 使用 fake HTTP server 覆盖 Discord 失败矩阵。
+  - 覆盖：2xx、4xx、5xx、429 rate limit、空 token、空 channel。
+  - 完成标准：默认测试不访问真实 Discord API。
 - [ ] 测试多个 delivery 其中一个失败。
   - 预期：其他 delivery 继续。
 - [ ] 验证任务 5.2。
@@ -360,6 +408,7 @@
   - 启动 test daemon。
   - POST `/api/hermes/hook`。
   - 断言 fake sink 收到渲染消息。
+  - 断言默认隐私保护生效。
 - [ ] 验证 `send`。
   - 命令：`cargo run -- send --channel test --message "hello"`
   - 使用 fake/dry-run 模式。
@@ -391,6 +440,7 @@
   - 超时 fail-open。
 - [ ] 编写模板测试。
   - 覆盖：manifest 可解析、handler 包含 fail-open 逻辑、不包含 secret。
+  - 要求：`handler.py` 只使用 Python 标准库。
 - [ ] 验证任务 6.1。
   - 命令：`cargo test hooks`
 - [ ] 提交任务 6.1。
@@ -407,6 +457,7 @@
   - 打印将写入的文件，不修改磁盘。
 - [ ] 编写 installer 测试。
   - 覆盖：首次安装、不覆盖、force 覆盖、dry-run、返回路径。
+  - 使用：fake Hermes home。
 - [ ] 验证任务 6.2。
   - 命令：`cargo test hooks`
   - 命令：`cargo run -- hermes install-hooks --home /tmp/hermeship-test-home --force`
@@ -420,6 +471,7 @@
   - 使用临时 `HERMES_HOME`。
   - 直接 import/exec handler module。
   - fake `hermeship` binary 验证 stdin payload。
+  - 覆盖：binary missing、调用 timeout、子进程失败时 fail-open。
 - [ ] 实现 uninstall/remove hooks。
   - `hermeship hermes uninstall-hooks --home <path>`
 - [ ] 编写回滚测试。
@@ -474,6 +526,8 @@
   - 配置示例。
   - docs 命令。
   - hook 模板包含。
+  - 测试夹具完整性。
+  - live verification 必填字段。
 - [ ] 实现 CLI。
   - `hermeship release preflight <version>`
 - [ ] 验证任务 7.3。
@@ -569,6 +623,8 @@
 - [ ] 记录 Discord live 验证。
 - [ ] 记录 Hermes gateway hook smoke。
 - [ ] 记录回滚验证。
+- [ ] 每条 live 记录包含 commit、时间、测试频道、触发事件、实际消息形态、未执行项和剩余风险。
+- [ ] live 记录不得包含 token、cookie、secret、完整 prompt、完整对话或 provider request/response body。
 - [ ] 验证任务 9.2。
   - 命令：`rg -n "HERMES_HOME|Discord|hermeship status|agent:start|rollback" docs/live-verification.md`
 - [ ] 提交任务 9.2。
