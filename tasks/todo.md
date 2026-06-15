@@ -4,20 +4,20 @@
 
 本阶段目标：在 Milestone 2.1 的 `IncomingEvent` 基础上建立 Hermeship 的第一版 typed event model，实现 `IncomingEvent -> EventEnvelope` 转换和 Hermes gateway canonical event mapping。不进入 daemon、privacy 清洗、router、renderer、sink、hook bridge、install 或 release preflight 实现。
 
-- [ ] 复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交。
-- [ ] 复习阶段上下文。
+- [x] 复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交。
+- [x] 复习阶段上下文。
   - 阅读：`docs/development-status.md`
   - 阅读：`docs/plans/2026-06-15-hermeship-development-plan.md`
   - 阅读：`tasks/development-checklist.md`
   - 阅读：`tasks/todo.md`
-- [ ] 确认当前分支、最新提交和未提交变更。
+- [x] 确认当前分支、最新提交和未提交变更。
   - 命令：`git status --short --branch`
   - 命令：`git log -3 --oneline`
   - 预期：当前分支为 `codex/milestone-1-cli`；最新已完成功能阶段提交为 `5584b13 feat: 完成 Hermes 入口事件模型与 emit 解析`；启动时不要混入无关改动。
-- [ ] 明确本阶段边界。
+- [x] 明确本阶段边界。
   - 只处理 typed `EventEnvelope`、Hermes event body、canonical mapping 和 `IncomingEvent -> EventEnvelope` conversion。
   - 不实现 daemon、client、HTTP ingress、队列、privacy 清洗、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。
-- [ ] 检查现有代码和参考实现。
+- [x] 检查现有代码和参考实现。
   - 查看：`src/events.rs`
   - 查看：`src/cli.rs`
   - 查看：`src/config.rs`
@@ -27,19 +27,19 @@
   - 查看：`/Users/zq/Desktop/ai-projs/posp/template/clawhip/src/event/mod.rs`
   - 查看：`/Users/zq/Desktop/ai-projs/posp/template/clawhip/src/events.rs`
   - 完成标准：确认 typed event 与 ingress event 的边界，不复制 daemon/router/render/privacy 逻辑。
-- [ ] 先写失败测试。
+- [x] 先写失败测试。
   - 新建或修改：`src/event/mod.rs`
   - 新建或修改：`src/event/body.rs`
   - 新建或修改：`src/event/compat.rs`
   - 覆盖：Hermes gateway hook canonical mapping、未知 event -> custom、metadata 继承、channel/mention/format/template 继承、fixture conversion。
   - 命令：`cargo test event`
-- [ ] 实现 typed event 基础类型。
+- [x] 实现 typed event 基础类型。
   - 新增：`EventEnvelope`
   - 新增：`EventBody`
   - 新增：`EventMetadata`
   - 新增：`EventPriority`
   - 在 `src/lib.rs` 导出 `hermeship::event`。
-- [ ] 实现 Hermes event body。
+- [x] 实现 Hermes event body。
   - `HermesGatewayStarted`
   - `HermesSessionStarted`
   - `HermesSessionFinished`
@@ -49,7 +49,7 @@
   - `HermesAgentFinished`
   - `HermesAgentFailed`
   - `Custom`
-- [ ] 实现 canonical kind。
+- [x] 实现 canonical kind。
   - `gateway:startup` -> `hermes.gateway.started`
   - `session:start` -> `hermes.session.started`
   - `session:end` -> `hermes.session.finished`
@@ -58,30 +58,37 @@
   - `agent:step` -> `hermes.agent.step`
   - `agent:end` -> `hermes.agent.finished`
   - 未知 event -> `Custom`
-- [ ] 实现 `IncomingEvent -> EventEnvelope` conversion。
+- [x] 实现 `IncomingEvent -> EventEnvelope` conversion。
   - 保留 `IncomingEvent` 的 `channel`、`mention`、`format`、`template` 到 `EventMetadata`。
   - 从 payload/context 中提取 Hermes metadata，如 `provider`、`source`、`platform`、`chat_id`、`session_id`、`agent_name`、`project`。
   - 生成事件 `id` 和 `timestamp`，不要引入外部依赖或真实 Hermes 状态。
-- [ ] 复用 Hermes fixture。
+- [x] 复用 Hermes fixture。
   - 使用：`tests/fixtures/hermes/agent_start.json`
   - 使用：`tests/fixtures/hermes/session_end.json`
   - 使用：`tests/fixtures/hermes/invalid_payload.json`
   - 完成标准：fixture 只使用合成脱敏样例，不包含真实 token、cookie、secret、完整 prompt、完整对话或 provider request/response body。
-- [ ] 运行任务 2.2 验证命令。
+- [x] 运行任务 2.2 验证命令。
   - `cargo test event`
   - `cargo test events`
   - `cargo fmt --all -- --check`
   - `cargo clippy --all-targets -- -D warnings`
   - `cargo test`
-- [ ] 更新 `tasks/development-checklist.md`。
+- [x] 更新 `tasks/development-checklist.md`。
   - 勾选任务 2.2 已完成项。
   - 在运行状态日志顶部记录本阶段实现、验证和提交状态。
-- [ ] 更新 `tasks/todo.md` Review。
+- [x] 更新 `tasks/todo.md` Review。
   - 记录实现、验证、边界和剩余风险。
-- [ ] 提交任务 2.2。
+- [x] 提交任务 2.2。
   - commit：`feat: 实现 Hermes typed event model`
   - commit 信息使用中文，说明变更、验证和影响。
 
 ## Review
 
-- 待任务 2.2 实施、验证和提交后填写。
+- 已新增 typed event 模块：`src/event/mod.rs`、`src/event/body.rs`、`src/event/compat.rs`，并在 `src/lib.rs` 导出 `hermeship::event`。
+- 已定义 `EventEnvelope`、`EventBody`、`EventMetadata`、`EventPriority`，并实现 `IncomingEvent -> EventEnvelope` conversion。
+- 已覆盖 Hermes canonical mapping：`gateway:startup`、`session:start`、`session:end`、`session:reset`、`agent:start`、`agent:step`、`agent:end`；显式失败的 `agent:end` 映射为 `hermes.agent.failed`；未知 event 降级为 `Custom`。
+- 已保留 `channel`、`mention`、`format`、`template` route hint，并从 payload/context 提取 provider/source/platform/user/chat/session/agent/project/repo metadata。
+- 已复用合成 Hermes fixture 覆盖 agent start 和 session end typed conversion，未引入真实 token、cookie、secret、完整 prompt、完整对话或 provider request/response body。
+- Red/Green 记录：实现前 `cargo test event` 失败于 `from_incoming_event()` 未实现；实现后目标测试通过。
+- 已运行验证：`cargo test event`、`cargo test events`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test` 均通过。
+- 阶段边界保持：未实现 daemon、privacy 清洗、router、renderer、sink、hook bridge、install 或 release preflight。

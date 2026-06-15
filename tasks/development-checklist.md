@@ -188,12 +188,12 @@
 
 ### 任务 2.2：Typed EventEnvelope
 
-- [ ] 新建 typed event 模块。
+- [x] 新建 typed event 模块。
   - 新建：`src/event/mod.rs`
   - 新建：`src/event/body.rs`
   - 新建：`src/event/compat.rs`
-- [ ] 定义 `EventEnvelope`、`EventBody`、`EventMetadata`、`EventPriority`。
-- [ ] 实现 Hermes event body。
+- [x] 定义 `EventEnvelope`、`EventBody`、`EventMetadata`、`EventPriority`。
+- [x] 实现 Hermes event body。
   - `HermesGatewayStarted`
   - `HermesSessionStarted`
   - `HermesSessionFinished`
@@ -203,7 +203,7 @@
   - `HermesAgentFinished`
   - `HermesAgentFailed`
   - `Custom`
-- [ ] 实现 canonical kind。
+- [x] 实现 canonical kind。
   - `gateway:startup` -> `hermes.gateway.started`
   - `session:start` -> `hermes.session.started`
   - `session:end` -> `hermes.session.finished`
@@ -211,11 +211,11 @@
   - `agent:start` -> `hermes.agent.started`
   - `agent:step` -> `hermes.agent.step`
   - `agent:end` -> `hermes.agent.finished`
-- [ ] 编写 compat 测试。
+- [x] 编写 compat 测试。
   - 覆盖：所有 Hermes gateway hook event、未知 event -> custom、缺失 session_id 的降级。
-- [ ] 验证任务 2.2。
+- [x] 验证任务 2.2。
   - 命令：`cargo test event`
-- [ ] 提交任务 2.2。
+- [x] 提交任务 2.2。
   - commit：`feat: 实现 Hermes typed event model`
 
 ### 任务 2.3：隐私与 payload 清洗
@@ -696,6 +696,19 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-15 - Milestone 2.2 Typed EventEnvelope
+
+- [x] 已在 `codex/milestone-1-cli` 分支执行本阶段；启动时工作树无未提交代码变更，最新提交为 `fdd175d docs: 更新 Hermeship Milestone 2.2 交接状态`。
+- [x] 已确认本阶段只实现 typed `EventEnvelope`、Hermes event body、canonical mapping 和 `IncomingEvent -> EventEnvelope` conversion；未实现 daemon、client、HTTP ingress、队列、privacy 清洗、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。
+- [x] 已参考 `template/clawhip/src/event/mod.rs`、`body.rs`、`compat.rs` 的 envelope/body/compat 分层，只移植结构和转换模式，不依赖 clawhip runtime。
+- [x] 已先写失败测试并运行 Red：`cargo test event` 在实现前失败于 `from_incoming_event()` 未实现。
+- [x] 已新增 `src/event/mod.rs`、`src/event/body.rs`、`src/event/compat.rs`，并在 `src/lib.rs` 导出 `hermeship::event`。
+- [x] 已定义 `EventEnvelope`、`EventBody`、`EventMetadata`、`EventPriority`；`EventMetadata` 保留 route hint 和 Hermes provider/source/platform/chat/session/agent/project 等 metadata。
+- [x] 已实现 Hermes canonical mapping：`gateway:startup`、`session:start`、`session:end`、`session:reset`、`agent:start`、`agent:step`、`agent:end`；显式失败的 `agent:end` 转为 `hermes.agent.failed`；未知 event 降级为 `Custom`。
+- [x] 已复用 Hermes 合成 fixture：`tests/fixtures/hermes/agent_start.json` 和 `session_end.json` 覆盖 typed conversion；fixture 不包含真实 token、cookie、secret、完整 prompt、完整对话或 provider request/response body。
+- [x] 已运行验证：`cargo test event`、`cargo test events`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test` 均通过。
+- [x] 提交状态：随本阶段提交 `feat: 实现 Hermes typed event model` 一并完成。
 
 ### 2026-06-15 - Milestone 2.1 IncomingEvent 与格式
 

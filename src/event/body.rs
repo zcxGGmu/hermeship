@@ -1,0 +1,46 @@
+use serde_json::Value;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HermesGatewayEvent {
+    pub provider: Option<String>,
+    pub source: Option<String>,
+    pub platform: Option<String>,
+    pub project: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HermesSessionEvent {
+    pub status: String,
+    pub session_id: Option<String>,
+    pub platform: Option<String>,
+    pub project: Option<String>,
+    pub message_chars: Option<u64>,
+    pub response_chars: Option<u64>,
+    pub has_message: Option<bool>,
+    pub has_response: Option<bool>,
+    pub success: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HermesAgentEvent {
+    pub status: String,
+    pub agent_name: Option<String>,
+    pub session_id: Option<String>,
+    pub platform: Option<String>,
+    pub project: Option<String>,
+    pub step_name: Option<String>,
+    pub message_chars: Option<u64>,
+    pub response_chars: Option<u64>,
+    pub has_message: Option<bool>,
+    pub has_response: Option<bool>,
+    pub elapsed_secs: Option<u64>,
+    pub success: Option<bool>,
+    pub error_message: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CustomEvent {
+    pub kind: String,
+    pub message: String,
+    pub payload: Option<Value>,
+}
