@@ -697,6 +697,12 @@
 
 最新记录放在最上方。
 
+### 2026-06-15 - Milestone 2.3 入口交接更新
+
+- [x] 已将 `docs/development-status.md`、`README.md` 和 `tasks/todo.md` 更新到 Milestone 2.3 入口。
+- [x] 已确认当前最新功能阶段提交为 `b799415 feat: 实现 Hermes typed event model`。
+- [x] 下次开发从 Milestone 2.3 隐私与 payload 清洗继续，不再沿用 Milestone 2.2 入口。
+
 ### 2026-06-15 - Milestone 2.2 Typed EventEnvelope
 
 - [x] 已在 `codex/milestone-1-cli` 分支执行本阶段；启动时工作树无未提交代码变更，最新提交为 `fdd175d docs: 更新 Hermeship Milestone 2.2 交接状态`。
