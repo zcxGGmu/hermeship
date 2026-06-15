@@ -1,39 +1,56 @@
 # Task: Milestone 1.1 - Cargo 项目与 CLI 入口
 
-- [ ] 复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交。
-- [ ] 确认当前分支、远程和未提交变更。
+- [x] 复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交。
+- [x] 复习阶段上下文。
+  - 已读：`docs/development-status.md`
+  - 已读：`docs/plans/2026-06-15-hermeship-development-plan.md`
+  - 已读：`tasks/development-checklist.md`
+  - 已读：`tasks/todo.md`
+- [x] 确认当前分支、远程和未提交变更。
   - 命令：`git status --short --branch`
-  - 完成标准：分支、远程和未提交变更清楚；不要混入无关改动。
-- [ ] 参考 clawhip Rust 骨架。
+  - 记录：启动时 `main...origin/main [ahead 5]`，无未提交变更；已切换到 `codex/milestone-1-cli` 执行本阶段。
+- [x] 参考 clawhip Rust 骨架。
   - 路径：`/Users/zq/Desktop/ai-projs/posp/template/clawhip`
   - 文件：`Cargo.toml`、`src/main.rs`、`src/cli.rs`
-  - 完成标准：只参考架构和 CLI 形态，不复用或调用 clawhip runtime、binary、daemon。
-- [ ] 新建 Cargo metadata。
+  - 记录：只参考 Rust 2024 metadata、`clap` derive 命令树和 `main.rs` parse/dispatch 形态；不复用或调用 clawhip runtime、binary、daemon。
+- [x] 先写 CLI parse 测试。
+  - 文件：`src/cli.rs`
+  - 覆盖：`send`、`emit --payload`、`hermes hook --payload`、`hermes install-hooks`。
+- [x] 增加公开命令 fixture。
+  - 新建：`tests/fixtures/cli/public_commands.txt`
+  - 覆盖：`start`、`status`、`send`、`emit`、`explain`、`config`、`hermes hook`、`hermes install-hooks`、`install`、`uninstall`、`release preflight`。
+  - 审查后补强：fixture 使用 shell 风格引号示例；测试断言每个必备公开命令前缀都存在。
+- [x] 运行 CLI Red 验证。
+  - 命令：`cargo test cli`
+  - 结果：实现前失败于缺少 `Cli`、`Commands`、`ConfigCommand`、`HermesCommands`、`ReleaseCommands`，证明测试锁定新 CLI 契约。
+- [x] 新建 Cargo metadata。
   - 新建：`Cargo.toml`
   - 包含：package metadata、Rust 2024、依赖 `anyhow`、`tokio`、`axum`、`clap`、`serde`、`serde_json`、`toml`、`reqwest`、`time`、`uuid`。
-- [ ] 新建基础源码文件。
+- [x] 新建基础源码文件。
   - 新建：`src/lib.rs`
   - 新建：`src/main.rs`
   - 新建：`src/cli.rs`
-- [ ] 先写 CLI parse 测试。
-  - 文件：`src/cli.rs`
-  - 覆盖：`send`、`emit --payload`、`hermes hook --payload`、`hermes install-hooks`。
-- [ ] 增加公开命令 fixture。
-  - 新建：`tests/fixtures/cli/public_commands.txt`
-  - 覆盖：`start`、`status`、`send`、`emit`、`explain`、`config`、`hermes hook`、`hermes install-hooks`、`install`、`uninstall`、`release preflight`。
-- [ ] 实现最小 `hermeship --help`。
+- [x] 增加最小构建产物 ignore。
+  - 新建：`.gitignore`
+  - 包含：`/target/`
+  - 说明：只处理本阶段验证产生的 Rust 构建产物；完整质量门禁仍留到任务 1.3 扩展。
+- [x] 实现最小 `hermeship --help`。
   - 子命令占位：`start`、`status`、`send`、`emit`、`explain`、`config`、`hermes`、`install`、`uninstall`、`release`。
-- [ ] 运行任务 1.1 验证命令。
+- [x] 运行任务 1.1 验证命令。
   - `cargo fmt --all -- --check`
   - `cargo test cli`
   - `cargo run -- --help`
-- [ ] 更新 `tasks/development-checklist.md`。
+- [x] 更新 `tasks/development-checklist.md`。
   - 勾选任务 1.1 已完成项。
   - 在运行状态日志顶部记录本阶段实现、验证和提交状态。
-- [ ] 提交任务 1.1。
+- [x] 提交任务 1.1。
   - commit：`chore: 搭建 hermeship Rust CLI 骨架`
   - commit 信息使用详细中文，说明变更、验证和影响。
 
 ## Review
 
-- 待任务 1.1 实施和验证后填写。
+- 实现：创建 Rust 2024 Cargo 工程骨架，新增 `src/lib.rs`、`src/main.rs`、`src/cli.rs`，建立 `clap` derive 命令树和最小 `hermeship --help`。
+- 测试：先写 CLI parse 单元测试和 `tests/fixtures/cli/public_commands.txt`，Red 阶段确认缺少 CLI 类型会失败；Green 阶段 `cargo test cli` 通过 6 个测试，并补强 fixture 必备命令覆盖断言。
+- 审查处理：新增 `.gitignore` 忽略 `/target/`，避免阶段验证产物进入提交；确认源码、锁文件、fixture 和任务文档将被纳入提交。
+- 验证：`cargo fmt --all -- --check`、`cargo test cli`、`cargo run -- --help` 均已通过。
+- 边界：本阶段只实现 CLI 解析和占位分发，不调用 clawhip runtime，不调用 clawhip daemon，不依赖真实 Discord、Hermes gateway、GitHub、tmux 或外网状态。

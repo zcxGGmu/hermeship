@@ -1,0 +1,14 @@
+# Public commands promised by the Milestone 1.1 CLI contract.
+start
+status
+send --channel ops --message "hello"
+emit hermes.agent.started --payload '{"session_id":"demo"}'
+explain hermes.agent.started --payload '{"session_id":"demo"}'
+config show
+config path
+config verify
+hermes hook --provider gateway --payload '{"event":"agent:start"}'
+hermes install-hooks --scope global --force
+install
+uninstall
+release preflight 0.1.0

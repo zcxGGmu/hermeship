@@ -92,27 +92,27 @@
 
 ### 任务 1.1：Cargo 项目与 CLI 入口
 
-- [ ] 新建 Cargo metadata。
+- [x] 新建 Cargo metadata。
   - 新建：`Cargo.toml`
   - 包含：package metadata、Rust 2024、依赖 `anyhow`、`tokio`、`axum`、`clap`、`serde`、`serde_json`、`toml`、`reqwest`、`time`、`uuid`。
-- [ ] 新建基础源码文件。
+- [x] 新建基础源码文件。
   - 新建：`src/main.rs`
   - 新建：`src/cli.rs`
   - 新建：`src/lib.rs`
-- [ ] 实现最小 `hermeship --help`。
+- [x] 实现最小 `hermeship --help`。
   - 子命令占位：`start`、`status`、`send`、`emit`、`explain`、`config`、`hermes`、`install`、`uninstall`、`release`。
-- [ ] 增加 CLI parse 单元测试。
+- [x] 增加 CLI parse 单元测试。
   - 文件：`src/cli.rs`
   - 覆盖：`send`、`emit --payload`、`hermes hook --payload`、`hermes install-hooks`。
-- [ ] 增加 CLI 合约测试 fixture。
+- [x] 增加 CLI 合约测试 fixture。
   - 新建：`tests/fixtures/cli/public_commands.txt`
   - 覆盖：`start`、`status`、`send`、`emit`、`explain`、`config`、`hermes hook`、`hermes install-hooks`、`install`、`uninstall`、`release preflight`。
   - 完成标准：fixture 中每条公开命令都能被 clap parse 或返回预期 help/error，不因文档漂移而静默失效。
-- [ ] 验证任务 1.1。
+- [x] 验证任务 1.1。
   - 命令：`cargo fmt --all -- --check`
   - 命令：`cargo test cli`
   - 命令：`cargo run -- --help`
-- [ ] 提交任务 1.1。
+- [x] 提交任务 1.1。
   - commit：`chore: 搭建 hermeship Rust CLI 骨架`
 
 ### 任务 1.2：配置模型
@@ -694,13 +694,24 @@
 
 最新记录放在最上方。
 
+### 2026-06-15 - Milestone 1.1 Cargo 项目与 CLI 入口
+
+- [x] 已在 `codex/milestone-1-cli` 分支执行本阶段，启动时 `main...origin/main [ahead 5]` 且无未提交变更。
+- [x] 已参考 `/Users/zq/Desktop/ai-projs/posp/template/clawhip/Cargo.toml`、`src/main.rs`、`src/cli.rs`，只借鉴 Rust 2024 metadata、`clap` 命令树和 CLI dispatch 形态。
+- [x] 已创建 `Cargo.toml`、`Cargo.lock`、`src/lib.rs`、`src/main.rs`、`src/cli.rs` 和 `tests/fixtures/cli/public_commands.txt`。
+- [x] 已先写 CLI parse 测试并运行 Red：`cargo test cli` 在实现前失败于缺少 `Cli`、`Commands` 等 CLI 类型。
+- [x] 已实现最小 CLI：`start`、`status`、`send`、`emit`、`explain`、`config`、`hermes`、`install`、`uninstall`、`release`。
+- [x] 已处理代码审查反馈：新增最小 `.gitignore` 忽略 `/target/`；公开命令 fixture 改为 shell 风格引号示例，并在测试中断言必备命令前缀存在。
+- [x] 已运行验证：`cargo fmt --all -- --check`、`cargo test cli`、`cargo run -- --help` 均通过。
+- [x] 提交状态：随本阶段提交 `chore: 搭建 hermeship Rust CLI 骨架` 一并完成。
+
 ### 2026-06-15 - Milestone 1 续接状态
 
 - [x] Milestone 0 已完成并提交：`af57c49 docs: 明确 hermeship 完整项目方向`。
 - [x] `README.md` 已更新为正式项目定位，明确 Hermeship 是 Hermes-native daemon-first event router，不是 clawhip runtime client。
 - [x] `tasks/todo.md` 已切换为下一阶段任务：Milestone 1.1 Cargo 项目与 CLI 入口。
 - [x] `docs/development-status.md` 已更新为 Milestone 0 完成后的状态入口和下次启动提示词。
-- [ ] 下一步执行 Milestone 1.1：创建 Rust 2024 工程骨架、CLI parse 测试、公开命令 fixture 和最小 `hermeship --help`。
+- [x] 下一步执行 Milestone 1.1：创建 Rust 2024 工程骨架、CLI parse 测试、公开命令 fixture 和最小 `hermeship --help`。
 
 ### 2026-06-15 - Milestone 0
 
