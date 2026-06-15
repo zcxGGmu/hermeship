@@ -694,6 +694,12 @@
 
 最新记录放在最上方。
 
+### 2026-06-15 - 开发状态交接更新
+
+- [x] 已更新 `docs/development-status.md`，明确 Milestone 0 和 Milestone 1.1 已完成，Milestone 1.2 及后续仍未完成。
+- [x] 已将 `tasks/todo.md` 切换为下一阶段任务：Milestone 1.2 配置模型。
+- [x] 下一步执行 Milestone 1.2：先写配置模型测试，再实现 `src/config.rs`，并将 `config path/show/verify` 接入真实配置逻辑。
+
 ### 2026-06-15 - Milestone 1.1 Cargo 项目与 CLI 入口
 
 - [x] 已在 `codex/milestone-1-cli` 分支执行本阶段，启动时 `main...origin/main [ahead 5]` 且无未提交变更。

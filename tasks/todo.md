@@ -1,56 +1,54 @@
-# Task: Milestone 1.1 - Cargo 项目与 CLI 入口
+# Task: Milestone 1.2 - 配置模型
 
-- [x] 复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交。
-- [x] 复习阶段上下文。
-  - 已读：`docs/development-status.md`
-  - 已读：`docs/plans/2026-06-15-hermeship-development-plan.md`
-  - 已读：`tasks/development-checklist.md`
-  - 已读：`tasks/todo.md`
-- [x] 确认当前分支、远程和未提交变更。
+- [ ] 复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交。
+- [ ] 复习阶段上下文。
+  - 阅读：`docs/development-status.md`
+  - 阅读：`docs/plans/2026-06-15-hermeship-development-plan.md`
+  - 阅读：`tasks/development-checklist.md`
+  - 阅读：`tasks/todo.md`
+- [ ] 确认当前分支、远程和未提交变更。
   - 命令：`git status --short --branch`
-  - 记录：启动时 `main...origin/main [ahead 5]`，无未提交变更；已切换到 `codex/milestone-1-cli` 执行本阶段。
-- [x] 参考 clawhip Rust 骨架。
+  - 完成标准：分支、远程和未提交变更清楚；不要混入无关改动。
+- [ ] 参考 clawhip 配置模型。
   - 路径：`/Users/zq/Desktop/ai-projs/posp/template/clawhip`
-  - 文件：`Cargo.toml`、`src/main.rs`、`src/cli.rs`
-  - 记录：只参考 Rust 2024 metadata、`clap` derive 命令树和 `main.rs` parse/dispatch 形态；不复用或调用 clawhip runtime、binary、daemon。
-- [x] 先写 CLI parse 测试。
-  - 文件：`src/cli.rs`
-  - 覆盖：`send`、`emit --payload`、`hermes hook --payload`、`hermes install-hooks`。
-- [x] 增加公开命令 fixture。
-  - 新建：`tests/fixtures/cli/public_commands.txt`
-  - 覆盖：`start`、`status`、`send`、`emit`、`explain`、`config`、`hermes hook`、`hermes install-hooks`、`install`、`uninstall`、`release preflight`。
-  - 审查后补强：fixture 使用 shell 风格引号示例；测试断言每个必备公开命令前缀都存在。
-- [x] 运行 CLI Red 验证。
-  - 命令：`cargo test cli`
-  - 结果：实现前失败于缺少 `Cli`、`Commands`、`ConfigCommand`、`HermesCommands`、`ReleaseCommands`，证明测试锁定新 CLI 契约。
-- [x] 新建 Cargo metadata。
-  - 新建：`Cargo.toml`
-  - 包含：package metadata、Rust 2024、依赖 `anyhow`、`tokio`、`axum`、`clap`、`serde`、`serde_json`、`toml`、`reqwest`、`time`、`uuid`。
-- [x] 新建基础源码文件。
-  - 新建：`src/lib.rs`
-  - 新建：`src/main.rs`
-  - 新建：`src/cli.rs`
-- [x] 增加最小构建产物 ignore。
-  - 新建：`.gitignore`
-  - 包含：`/target/`
-  - 说明：只处理本阶段验证产生的 Rust 构建产物；完整质量门禁仍留到任务 1.3 扩展。
-- [x] 实现最小 `hermeship --help`。
-  - 子命令占位：`start`、`status`、`send`、`emit`、`explain`、`config`、`hermes`、`install`、`uninstall`、`release`。
-- [x] 运行任务 1.1 验证命令。
-  - `cargo fmt --all -- --check`
-  - `cargo test cli`
-  - `cargo run -- --help`
-- [x] 更新 `tasks/development-checklist.md`。
-  - 勾选任务 1.1 已完成项。
+  - 重点文件：`src/config.rs`、`src/cli.rs`
+  - 完成标准：只参考 TOML schema、默认值、路径/env override 和 CLI 接入形态；不复用或调用 clawhip runtime、binary、daemon。
+- [ ] 先写配置模型测试。
+  - 新建或修改：`src/config.rs`
+  - 覆盖：默认值、默认配置路径、`HERMESHIP_CONFIG` env override、非法 TOML、未知 key、空 channel/token 归一化。
+- [ ] 运行配置 Red 验证。
+  - 命令：`cargo test config`
+  - 预期：实现前失败，证明测试锁定配置模型契约。
+- [ ] 新建配置模块。
+  - 新建：`src/config.rs`
+  - 类型：`AppConfig`、`DaemonConfig`、`ProvidersConfig`、`DiscordConfig`、`DefaultsConfig`、`PrivacyConfig`、`HermesConfig`、`RouteRule`。
+- [ ] 实现默认配置路径。
+  - 默认：`~/.hermeship/config.toml`
+  - 环境变量：`HERMESHIP_CONFIG`
+  - 要求：路径逻辑可测试，不依赖真实 HOME 写文件。
+- [ ] 实现默认配置与 TOML 加载。
+  - 缺失配置：返回默认值。
+  - 非法 TOML：返回清晰错误。
+  - 未知 key：按本阶段测试要求处理。
+  - 空 channel/token：归一化为 `None` 或空安全状态。
+- [ ] 接入 config CLI 真实逻辑。
+  - 修改：`src/main.rs`
+  - 命令：`hermeship config path`
+  - 命令：`hermeship config show`
+  - 命令：`hermeship config verify`
+  - 完成标准：不再只是 Milestone 1.1 的占位输出。
+- [ ] 运行任务 1.2 验证命令。
+  - `cargo test config`
+  - `cargo run -- config show`
+- [ ] 更新 `tasks/development-checklist.md`。
+  - 勾选任务 1.2 已完成项。
   - 在运行状态日志顶部记录本阶段实现、验证和提交状态。
-- [x] 提交任务 1.1。
-  - commit：`chore: 搭建 hermeship Rust CLI 骨架`
+- [ ] 更新 `tasks/todo.md` Review。
+  - 记录实现、测试、验证、边界和剩余风险。
+- [ ] 提交任务 1.2。
+  - commit：`feat: 实现 hermeship 配置模型`
   - commit 信息使用详细中文，说明变更、验证和影响。
 
 ## Review
 
-- 实现：创建 Rust 2024 Cargo 工程骨架，新增 `src/lib.rs`、`src/main.rs`、`src/cli.rs`，建立 `clap` derive 命令树和最小 `hermeship --help`。
-- 测试：先写 CLI parse 单元测试和 `tests/fixtures/cli/public_commands.txt`，Red 阶段确认缺少 CLI 类型会失败；Green 阶段 `cargo test cli` 通过 6 个测试，并补强 fixture 必备命令覆盖断言。
-- 审查处理：新增 `.gitignore` 忽略 `/target/`，避免阶段验证产物进入提交；确认源码、锁文件、fixture 和任务文档将被纳入提交。
-- 验证：`cargo fmt --all -- --check`、`cargo test cli`、`cargo run -- --help` 均已通过。
-- 边界：本阶段只实现 CLI 解析和占位分发，不调用 clawhip runtime，不调用 clawhip daemon，不依赖真实 Discord、Hermes gateway、GitHub、tmux 或外网状态。
+- 待任务 1.2 实施、验证和提交后填写。
