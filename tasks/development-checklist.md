@@ -4,6 +4,8 @@
 
 方案文档：`docs/plans/2026-06-15-hermeship-development-plan.md`
 
+状态入口：`docs/development-status.md`
+
 ## 跟踪规则
 
 - [ ] 同一时间只推进一个 milestone。
@@ -695,6 +697,13 @@
 - [x] 更新 lessons，记录正确目标。
 - [x] 重写方案文档为 Hermes-native daemon-first event router。
 - [x] 重写开发清单为 Rust/clawhip-parity 实现路径。
+- [x] 集成测试计划，明确单元/契约/集成/E2E/live verification 分层。
+- [x] 扩展开发清单测试门禁，覆盖 fake sink、fake HTTP、fake Hermes home、fake hermeship binary、隐私不变量和 CI/live 分离。
+- [x] 新增 `docs/development-status.md`，作为下次启动的状态入口。
+- [x] 当前已完成提交：`d69dbb4 docs: 重写 hermeship 完整项目方案`。
+- [x] 当前已完成提交：`9771968 docs: 集成 hermeship 测试计划`。
+- [ ] `README.md` 尚未更新为正式项目定位。
+- [ ] Milestone 0 尚未正式执行。
 - [ ] 实现尚未开始。
 
 ## 阻塞项
