@@ -11,404 +11,623 @@
 - [ ] 只有运行过对应验证命令后，才能勾选任务完成。
 - [ ] 每完成一个阶段任务就提交一次。
 - [ ] commit 信息使用中文，说明完成内容、验证结果和影响。
+- [ ] 方案文档只维护设计边界，执行进度只维护在本清单。
 - [ ] MVP 阶段不修改 Hermes 核心。
-- [ ] MVP 阶段不修改 clawhip，除非本清单被显式修订。
-- [ ] Observer plugin 必须等 gateway hook MVP 完成 live verification 后再启动。
+- [ ] MVP 阶段不依赖运行中的 `clawhip`。
+- [ ] `template/clawhip` 只作为架构和实现参考，不作为运行时依赖。
+- [ ] Hermes plugin/observer 必须等 gateway hook bridge MVP 完成 live verification 后再启动。
 - [ ] 未执行的 live check 必须记录原因和剩余风险。
 
 ## 全局完成定义
 
-- [ ] `pytest -q` 通过。
-- [ ] `ruff check .` 通过，或记录暂未启用 ruff 的原因。
-- [ ] `python -m hermeship --help` 退出码为 0。
-- [ ] `python -m hermeship emit-sample --event agent:start --dry-run` 输出映射后的 JSON。
-- [ ] `hermeship install-hook --home /tmp/hermeship-test-home --force` 写入 hook 文件。
-- [ ] `clawhip status` 已在运行中的 daemon 上验证。
+- [ ] `cargo fmt --all -- --check` 通过。
+- [ ] `cargo clippy --all-targets -- -D warnings` 通过。
+- [ ] `cargo test` 通过。
+- [ ] `cargo run -- --help` 退出码为 0。
+- [ ] `cargo run -- status` 能在 daemon 运行时返回健康信息。
+- [ ] `cargo run -- send --channel <test-channel> --message "..."` 已通过 fake sink 或 live sink 验证。
+- [ ] `cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'` 能进入 daemon 队列。
+- [ ] `cargo run -- explain hermes.agent.started --payload '{"session_id":"demo"}'` 能展示 route 匹配结果。
+- [ ] `hermeship hermes install-hooks --home /tmp/hermeship-test-home --force` 写入 hook 文件。
+- [ ] 在一次性 `HERMES_HOME` 中测试过 hook 加载和回滚路径。
 - [ ] Discord live delivery 已验证，或明确记录未验证原因。
-- [ ] 在一次性 `HERMES_HOME` 中测试过回滚路径。
 - [ ] 日志和测试 fixture 中没有完整对话、prompt、provider 请求/响应、token、cookie 或 secret。
 - [ ] README、operations 文档和实际 CLI 一致。
 
-## Milestone 0：仓库卫生
+## Milestone 0：契约与仓库基线
 
-目标：确保仓库处于可迭代开发状态。
+目标：先锁定“参考 clawhip、适配 Hermes”的真实边界，避免再次滑回 thin adapter 方向。
 
 - [ ] 确认当前分支和远程。
   - 命令：`git status --short --branch`
   - 完成标准：分支、远程和未提交变更清楚。
-- [ ] 确认当前文件结构。
-  - 命令：`find . -maxdepth 3 -type f | sort`
-  - 完成标准：实现不会覆盖无关文件。
 - [ ] 复习 lessons。
   - 文件：`tasks/lessons.md`
-  - 完成标准：确认阶段完成后验证并提交。
-- [ ] 复习方案文档。
-  - 文件：`docs/plans/2026-06-15-hermeship-development-plan.md`
-  - 完成标准：当前实现顺序和本清单一致。
+  - 完成标准：确认 Hermeship 不是 thin adapter。
+- [ ] 固化 clawhip 参考路径。
+  - 路径：`/Users/zq/Desktop/ai-projs/posp/template/clawhip`
+  - 阅读：`ARCHITECTURE.md`、`Cargo.toml`、`src/cli.rs`、`src/main.rs`、`src/daemon.rs`、`src/events.rs`、`src/event/compat.rs`、`src/router.rs`、`src/render/default.rs`
+  - 完成标准：记录可移植模块和必须替换的 OpenClaw/Codex/Claude 耦合点。
+- [ ] 固化 Hermes 参考路径。
+  - 路径：`/Users/zq/Desktop/ai-projs/posp/agents-contributions/hermes-agent`
+  - 阅读：`gateway/hooks.py`、`hermes_cli/plugins.py`
+  - 完成标准：确认 gateway hook 事件、context 字段、plugin hook 后续能力。
+- [ ] 确认项目技术栈。
+  - 决策：Rust 2024 daemon-first，Python 只用于 Hermes hook bridge 模板。
+  - 完成标准：记录到本清单决策记录。
 - [ ] 更新 README 项目定位。
   - 文件：`README.md`
-  - 完成标准：说明 Hermeship 是 Hermes 到 clawhip 的适配层，不是 clawhip fork。
-- [ ] 提交仓库卫生阶段。
-  - 验证：`git status --short`
-  - commit：`docs: 明确 hermeship 项目定位`
+  - 完成标准：说明 Hermeship 是 Hermes-native event router，不是 clawhip runtime client。
+- [ ] 验证 Milestone 0。
+  - 命令：`rg -n "Hermes 到 clawhip 的适配层|通过 clawhip 已有 CLI 入口|python -m hermeship|src/hermeship|pyproject.toml|pytest|ruff|ClawhipClient|clawhip_client|HERMESHIP_CLAWHIP" docs/plans README.md`
+  - 命令：`rg -n "Hermes 到 clawhip 的适配层|通过 clawhip 已有 CLI 入口|python -m hermeship|src/hermeship|pyproject.toml|pytest|ruff|ClawhipClient|clawhip_client|HERMESHIP_CLAWHIP" tasks/development-checklist.md | rg -v "rg -n"`
+  - 预期：无旧 Python/thin-adapter 方案残留。
+- [ ] 提交 Milestone 0。
+  - commit：`docs: 明确 hermeship 完整项目方向`
 
-## Milestone 1：本地 Dry-run 基础
+## Milestone 1：Rust 项目骨架与质量门禁
 
-目标：在不依赖 clawhip daemon 的情况下完成 package、config、privacy、mapper。
+目标：建立与 clawhip 相似的 Rust CLI/daemon 工程骨架。
 
-### 任务 1.1：包骨架与 CLI 入口
+### 任务 1.1：Cargo 项目与 CLI 入口
 
-- [ ] 编写 CLI import/help 失败测试。
-  - 新建：`tests/test_cli.py`
-  - 验证失败：`pytest tests/test_cli.py -q`
-- [ ] 新建 package metadata。
-  - 新建：`pyproject.toml`
-  - 包含：project metadata、console script、dev extras、pytest 配置。
-- [ ] 新建 Python package 入口。
-  - 新建：`src/hermeship/__init__.py`
-  - 新建：`src/hermeship/__main__.py`
-  - 新建：`src/hermeship/cli.py`
-- [ ] 实现最小 `main()` 和 `--help`。
-  - 完成标准：`python -m hermeship --help` 退出码为 0。
-- [ ] 更新 README quickstart 占位内容。
-  - 修改：`README.md`
+- [ ] 新建 Cargo metadata。
+  - 新建：`Cargo.toml`
+  - 包含：package metadata、Rust 2024、依赖 `anyhow`、`tokio`、`axum`、`clap`、`serde`、`serde_json`、`toml`、`reqwest`、`time`、`uuid`。
+- [ ] 新建基础源码文件。
+  - 新建：`src/main.rs`
+  - 新建：`src/cli.rs`
+  - 新建：`src/lib.rs`
+- [ ] 实现最小 `hermeship --help`。
+  - 子命令占位：`start`、`status`、`send`、`emit`、`explain`、`config`、`hermes`、`install`、`uninstall`、`release`。
+- [ ] 增加 CLI parse 单元测试。
+  - 文件：`src/cli.rs`
+  - 覆盖：`send`、`emit --payload`、`hermes hook --payload`、`hermes install-hooks`。
 - [ ] 验证任务 1.1。
-  - 命令：`python -m pip install -e ".[dev]"`
-  - 命令：`pytest tests/test_cli.py -q`
-  - 命令：`python -m hermeship --help`
+  - 命令：`cargo fmt --all -- --check`
+  - 命令：`cargo test cli`
+  - 命令：`cargo run -- --help`
 - [ ] 提交任务 1.1。
-  - commit：`chore: 搭建 hermeship Python 包骨架`
+  - commit：`chore: 搭建 hermeship Rust CLI 骨架`
 
-### 任务 1.2：配置加载器
+### 任务 1.2：配置模型
 
-- [ ] 编写默认配置测试。
-  - 新建：`tests/test_config.py`
-  - 覆盖：缺失配置文件、默认值、空字符串归一化。
-- [ ] 编写配置覆盖测试。
-  - 覆盖：用户配置、环境变量覆盖、非法 TOML、未知 key。
-- [ ] 实现配置 dataclass。
-  - 新建：`src/hermeship/config.py`
-  - 包含：`ClawhipConfig`、`DefaultsConfig`、`EventsConfig`、`PrivacyConfig`、`HermeshipConfig`。
-- [ ] 实现配置路径解析。
-  - 包含：`default_config_path()`、可选 `repo_config_path()`、`load_config()`。
-- [ ] 实现环境变量解析。
-  - 覆盖：`HERMESHIP_DRY_RUN` 布尔值解析。
-- [ ] 实现配置校验。
-  - 校验：`mode`、`format`、`timeout_secs`、`dedupe_window_secs`、未知 key。
+- [ ] 新建配置模块。
+  - 新建：`src/config.rs`
+  - 包含：`AppConfig`、`DaemonConfig`、`ProvidersConfig`、`DiscordConfig`、`DefaultsConfig`、`PrivacyConfig`、`HermesConfig`、`RouteRule`。
+- [ ] 实现默认配置路径。
+  - 默认：`~/.hermeship/config.toml`
+  - 环境变量：`HERMESHIP_CONFIG`
+- [ ] 实现默认配置与 TOML 加载。
+  - 要求：缺失配置返回默认值；非法 TOML 返回错误。
+- [ ] 实现 config CLI。
+  - `hermeship config path`
+  - `hermeship config show`
+  - `hermeship config verify`
+- [ ] 编写配置测试。
+  - 覆盖：默认值、env override、非法 TOML、未知 key、空 channel/token 归一化。
 - [ ] 验证任务 1.2。
-  - 命令：`pytest tests/test_config.py -q`
+  - 命令：`cargo test config`
+  - 命令：`cargo run -- config show`
 - [ ] 提交任务 1.2。
-  - commit：`feat: 实现 hermeship 配置加载器`
+  - commit：`feat: 实现 hermeship 配置模型`
 
-### 任务 1.3：隐私与脱敏
+### 任务 1.3：质量门禁与仓库基础
 
-- [ ] 编写脱敏测试。
-  - 新建：`tests/test_privacy.py`
-  - 覆盖：嵌套 dict、list、大小写不敏感 key、非字符串值。
-- [ ] 编写截断测试。
-  - 覆盖：不截断、刚好等长、超长文本、`None`。
-- [ ] 实现隐私 helper。
-  - 新建：`src/hermeship/privacy.py`
-  - 函数：`truncate_text()`、`redact_payload()`、可选 `sanitize_context()`。
-- [ ] 验证不会原地修改输入 payload。
-  - 完成标准：redaction 后原始对象不变。
-- [ ] 验证任务 1.3。
-  - 命令：`pytest tests/test_privacy.py -q`
+- [ ] 增加 `.gitignore`。
+  - 包含：`target/`、临时日志、测试输出。
+- [ ] 增加 rustfmt/clippy 约束说明。
+  - 文件：`README.md` 或 `docs/development.md`
+- [ ] 确认基础门禁通过。
+  - 命令：`cargo fmt --all -- --check`
+  - 命令：`cargo clippy --all-targets -- -D warnings`
+  - 命令：`cargo test`
 - [ ] 提交任务 1.3。
-  - commit：`feat: 增加 payload 脱敏与截断工具`
+  - commit：`chore: 增加 Rust 质量门禁`
 
-### 任务 1.4：事件模型与映射器
+## Milestone 2：事件模型与兼容层
 
-- [ ] 编写生命周期映射测试。
-  - 新建：`tests/test_mapper.py`
-  - 覆盖：`gateway:startup`、`session:start`、`session:end`、`session:reset`、`agent:start`、`agent:end`。
-- [ ] 编写错误映射测试。
-  - 覆盖：`agent:end` with `error`、`exception`、`status=failed`。
-- [ ] 编写禁用/未知事件测试。
-  - 覆盖：配置禁用事件、未知事件返回 `None`。
-- [ ] 编写隐私映射测试。
-  - 覆盖：message/response 截断、secret 脱敏、不携带 `conversation_history`。
-- [ ] 实现事件 dataclass。
-  - 新建：`src/hermeship/events.py`
-  - 包含：`MappedEvent`。
-- [ ] 实现 mapper。
-  - 新建：`src/hermeship/mapper.py`
-  - 包含：`map_hermes_event()`、event enabled helper。
-- [ ] 新增事件映射文档。
-  - 新建：`docs/event-mapping.md`
-  - 内容：支持事件、输出事件、payload 字段、隐私规则。
-- [ ] 验证任务 1.4。
-  - 命令：`pytest tests/test_mapper.py -q`
-- [ ] 验证 Milestone 1。
-  - 命令：`pytest -q`
-  - 命令：`python -m hermeship --help`
-- [ ] 提交任务 1.4。
-  - commit：`feat: 实现 Hermes 生命周期事件映射`
+目标：实现 clawhip 风格的 `IncomingEvent -> typed EventEnvelope` 管道。
 
-## Milestone 2：clawhip CLI 投递
+### 任务 2.1：IncomingEvent 与格式
 
-目标：通过 clawhip 已有 CLI 入口投递 Hermeship 映射事件。
-
-### 任务 2.1：客户端契约与命令生成
-
-- [ ] 编写 fake runner 测试。
-  - 新建：`tests/test_clawhip_client.py`
-  - 覆盖：`agent.started`、`agent.finished`、`agent.blocked`、`agent.failed`。
-- [ ] 编写 custom emit 命令测试。
-  - 覆盖：`hermes.session.started`、JSON payload、channel、mention。
-- [ ] 实现 client class。
-  - 新建：`src/hermeship/clawhip_client.py`
-  - 包含：`ClawhipClient`、runner seam、timeout、dry-run。
-- [ ] 使用无 shell 的命令构造。
-  - 要求：`subprocess.run(list[str], shell=False, ...)`。
+- [ ] 新建事件入口模型。
+  - 新建：`src/events.rs`
+  - 类型：`IncomingEvent`、`MessageFormat`、`RoutingMetadata`。
+- [ ] 实现 `MessageFormat`。
+  - 支持：`compact`、`inline`、`alert`、`raw`。
+- [ ] 实现 `emit` 参数解析。
+  - 支持：`--channel`、`--mention`、`--format`、`--template`、`--payload`、任意 `--key value`。
+- [ ] 编写测试。
+  - 覆盖：payload JSON 合并、非法 format、奇数 key/value 拒绝、字段别名。
 - [ ] 验证任务 2.1。
-  - 命令：`pytest tests/test_clawhip_client.py -q`
+  - 命令：`cargo test events`
+  - 命令：`cargo test cli`
 - [ ] 提交任务 2.1。
-  - commit：`feat: 生成 clawhip 投递命令`
+  - commit：`feat: 增加 IncomingEvent 事件入口`
 
-### 任务 2.2：失败语义
+### 任务 2.2：Typed EventEnvelope
 
-- [ ] 测试 clawhip binary 缺失。
-  - 预期：返回 warning，不抛异常。
-- [ ] 测试 timeout。
-  - 预期：返回 warning，不抛异常。
-- [ ] 测试非零退出码。
-  - 预期：捕获 stderr tail，不抛异常。
-- [ ] 测试序列化失败 fallback。
-  - 预期：跳过事件并输出诊断。
-- [ ] 实现结构化 send result。
-  - 字段：`sent`、`skipped`、`reason`、`stderr_tail`、`command`。
+- [ ] 新建 typed event 模块。
+  - 新建：`src/event/mod.rs`
+  - 新建：`src/event/body.rs`
+  - 新建：`src/event/compat.rs`
+- [ ] 定义 `EventEnvelope`、`EventBody`、`EventMetadata`、`EventPriority`。
+- [ ] 实现 Hermes event body。
+  - `HermesGatewayStarted`
+  - `HermesSessionStarted`
+  - `HermesSessionFinished`
+  - `HermesSessionReset`
+  - `HermesAgentStarted`
+  - `HermesAgentStep`
+  - `HermesAgentFinished`
+  - `HermesAgentFailed`
+  - `Custom`
+- [ ] 实现 canonical kind。
+  - `gateway:startup` -> `hermes.gateway.started`
+  - `session:start` -> `hermes.session.started`
+  - `session:end` -> `hermes.session.finished`
+  - `session:reset` -> `hermes.session.reset`
+  - `agent:start` -> `hermes.agent.started`
+  - `agent:step` -> `hermes.agent.step`
+  - `agent:end` -> `hermes.agent.finished`
+- [ ] 编写 compat 测试。
+  - 覆盖：所有 Hermes gateway hook event、未知 event -> custom、缺失 session_id 的降级。
 - [ ] 验证任务 2.2。
-  - 命令：`pytest tests/test_clawhip_client.py -q`
+  - 命令：`cargo test event`
 - [ ] 提交任务 2.2。
-  - commit：`feat: 让 clawhip 投递失败保持 fail-open`
+  - commit：`feat: 实现 Hermes typed event model`
 
-### 任务 2.3：Dry-run 与样例事件
+### 任务 2.3：隐私与 payload 清洗
 
-- [ ] 新增 CLI `emit-sample`。
-  - 修改：`src/hermeship/cli.py`
-  - flags：`--event`、`--dry-run`、`--channel`、`--project`。
-- [ ] 测试 dry-run 输出 JSON。
-  - 覆盖：不调用 subprocess。
-- [ ] 测试样例事件映射。
-  - 覆盖：`agent:start`、`agent:end`、`session:start`、`session:end`。
+- [ ] 新建隐私模块。
+  - 新建：`src/privacy.rs`
+  - 函数：`sanitize_payload`、`redact_value`、`excerpt_policy`。
+- [ ] 实现敏感 key 递归脱敏。
+  - key：`token`、`api_key`、`authorization`、`password`、`secret`、`cookie`。
+- [ ] 实现正文默认禁发。
+  - 默认删除 `message`、`response`、`conversation_history`、`request`、`provider_response`、`tool_result`。
+  - 默认保留 `message_chars`、`response_chars`、`has_message`、`has_response`。
+- [ ] 实现 opt-in 摘录。
+  - 配置：`privacy.include_message_excerpt`、`privacy.include_response_excerpt`。
+  - 要求：先脱敏，再截断。
+- [ ] 编写隐私测试。
+  - 覆盖：短文本不原样泄漏、嵌套 secret、list、非字符串、原始 payload 不被原地修改。
 - [ ] 验证任务 2.3。
-  - 命令：`pytest tests/test_cli.py tests/test_clawhip_client.py -q`
-  - 命令：`python -m hermeship emit-sample --event agent:start --dry-run`
-- [ ] 验证 Milestone 2。
-  - 命令：`pytest -q`
-  - 命令：`python -m hermeship emit-sample --event agent:start --dry-run`
+  - 命令：`cargo test privacy`
 - [ ] 提交任务 2.3。
-  - commit：`feat: 增加 dry-run 样例事件`
+  - commit：`feat: 增加 Hermes 事件隐私清洗`
 
-## Milestone 3：Hermes Hook 安装
+## Milestone 3：Daemon、队列与 HTTP ingress
 
-目标：Hermeship 能安装 fail-open 的 Hermes gateway hook bundle。
+目标：建立本地 daemon-first runtime。
 
-### 任务 3.1：Hook 模板
+### 任务 3.1：Daemon health 与 client
 
-- [ ] 创建 hook manifest 模板。
-  - 新建：`templates/hermes-hook/HOOK.yaml`
-  - 事件：`gateway:startup`、`session:start`、`session:end`、`session:reset`、`agent:start`、`agent:end`。
-- [ ] 创建 hook handler 模板。
-  - 新建：`templates/hermes-hook/handler.py`
-  - 内容：导入并暴露 `hermeship.hook_handler.handle`。
-- [ ] 编写模板完整性测试。
-  - 新建：`tests/test_hook_template.py`
-  - 覆盖：manifest 结构或基本内容。
+- [ ] 新建 daemon/client 模块。
+  - 新建：`src/daemon.rs`
+  - 新建：`src/client.rs`
+- [ ] 实现 `hermeship start`。
+  - 默认监听：`127.0.0.1:25295`。
+- [ ] 实现 `/health`。
+  - 返回：version、status、queue 状态、configured sinks。
+- [ ] 实现 `hermeship status`。
+  - 调用 daemon `/health`。
+- [ ] 编写 daemon health 测试。
+  - 使用随机端口或 test server。
 - [ ] 验证任务 3.1。
-  - 命令：`pytest tests/test_hook_template.py -q`
+  - 命令：`cargo test daemon`
+  - 命令：`cargo run -- status`
+  - 预期：daemon 未运行时返回清晰错误；不 panic。
 - [ ] 提交任务 3.1。
-  - commit：`feat: 增加 Hermes hook 模板`
+  - commit：`feat: 增加 hermeship daemon health`
 
-### 任务 3.2：Hook 运行时 handler
+### 任务 3.2：Event ingress 与队列
 
-- [ ] 编写 handler 转发测试。
-  - 新建：`tests/test_hook_handler.py`
-  - 覆盖：`agent:start` 转发 mapped event。
-- [ ] 编写 fail-open 测试。
-  - 覆盖：配置解析失败、mapper 失败、client 失败。
-- [ ] 编写防递归测试。
-  - 覆盖：`origin=hermeship` 的 context 被忽略。
-- [ ] 编写去重测试。
-  - 覆盖：同一事件/session 在 dedupe window 内只转发一次。
-- [ ] 实现 runtime handler。
-  - 新建：`src/hermeship/hook_handler.py`
-  - 包含：`handle(event_type, context)`、`send_event()`、dedupe state。
+- [ ] 实现 `/event`。
+  - 接收 `IncomingEvent`。
+  - 规范化并转为 `EventEnvelope`。
+  - 写入 `tokio::mpsc` 队列。
+- [ ] 实现 `hermeship emit`。
+  - 通过 client POST `/event`。
+- [ ] 实现 `hermeship send`。
+  - 作为 custom event 发送。
+- [ ] 编写 ingress 测试。
+  - 覆盖：有效事件入队、非法 payload 4xx、daemon unavailable 错误。
 - [ ] 验证任务 3.2。
-  - 命令：`pytest tests/test_hook_handler.py -q`
+  - 命令：`cargo test daemon event`
+  - 命令：`cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'`
 - [ ] 提交任务 3.2。
-  - commit：`feat: 实现 fail-open 的 Hermes hook handler`
+  - commit：`feat: 增加 daemon event ingress`
 
-### 任务 3.3：Installer 与 Doctor
+### 任务 3.3：Hermes hook ingress
 
-- [ ] 编写 installer 测试。
-  - 新建：`tests/test_installer.py`
-  - 覆盖：首次安装、不覆盖、force install、返回路径。
-- [ ] 实现 installer。
-  - 新建：`src/hermeship/installer.py`
-  - 函数：`install_hook(home: Path, force: bool = False) -> Path`。
-- [ ] 新增 CLI `install-hook`。
-  - 修改：`src/hermeship/cli.py`
-  - flags：`--home`、`--force`。
-- [ ] 新增 CLI `doctor`。
-  - 检查：package import、hook 是否安装、clawhip binary、clawhip status。
-- [ ] 新增运维文档。
-  - 新建：`docs/operations.md`
-  - 内容：安装、验证、更新、回滚。
+- [ ] 实现 `/api/hermes/hook`。
+  - 接收：`provider`、`source`、`event`、`context`。
+  - 输出：标准 `IncomingEvent`。
+- [ ] 实现 `hermeship hermes hook --payload`。
+  - 支持 stdin `--payload -`。
+- [ ] 编写 Hermes hook normalization 测试。
+  - 覆盖：`gateway:startup`、`session:start`、`session:end`、`session:reset`、`agent:start`、`agent:end`。
 - [ ] 验证任务 3.3。
-  - 命令：`pytest tests/test_installer.py -q`
-  - 命令：`python -m hermeship install-hook --home /tmp/hermeship-test-home --force`
-  - 命令：`find /tmp/hermeship-test-home/hooks/hermeship-clawhip -maxdepth 1 -type f -print`
-- [ ] 验证 Milestone 3。
-  - 命令：`pytest -q`
-  - 命令：`python -m hermeship doctor`
+  - 命令：`cargo test hermes`
+  - 命令：`printf '%s' '{"event":"agent:start","context":{"session_id":"demo"}}' | cargo run -- hermes hook --payload -`
 - [ ] 提交任务 3.3。
-  - commit：`feat: 支持安装 Hermes hook bundle`
+  - commit：`feat: 增加 Hermes hook ingress`
 
-## Milestone 4：文档与 Live Verification
+## Milestone 4：Router、Renderer、Dispatcher
 
-目标：证明 Hermeship 能与 clawhip 联通，并给 operator 清晰操作路径。
+目标：移植 clawhip 核心事件分发管道。
 
-### 任务 4.1：README 与运维文档
+### 任务 4.1：Router
 
-- [ ] 重写 README quickstart。
-  - 内容：Hermeship 是什么、安装、配置 clawhip、安装 hook、dry-run、live check。
-- [ ] 增加 rollback 章节。
-  - 内容：删除 hook 目录、卸载 package、必要时重启 Hermes。
-- [ ] 增加隐私章节。
-  - 内容：默认不会转发哪些内容。
-- [ ] 链接方案与事件映射文档。
-  - 文件：`README.md`、`docs/event-mapping.md`、`docs/operations.md`。
+- [ ] 新建 router 模块。
+  - 新建：`src/router.rs`
+  - 类型：`ResolvedDelivery`、`SinkTarget`、`DeliveryExplanation`。
+- [ ] 实现 route match。
+  - 支持 event glob。
+  - 支持 filter map。
+  - 支持 0..N delivery。
+- [ ] 实现 route candidates。
+  - `hermes.agent.*`、`hermes.session.*`、`hermes.*`。
+- [ ] 实现 `hermeship explain`。
+  - 展示 matched routes、failed filters、delivery target。
+- [ ] 编写 router 测试。
+  - 覆盖：多 route、filter 命中/未命中、缺 channel、template/format/mention 继承。
 - [ ] 验证任务 4.1。
-  - 命令：`rg -n "install-hook|emit-sample|rollback|privacy|clawhip" README.md docs`
+  - 命令：`cargo test router`
+  - 命令：`cargo run -- explain hermes.agent.started --payload '{"platform":"telegram","session_id":"demo"}'`
 - [ ] 提交任务 4.1。
-  - commit：`docs: 增加 Hermeship 运维说明`
+  - commit：`feat: 实现多投递路由`
 
-### 任务 4.2：Live Verification Runbook
+### 任务 4.2：Renderer
 
-- [ ] 创建 live verification 文档。
-  - 新建：`docs/live-verification.md`
-- [ ] 记录前置条件。
-  - 包含：运行中的 clawhip daemon、Discord 测试频道、独立 clawhip bot token。
-- [ ] 记录 dry-run 验证。
-  - 命令：`python -m hermeship emit-sample --event agent:start --dry-run`。
-- [ ] 记录 clawhip daemon 验证。
-  - 命令：`clawhip start`、`clawhip status`、sample events。
-- [ ] 记录 Hermes hook smoke 验证。
-  - 使用隔离 `HERMES_HOME`。
-- [ ] 记录预期 Discord 消息。
-  - 包含：start、finish、session started、session finished。
+- [ ] 新建 render 模块。
+  - 新建：`src/render/mod.rs`
+  - 新建：`src/render/default.rs`
+- [ ] 实现默认 renderer。
+  - 支持：`compact`、`inline`、`alert`、`raw`。
+- [ ] 实现 Hermes 事件渲染。
+  - gateway/session/agent/custom。
+- [ ] 实现 template 渲染。
+  - 支持 `{session_id}`、`{platform}`、`{project}`、`{event}` 等上下文 token。
+- [ ] 编写 renderer 测试。
+  - 覆盖：所有格式、缺字段降级、raw JSON、template token。
 - [ ] 验证任务 4.2。
-  - 命令：`rg -n "clawhip status|HERMES_HOME|Discord|emit-sample" docs/live-verification.md`
+  - 命令：`cargo test render`
 - [ ] 提交任务 4.2。
+  - commit：`feat: 增加 Hermes 默认渲染器`
+
+### 任务 4.3：Dispatcher 与 fake sink
+
+- [ ] 新建 dispatch/sink 模块。
+  - 新建：`src/dispatch.rs`
+  - 新建：`src/sink/mod.rs`
+  - 新建：`src/sink/fake.rs`
+- [ ] 实现 `Sink` trait。
+- [ ] 实现 fake sink。
+  - 用于测试保存 delivery。
+- [ ] 实现 dispatcher。
+  - 从队列读取 event。
+  - route -> render -> sink。
+  - 单个 delivery 失败不影响其他 delivery。
+- [ ] 编写 dispatcher 测试。
+  - 覆盖：多投递、单 sink failure、无 route、render failure。
+- [ ] 验证任务 4.3。
+  - 命令：`cargo test dispatch sink`
+- [ ] 提交任务 4.3。
+  - commit：`feat: 实现事件 dispatcher 与 fake sink`
+
+## Milestone 5：Discord Sink 与基础 Live Path
+
+目标：实现第一条真实通知链路。
+
+### 任务 5.1：Discord 配置与 payload
+
+- [ ] 新建 Discord sink。
+  - 新建：`src/sink/discord.rs`
+- [ ] 支持 bot token + channel。
+- [ ] 支持 webhook URL。
+- [ ] 实现 Discord message payload。
+  - 内容长度限制。
+  - mention 前缀。
+  - allowed mentions 策略。
+- [ ] 编写 Discord sink 单元测试。
+  - 使用 fake HTTP 或 request builder 测试。
+- [ ] 验证任务 5.1。
+  - 命令：`cargo test discord`
+- [ ] 提交任务 5.1。
+  - commit：`feat: 增加 Discord sink`
+
+### 任务 5.2：Sink 失败语义
+
+- [ ] 测试 token 缺失。
+  - 预期：delivery failed，不 panic。
+- [ ] 测试非 2xx。
+  - 预期：记录 status/body tail。
+- [ ] 测试 rate limit。
+  - 预期：尊重 retry 信息或记录明确诊断。
+- [ ] 测试多个 delivery 其中一个失败。
+  - 预期：其他 delivery 继续。
+- [ ] 验证任务 5.2。
+  - 命令：`cargo test sink dispatch`
+- [ ] 提交任务 5.2。
+  - commit：`feat: 完善 sink 失败处理`
+
+### 任务 5.3：本地端到端 smoke
+
+- [ ] 编写 daemon + fake sink E2E。
+  - 启动 test daemon。
+  - POST `/api/hermes/hook`。
+  - 断言 fake sink 收到渲染消息。
+- [ ] 验证 `send`。
+  - 命令：`cargo run -- send --channel test --message "hello"`
+  - 使用 fake/dry-run 模式。
+- [ ] 验证 `emit`。
+  - 命令：`cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'`
+- [ ] 提交任务 5.3。
+  - commit：`test: 增加 daemon 到 sink 的端到端覆盖`
+
+## Milestone 6：Hermes Hook Bridge 安装
+
+目标：让 Hermes gateway 能通过 hook bridge 投递到 Hermeship。
+
+### 任务 6.1：Hook 模板
+
+- [ ] 创建 Hermes hook 模板目录。
+  - 新建：`templates/hermes-hook/HOOK.yaml`
+  - 新建：`templates/hermes-hook/handler.py`
+- [ ] `HOOK.yaml` 声明事件。
+  - `gateway:startup`
+  - `session:start`
+  - `session:end`
+  - `session:reset`
+  - `agent:start`
+  - `agent:end`
+  - `agent:step` 默认可配置禁用。
+- [ ] `handler.py` 只使用标准库。
+  - 不 import Hermeship package。
+  - 调用 `hermeship hermes hook --payload -`。
+  - 超时 fail-open。
+- [ ] 编写模板测试。
+  - 覆盖：manifest 可解析、handler 包含 fail-open 逻辑、不包含 secret。
+- [ ] 验证任务 6.1。
+  - 命令：`cargo test hooks`
+- [ ] 提交任务 6.1。
+  - commit：`feat: 增加 Hermes hook bridge 模板`
+
+### 任务 6.2：Installer
+
+- [ ] 新建 hooks installer。
+  - 新建：`src/hooks/mod.rs`
+  - 函数：`install_hermes_hooks(home, force)`。
+- [ ] 实现 CLI。
+  - `hermeship hermes install-hooks --home <path> --force`
+- [ ] 支持 dry-run。
+  - 打印将写入的文件，不修改磁盘。
+- [ ] 编写 installer 测试。
+  - 覆盖：首次安装、不覆盖、force 覆盖、dry-run、返回路径。
+- [ ] 验证任务 6.2。
+  - 命令：`cargo test hooks`
+  - 命令：`cargo run -- hermes install-hooks --home /tmp/hermeship-test-home --force`
+  - 命令：`find /tmp/hermeship-test-home/hooks/hermeship -maxdepth 1 -type f -print`
+- [ ] 提交任务 6.2。
+  - commit：`feat: 支持安装 Hermes gateway hooks`
+
+### 任务 6.3：Bridge smoke 与回滚
+
+- [ ] 编写 Python handler smoke test。
+  - 使用临时 `HERMES_HOME`。
+  - 直接 import/exec handler module。
+  - fake `hermeship` binary 验证 stdin payload。
+- [ ] 实现 uninstall/remove hooks。
+  - `hermeship hermes uninstall-hooks --home <path>`
+- [ ] 编写回滚测试。
+  - 安装 -> 卸载 -> 确认目录删除或 marker 删除。
+- [ ] 验证任务 6.3。
+  - 命令：`cargo test hooks`
+  - 命令：`cargo run -- hermes uninstall-hooks --home /tmp/hermeship-test-home`
+- [ ] 提交任务 6.3。
+  - commit：`feat: 支持 Hermes hook 回滚`
+
+## Milestone 7：安装、生命周期与运维 CLI
+
+目标：补齐 clawhip 风格的可运维项目表面。
+
+### 任务 7.1：Install/Setup
+
+- [ ] 实现 `hermeship install`。
+  - 创建 `~/.hermeship`。
+  - scaffold `config.toml`。
+  - 输出下一步命令。
+- [ ] 实现 `hermeship setup`。
+  - 支持设置 Discord token、default channel、daemon URL。
+  - 不打印 secret。
+- [ ] 编写 install/setup 测试。
+  - 使用临时 HOME。
+- [ ] 验证任务 7.1。
+  - 命令：`cargo test lifecycle`
+- [ ] 提交任务 7.1。
+  - commit：`feat: 增加 hermeship install setup`
+
+### 任务 7.2：Service 与 Uninstall
+
+- [ ] 增加 systemd service 模板。
+  - 新建：`deploy/hermeship.service`
+- [ ] 增加 launchd 文档或模板。
+  - macOS 先文档化，是否实现视环境决定。
+- [ ] 实现 `hermeship uninstall`。
+  - 可选删除 config/state/service/hooks。
+- [ ] 编写 lifecycle 测试。
+  - 覆盖：不误删、force/remove-config 行为。
+- [ ] 验证任务 7.2。
+  - 命令：`cargo test lifecycle`
+- [ ] 提交任务 7.2。
+  - commit：`feat: 增加安装生命周期管理`
+
+### 任务 7.3：Release preflight
+
+- [ ] 新建 release preflight。
+  - 新建：`src/release_preflight.rs`
+- [ ] 检查项目一致性。
+  - CLI help。
+  - 配置示例。
+  - docs 命令。
+  - hook 模板包含。
+- [ ] 实现 CLI。
+  - `hermeship release preflight <version>`
+- [ ] 验证任务 7.3。
+  - 命令：`cargo run -- release preflight 0.1.0`
+- [ ] 提交任务 7.3。
+  - commit：`chore: 增加 release preflight`
+
+## Milestone 8：clawhip 功能 Parity 扩展
+
+目标：按 clawhip 能力补齐非 Hermes 专属 sources。
+
+### 任务 8.1：Git Source
+
+- [ ] 新建 git source。
+  - 新建：`src/source/git.rs`
+- [ ] 实现 commit/branch 事件。
+- [ ] 实现 `hermeship git commit` 和 `hermeship git branch-changed`。
+- [ ] 编写测试。
+  - 覆盖：repo/branch/commit summary、路由 metadata。
+- [ ] 验证任务 8.1。
+  - 命令：`cargo test git`
+- [ ] 提交任务 8.1。
+  - commit：`feat: 增加 git 事件 source`
+
+### 任务 8.2：GitHub Source
+
+- [ ] 新建 GitHub source。
+  - 新建：`src/source/github.rs`
+- [ ] 实现 issue/PR/CI/release 事件。
+- [ ] 实现 `hermeship github ...` CLI。
+- [ ] 编写测试。
+  - 使用 fixture，不依赖真实 GitHub。
+- [ ] 验证任务 8.2。
+  - 命令：`cargo test github`
+- [ ] 提交任务 8.2。
+  - commit：`feat: 增加 GitHub 事件 source`
+
+### 任务 8.3：Tmux Source
+
+- [ ] 新建 tmux source。
+  - 新建：`src/source/tmux.rs`
+- [ ] 实现 keyword/stale 事件。
+- [ ] 实现 `hermeship tmux keyword/stale/watch/list`。
+- [ ] 编写测试。
+  - fake tmux 命令输出。
+- [ ] 验证任务 8.3。
+  - 命令：`cargo test tmux`
+- [ ] 提交任务 8.3。
+  - commit：`feat: 增加 tmux 事件 source`
+
+### 任务 8.4：Cron 与 Memory Scaffold
+
+- [ ] 新建 cron 模块。
+  - 新建：`src/cron.rs`
+- [ ] 支持 configured cron job run。
+- [ ] 新建 memory scaffold。
+  - 新建：`src/memory.rs`
+  - CLI：`hermeship memory init/status`
+- [ ] 编写测试。
+- [ ] 验证任务 8.4。
+  - 命令：`cargo test cron memory`
+- [ ] 提交任务 8.4。
+  - commit：`feat: 增加 cron 与 memory scaffold`
+
+## Milestone 9：文档与 Live Verification
+
+目标：证明 Hermeship 的真实使用路径可操作、可回滚。
+
+### 任务 9.1：README 与运维文档
+
+- [ ] 重写 README。
+  - 内容：项目定位、安装、配置、启动 daemon、安装 Hermes hooks、send/emit/explain、live check。
+- [ ] 新增 operations 文档。
+  - 新建：`docs/operations.md`
+  - 内容：安装、更新、回滚、常见故障。
+- [ ] 新增 event contract 文档。
+  - 新建：`docs/hermes-event-contract.md`
+  - 内容：Hermes hook input、canonical events、payload 字段、隐私规则。
+- [ ] 新增 architecture 文档。
+  - 新建：`ARCHITECTURE.md`
+  - 参考 clawhip，但使用 Hermeship 实际模块。
+- [ ] 验证任务 9.1。
+  - 命令：`rg -n "hermeship start|hermes install-hooks|hermes.agent|Discord|rollback" README.md docs ARCHITECTURE.md`
+- [ ] 提交任务 9.1。
+  - commit：`docs: 增加 Hermeship 运维与事件契约`
+
+### 任务 9.2：Live Verification Runbook
+
+- [ ] 新增 live verification 文档。
+  - 新建：`docs/live-verification.md`
+- [ ] 记录 fake sink 验证。
+- [ ] 记录 daemon health 验证。
+- [ ] 记录 Discord live 验证。
+- [ ] 记录 Hermes gateway hook smoke。
+- [ ] 记录回滚验证。
+- [ ] 验证任务 9.2。
+  - 命令：`rg -n "HERMES_HOME|Discord|hermeship status|agent:start|rollback" docs/live-verification.md`
+- [ ] 提交任务 9.2。
   - commit：`docs: 增加 live verification runbook`
 
-### 任务 4.3：首次 Live Check
+### 任务 9.3：首次 Live Check
 
-- [ ] 启动或确认 clawhip daemon。
-  - 命令：`clawhip status`
-  - 如果不可用：在本清单记录原因。
-- [ ] 发送 dry-run 样例。
-  - 命令：`python -m hermeship emit-sample --event agent:start --dry-run`
-- [ ] 发送 live start 样例。
-  - 命令：`python -m hermeship emit-sample --event agent:start`
-- [ ] 发送 live finish 样例。
-  - 命令：`python -m hermeship emit-sample --event agent:end`
-- [ ] 确认 Discord 投递。
-  - 记录：频道、时间、消息形态。
-- [ ] 在一次性 home 测试回滚。
-  - 命令：`rm -rf /tmp/hermeship-test-home/hooks/hermeship-clawhip`
-- [ ] 验证 Milestone 4。
-  - 命令：`pytest -q`
-  - 命令：`python -m hermeship --help`
-- [ ] 如文档变化则提交 live verification 记录。
+- [ ] 启动 Hermeship daemon。
+  - 命令：`hermeship start`
+- [ ] 确认 daemon status。
+  - 命令：`hermeship status`
+- [ ] 发送 custom live message。
+  - 命令：`hermeship send --channel <id> --message "hermeship live check"`
+- [ ] 发送 Hermes sample event。
+  - 命令：`hermeship emit hermes.agent.started --payload '{"session_id":"live-check"}'`
+- [ ] 安装 Hermes hooks。
+  - 命令：`hermeship hermes install-hooks --force`
+- [ ] 触发真实 Hermes gateway event。
+  - 记录：平台、频道、时间、消息形态。
+- [ ] 执行回滚。
+  - 命令：`hermeship hermes uninstall-hooks`
+- [ ] 如凭据不可用，记录阻塞原因和剩余风险。
+- [ ] 提交 live verification 记录。
   - commit：`docs: 记录 Hermeship live verification 结果`
 
-## Milestone 5：CI 与发布准备
-
-目标：让 MVP 可重复验证、可发布、可回滚。
-
-### 任务 5.1：Lint 与测试自动化
-
-- [ ] 增加 ruff 配置。
-  - 修改：`pyproject.toml`
-- [ ] 确认 editable install 下测试通过。
-  - 命令：`python -m pip install -e ".[dev]"`
-  - 命令：`ruff check .`
-  - 命令：`pytest -q`
-- [ ] 增加 fake clawhip binary 测试 fixture。
-  - 文件：`tests/conftest.py`
-  - 目的：不依赖 daemon 验证 command integration。
-- [ ] 验证任务 5.1。
-  - 命令：`ruff check .`
-  - 命令：`pytest -q`
-- [ ] 提交任务 5.1。
-  - commit：`test: 增加 lint 与 fake clawhip 覆盖`
-
-### 任务 5.2：构建与打包
-
-- [ ] 增加 package build 验证。
-  - 命令：`python -m build`
-- [ ] 检查 distribution 内容。
-  - 确认：hook templates 和 docs 被包含。
-- [ ] 如果模板缺失，增加 packaging 测试。
-  - 覆盖：安装后的 package 能定位 template 文件。
-- [ ] 验证任务 5.2。
-  - 命令：`python -m build`
-  - 命令：`python -m pip install dist/*.whl --force-reinstall`
-  - 命令：`python -m hermeship --help`
-- [ ] 提交任务 5.2。
-  - commit：`chore: 验证 hermeship 打包产物`
-
-### 任务 5.3：发布门禁
-
-- [ ] 复核配置 schema 稳定性。
-  - 完成标准：没有待定的用户可见 key 重命名。
-- [ ] 复核事件映射稳定性。
-  - 完成标准：事件名与 `docs/event-mapping.md` 一致。
-- [ ] 复核隐私默认值。
-  - 完成标准：默认不转发高风险字段。
-- [ ] 复核回滚路径。
-  - 完成标准：在一次性 `HERMES_HOME` 中回滚成功。
-- [ ] 运行完整发布验证。
-  - 命令：`ruff check .`
-  - 命令：`pytest -q`
-  - 命令：`python -m hermeship emit-sample --event agent:start --dry-run`
-  - 命令：`python -m build`
-- [ ] 提交发布准备更新。
-  - commit：`chore: 准备 hermeship v0.1.0`
-
-## Milestone 6：可选 Observer Plugin 研究
+## Milestone 10：Hermes Plugin / Observer 研究
 
 目标：在 gateway hook MVP 稳定后，增加更高保真 telemetry。
 
-门禁：Milestone 1-5 完成或被明确豁免前，不启动本阶段。
+门禁：Milestone 1-9 完成或被明确豁免前，不启动本阶段。
 
-### 任务 6.1：Observer Hook 运行时研究
+### 任务 10.1：Observer 契约研究
 
-- [ ] 复读 Hermes observer 文档。
-  - 文件：`/home/zq/work-space/repo/ai-projs/agents/hermes-agent/docs/observability/README.md`
-- [ ] 确认 plugin 安装机制。
-  - 完成标准：记录准确 plugin 目录和启用命令。
+- [ ] 复读 Hermes plugin 文档和源码。
+  - 文件：`/Users/zq/Desktop/ai-projs/posp/agents-contributions/hermes-agent/hermes_cli/plugins.py`
+- [ ] 确认 plugin 安装与启用机制。
+  - 重点：`~/.hermes/plugins`、`plugins.enabled`、entry point。
 - [ ] 起草 observer event mapping。
-  - 新建或更新：`docs/observer-plugin.md`
+  - 新建：`docs/observer-plugin.md`
 - [ ] 决定 observer mode 进入 v0.2 还是更晚。
   - 记录决策到本清单。
 
-### 任务 6.2：Observer Plugin MVP
+### 任务 10.2：Observer Plugin MVP
 
-- [ ] 编写 observer plugin 测试。
-  - 新建：`tests/test_observer_plugin.py`
-- [ ] 实现只读 observer callback。
-  - 新建：`src/hermeship/observer_plugin.py`
-  - 新建：`templates/hermes-plugin/hermeship_observer.py`
-- [ ] 验证隐私默认值。
-  - 测试：默认丢弃 request/response body。
-- [ ] 验证 observer mode 不依赖 gateway hook。
-  - 命令：运行 targeted tests。
+- [ ] 创建 plugin 模板。
+  - 新建：`templates/hermes-plugin/plugin.yaml`
+  - 新建：`templates/hermes-plugin/__init__.py`
+- [ ] 支持 hook。
+  - `pre_tool_call`
+  - `post_tool_call`
+  - `post_llm_call`
+  - `api_request_error`
+  - `subagent_start`
+  - `subagent_stop`
+- [ ] 默认隐私保护。
+  - 不转发 request/response body。
+- [ ] 编写 plugin smoke test。
 - [ ] 提交 observer plugin。
-  - commit：`feat: 增加可选 Hermes observer 转发`
+  - commit：`feat: 增加可选 Hermes observer plugin`
 
 ## 运行状态日志
 
@@ -416,21 +635,27 @@
 
 ### 2026-06-15
 
-- [x] 创建初版开发方案。
-- [x] 创建迭代开发清单。
-- [x] 将方案和清单拆分为中文文档。
+- [x] 用户纠正：Hermeship 应完全参考 clawhip 项目形态，而不是 thin adapter。
+- [x] 更新 lessons，记录正确目标。
+- [x] 重写方案文档为 Hermes-native daemon-first event router。
+- [x] 重写开发清单为 Rust/clawhip-parity 实现路径。
 - [ ] 实现尚未开始。
 
 ## 阻塞项
 
 - [ ] 确认 live Discord verification 凭据是否可用。
-- [ ] 确认开发环境是否已安装 `clawhip` binary。
-- [ ] 确认 v0.1.0 是否必须真实运行 Hermes gateway，还是允许先做手动 post-release verification。
+- [ ] 确认是否需要第一版就支持 Slack sink。
+- [ ] 确认 git/GitHub/tmux parity 是否必须进入 `0.1.0`，还是 `0.2.0`。
+- [ ] 确认 macOS launchd 是否必须和 systemd 同期实现。
 
 ## 决策记录
 
-- [x] MVP 使用 Hermes gateway hooks，不 patch Hermes core。
-- [x] MVP 使用 `clawhip agent` 和 `clawhip emit`，不新增 clawhip native provider contract。
-- [x] MVP 优先标准库，HTTP transport 延后。
-- [x] 默认不转发 `command:*`。
+- [x] Hermeship 不是 thin adapter。
+- [x] Hermeship 不依赖运行中的 clawhip。
+- [x] Hermeship 以 `template/clawhip` 为架构和功能参考。
+- [x] 主实现采用 Rust daemon-first 架构。
+- [x] Python 只用于 Hermes gateway hook bridge 模板。
+- [x] MVP 不修改 Hermes 核心。
+- [x] MVP 首选 Hermes gateway hooks，observer plugin 后续推进。
+- [x] 默认不转发完整 message/response/request/response/tool body。
 - [x] 方案文档和进度清单分离维护。

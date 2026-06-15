@@ -1,17 +1,16 @@
-# Task: Hermeship 文档中文化与分离
+# Task: 重写 Hermeship 方案与阶段清单
 
 - [x] 复习 `tasks/lessons.md`。
-- [x] 确认仓库状态与远程分支同步。
-- [x] 将方案文档改写为中文方案文档。
-- [x] 从方案文档中移除详细执行清单内容。
-- [x] 将开发进度清单改写为中文跟踪清单。
-- [x] 更新 lessons，记录方案与清单必须分离维护。
-- [x] 验证文档结构、行尾空白、diff 范围。
-- [x] 提交并推送本阶段变更。
+- [x] 记录用户纠正：Hermeship 不是 thin adapter，而是 Hermes-native 的 clawhip-equivalent。
+- [x] 重写 `docs/plans/2026-06-15-hermeship-development-plan.md`。
+- [x] 重写 `tasks/development-checklist.md`。
+- [x] 验证文档中不再保留“调用现有 clawhip”的旧方向。
+- [x] 验证方案文档与开发清单继续分离维护。
+- [ ] 提交本阶段文档更新。
 
 ## Review
 
-- 方案文档已改为中文，保留目标、边界、架构、契约、安全、验证、发布和参考内容。
-- 开发进度清单已改为中文，保留全局完成定义、Milestone 0-6、任务项、状态日志、阻塞项和决策记录。
-- 已更新 `tasks/lessons.md`，记录方案文档和开发清单必须分离维护。
-- 验证文档结构、英文模板残留、行尾空白和 git diff 范围。
+- 方案文档已改为 Hermes-native daemon-first event router 方向，明确不依赖运行中的 `clawhip`。
+- 开发清单已改为 Rust/clawhip-parity 实现路径，覆盖 CLI、daemon、event model、router、renderer、sink、Hermes hook bridge、安装运维、parity 扩展和 live verification。
+- 已更新 lessons，记录 Hermeship 不是 thin adapter 的纠正。
+- 已验证旧 Python/thin-adapter 方案正向残留和 diff 空白错误。

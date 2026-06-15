@@ -6,189 +6,391 @@
 
 本文是 `hermeship` 的中文开发方案，描述系统目标、边界、架构、事件契约、安全策略、验证策略和发布策略。
 
-具体迭代任务、进度勾选、每阶段验证命令和提交边界不在本文重复维护，统一放在：
+具体迭代任务、进度勾选、每阶段验证命令和提交边界统一维护在：
 
 - `tasks/development-checklist.md`
 
-这样做的原因是：方案文档保持稳定，用来回答“为什么这样设计”和“边界在哪里”；任务清单保持可变，用来跟踪“当前做到哪一步”和“下一步做什么”。
+方案文档回答“为什么这样设计、边界在哪里、最终系统长什么样”；开发清单回答“当前做到哪一步、下一步做什么、如何验收”。
 
-## 2. 背景
+## 2. 修正后的目标理解
 
-`clawhip` 是一个 daemon-first 的事件到频道通知路由器。它接收 GitHub、git、tmux、自定义事件和 provider-native hook payload，经过标准化、路由、渲染后发送到 Discord 等下游。
+`hermeship` 不是一个调用现有 `clawhip` binary 的薄适配器。
 
-Hermes 是一个跨 CLI、网关、多聊天平台、插件、技能和子代理的个人 AI agent。Hermes 的设计原则是核心窄、能力在边缘扩展；因此 `hermeship` 不应修改 Hermes 核心，也不应把通知逻辑塞回 Hermes 对话上下文。
+`hermeship` 的目标是以 `/Users/zq/Desktop/ai-projs/posp/template/clawhip` 为工程模板，为 Hermes 构建一个 Hermes-native 的事件到通知渠道路由项目。它应参考 `clawhip` 的 daemon-first 架构、CLI 形态、事件模型、路由、渲染、sink、安装、配置、运维和 live verification，只把 OpenClaw、Codex、Claude、OMC/OMX 等耦合点替换为 Hermes 的 gateway hooks、plugin hooks、session/agent 生命周期、配置和安装习惯。
 
-`hermeship` 的目标是把 Hermes 生命周期事件转发给 `clawhip`，让通知进入独立事件管道，避免污染 Hermes gateway session。
+正确方向：
 
-## 3. 目标
+- `clawhip` 是架构和功能参考，不是运行时依赖。
+- `hermeship` 自己提供 daemon、router、renderer、sink 和 CLI。
+- Hermes 通过 hook bridge 或后续 plugin/observer 向 `hermeship` 投递事件。
+- 下游通知由 `hermeship` 直接投递到 Discord、Slack 等渠道。
 
-`hermeship` 第一阶段要做到：
+## 3. 背景
 
-- 作为 Hermes 到 clawhip 的适配层。
-- 安装一个 Hermes gateway hook bundle。
-- 监听 Hermes 的粗粒度生命周期事件。
-- 将事件映射成 clawhip 已有的 `agent.*` 和 `emit` 事件。
-- 支持 dry-run，便于本地调试和 CI。
-- 在 clawhip 不存在、daemon 不可用或配置错误时 fail-open，不影响 Hermes 正常运行。
-- 默认不发送完整对话、完整 prompt、provider 请求/响应、token、cookie 或 secrets。
+`clawhip` 是一个 daemon-first 的事件到频道通知路由器。它接收 CLI、GitHub、git、tmux、自定义事件和 provider-native hook payload，经过标准化、路由、渲染后发送到 Discord/Slack 等下游。
 
-## 4. 非目标
+Hermes 是一个跨 CLI、网关、多聊天平台、插件、技能和子代理的个人 AI agent。Hermes 的扩展原则是核心窄、能力在边缘扩展。Hermeship 应遵守这个原则：不把通知逻辑塞进 Hermes 对话上下文，不修改 Hermes 核心，而是在 Hermes 边缘接收生命周期事件并进入独立通知管道。
+
+## 4. 产品目标
+
+第一阶段的 Hermeship 应做到：
+
+- 作为 Hermes-native 的 daemon-first 通知路由器。
+- 提供 `hermeship` CLI，覆盖安装、启动、状态、配置、发送、解释路由、release preflight 等运维入口。
+- 提供本地 daemon，接收事件并通过队列分发。
+- 提供 typed event model，将外部 ingress 标准化为内部事件 envelope。
+- 提供 multi-delivery router，一个事件可投递到 0..N 个目的地。
+- 提供 renderer/sink 分离，第一版至少支持 Discord，后续支持 Slack。
+- 提供 Hermes gateway hook bridge 安装和转发能力。
+- 提供 custom event、Hermes lifecycle event、git/GitHub/tmux/cron 等与 clawhip 对齐的事件能力路线。
+- 默认 fail-open：Hermeship 失败不能影响 Hermes gateway 或 agent 正常运行。
+- 默认保护隐私：不发送完整对话、完整 prompt、provider 请求/响应、tool result body、token、cookie 或 secret。
+- 提供可重复的本地测试、fake sink、fake Hermes hook、daemon smoke test 和 live Discord verification runbook。
+
+## 5. 非目标
 
 MVP 不做以下事情：
 
-- 不 fork `clawhip`。
-- 不替代 `clawhip` daemon、router、renderer 或 Discord sink。
+- 不依赖运行中的 `clawhip` daemon。
+- 不通过 `clawhip agent` 或 `clawhip emit` 作为核心投递路径。
 - 不修改 Hermes 核心代码。
 - 不新增 Hermes model tool。
-- 不实现多 agent 调度器。
-- 不自动启动 Codex/LazyCodex worker。
-- 不创建 GitHub PR。
-- 不把 Hermes 加进 clawhip 已冻结的 Codex/Claude native hook v1 契约。
-- 不默认转发 `command:*` 事件。
-- 不默认实现 HTTP transport；第一版优先使用 clawhip CLI。
+- 不把通知消息回灌到 Hermes 对话上下文。
+- 不复用 Hermes 聊天 bot token 作为通知 bot token。
+- 不把 Hermes 塞进 clawhip 已冻结的 Codex/Claude native hook v1 契约。
+- 不默认转发完整 `command:*`、完整 tool body、完整 LLM request/response。
+- 不在 MVP 中实现所有 clawhip 历史遗留能力；但要按相同架构为 parity 留出清晰路径。
 
-## 5. 设计原则
+## 6. 设计原则
 
-- **失败开放**：Hermeship 失败不能中断 Hermes。
-- **边界清晰**：Hermeship 只做适配，clawhip 继续负责路由和投递。
-- **依赖最小**：MVP 使用 Python 标准库优先，第三方依赖只进入 dev extra。
-- **事件小而稳**：发送摘要和结构化元数据，不发送大段内容。
-- **隐私默认安全**：默认丢弃高风险字段，递归脱敏敏感 key。
-- **安装可回滚**：hook 安装必须幂等，回滚只需删除 hook 目录。
-- **不重复状态机**：不在 Hermeship 里重建 Hermes 或 clawhip 的内部状态。
-- **先验证再提交**：每个阶段完成后必须运行验证命令并提交。
+- **架构同构**：优先参考 `clawhip` 的 daemon、source、dispatcher、router、renderer、sink 模块边界。
+- **Hermes 原生**：接入点、命名、安装和配置面向 Hermes，而不是 OpenClaw/Codex/Claude。
+- **失败开放**：hook bridge、daemon、sink、配置失败都不能中断 Hermes。
+- **边界清晰**：Hermes 只产生事件，Hermeship 负责路由和投递，下游渠道只接收通知。
+- **事件小而稳**：事件承载摘要和结构化元数据，不承载大段内容。
+- **隐私默认安全**：默认丢弃高风险字段，递归脱敏敏感 key，正文摘录必须显式启用。
+- **配置兼容演进**：TOML schema 首版稳定，后续只做向后兼容扩展。
+- **先契约后实现**：先锁定 Hermes hook context、CLI event shape、daemon API、route/filter 语义，再写代码。
+- **先验证再提交**：每个阶段完成后运行对应验证命令并提交。
 
-## 6. 总体架构
+## 7. 技术栈
+
+Hermeship 应采用与 clawhip 接近的 Rust daemon-first 技术栈：
+
+- Rust 2024 edition。
+- `tokio`：异步运行时和队列。
+- `axum`：本地 daemon HTTP API。
+- `clap`：CLI。
+- `serde` / `serde_json`：事件和配置序列化。
+- `toml`：配置文件。
+- `reqwest`：Discord/Slack/GitHub 等 HTTP 调用。
+- `time`、`uuid`：事件时间戳和 ID。
+- `tempfile`、fake sink/fake bridge：测试辅助。
+
+Hermes hook bridge 使用 Python 标准库脚本，因为 Hermes gateway hook 运行 `handler.py`。该脚本应尽量薄：读取 `event_type/context`，调用 `hermeship hermes hook` 或向本地 daemon POST 事件，捕获所有异常并 fail-open。bridge 不应要求 Hermes gateway Python 环境能 import `hermeship` Python package。
+
+## 8. 总体架构
 
 ```text
-Hermes gateway hooks
-  -> hermeship hook handler
-  -> hermeship mapper
-  -> hermeship clawhip client
-  -> clawhip CLI / daemon
-  -> clawhip router / renderer / sink
-  -> Discord notification channel
+Hermes gateway hooks / Hermes plugins / CLI / git / GitHub / tmux / cron
+  -> source ingress
+  -> IncomingEvent
+  -> typed EventEnvelope
+  -> mpsc queue
+  -> Dispatcher
+  -> Router
+  -> Renderer
+  -> Sink
+  -> Discord / Slack / webhook
 ```
 
-组件职责：
+核心模块建议对齐 clawhip：
 
-| 组件 | 职责 |
+| 模块 | 职责 |
 | --- | --- |
-| Hermes | 运行 agent、网关、session、hook 触发 |
-| Hermeship hook handler | 接收 Hermes hook context，fail-open 转发 |
-| Hermeship mapper | 将 Hermes event/context 标准化为 Hermeship event |
-| Hermeship privacy layer | 截断、脱敏、丢弃高风险字段 |
-| Hermeship clawhip client | 调用 `clawhip agent` 或 `clawhip emit` |
-| clawhip | 路由、渲染、投递通知 |
-| Discord | 接收通知，不承载 Hermes 思考上下文 |
+| `src/main.rs` | CLI dispatch 入口 |
+| `src/cli.rs` | `clap` 命令树 |
+| `src/config.rs` | TOML 配置、默认值、兼容迁移 |
+| `src/client.rs` | daemon client |
+| `src/daemon.rs` | HTTP server、队列、source 启动 |
+| `src/events.rs` | 外部 `IncomingEvent` 和兼容别名 |
+| `src/event/` | typed event body/envelope/compat |
+| `src/router.rs` | route/filter/multi-delivery |
+| `src/dispatch.rs` | queue consumer、render、sink 调用 |
+| `src/render/` | compact/alert/inline/raw renderer |
+| `src/sink/` | Discord、Slack、fake sink |
+| `src/source/` | Hermes、git、GitHub、tmux、workspace source |
+| `src/hooks/` | Hermes hook bridge install、prompt/delivery helpers |
+| `src/native_hooks.rs` 或 `src/hermes_hooks.rs` | Hermes hook payload normalization |
+| `src/lifecycle.rs` | install/update/uninstall/service |
+| `src/release_preflight.rs` | 发布一致性检查 |
 
-## 7. 与 clawhip 的关系
+## 9. CLI 设计
 
-Hermeship 复用 clawhip 现有公共入口：
+Hermeship CLI 应参考 clawhip 命令形态，但使用 Hermes 命名：
 
-- `clawhip agent started`
-- `clawhip agent finished`
-- `clawhip agent blocked`
-- `clawhip agent failed`
-- `clawhip emit <event>`
+```bash
+hermeship start
+hermeship status
+hermeship setup
+hermeship config
+hermeship send --channel <id> --message "..."
+hermeship emit <event> --payload '{"...": "..."}'
+hermeship hermes hook --provider gateway --payload '{"event":"agent:start"}'
+hermeship hermes install-hooks --scope global
+hermeship git commit ...
+hermeship github issue-opened ...
+hermeship tmux keyword ...
+hermeship cron run <id>
+hermeship explain <event> --payload '{"...": "..."}'
+hermeship release preflight <version>
+hermeship install
+hermeship uninstall
+```
 
-Hermeship 不改变 clawhip 以下能力：
+MVP CLI 必须包含：
 
-- daemon 生命周期
-- Discord 配置
-- route/filter 配置
-- renderer/sink
-- Git/GitHub/tmux source
-- Codex/Claude native hook v1 contract
+- `start`
+- `status`
+- `send`
+- `emit`
+- `explain`
+- `config show/path/verify`
+- `hermes hook`
+- `hermes install-hooks`
+- `install`
+- `uninstall`
 
-如果 MVP 证明需要 clawhip 上游支持，只提交小而通用的上游改动，例如：
+`git`、`github`、`tmux`、`cron`、`memory` 可以分阶段实现，但接口风格应提前预留。
 
-- 更明确的 `emit --payload` 文档。
-- provider-agnostic event ingress。
-- `hermes.*` custom event 的渲染支持。
+## 10. Daemon API
 
-不要把 Hermes 特定假设写入 clawhip 的 Codex/Claude native hook v1 契约。
+本地 daemon 默认监听：
 
-## 8. 与 Hermes 的关系
+```text
+http://127.0.0.1:25295
+```
 
-Hermeship 首选接入点是 Hermes gateway hook：
+建议 API：
+
+| 方法 | 路径 | 职责 |
+| --- | --- | --- |
+| `GET` | `/health` | daemon health/status |
+| `POST` | `/event` | 接收通用 `IncomingEvent` |
+| `POST` | `/api/hermes/hook` | 接收 Hermes hook envelope |
+| `POST` | `/api/native/hook` | 后续 provider-agnostic ingress |
+| `GET` | `/api/routes/explain` | route debug，可由 CLI 包装 |
+| `GET` | `/api/update/status` | 后续 update 状态 |
+
+所有 ingress 在进入队列前必须：
+
+1. 解析 JSON。
+2. 规范化事件名和 payload。
+3. 转为 typed envelope。
+4. 拒绝或降级高风险 payload。
+5. 返回可诊断响应。
+
+## 11. Hermes 接入
+
+### Gateway Hook Bridge
+
+Hermes 已支持 `~/.hermes/hooks/<name>/HOOK.yaml + handler.py`，事件包括：
 
 - `gateway:startup`
 - `session:start`
 - `session:end`
 - `session:reset`
 - `agent:start`
+- `agent:step`
 - `agent:end`
+- `command:*`
 
-Hermeship 不要求 Hermes 核心 patch，也不新增核心工具。后续如果需要更高保真 telemetry，再研究 Hermes observer plugin：
+MVP 安装：
+
+```text
+~/.hermes/hooks/hermeship/
+  HOOK.yaml
+  handler.py
+```
+
+`handler.py` 设计要求：
+
+- 只使用 Python 标准库。
+- 不导入 Hermeship Rust/Python package。
+- 将 `event_type` 和 `context` 序列化为 JSON。
+- 优先调用 `hermeship hermes hook --payload -`。
+- 可选支持直接 POST `http://127.0.0.1:25295/api/hermes/hook`。
+- 默认超时 2 秒。
+- 捕获所有异常并打印短诊断，不抛给 Hermes。
+
+### Hermes Plugin / Observer
+
+后续阶段可提供 Hermes plugin，用于更高保真事件：
 
 - `on_session_start`
 - `on_session_end`
 - `pre_tool_call`
 - `post_tool_call`
+- `pre_llm_call`
+- `post_llm_call`
 - `api_request_error`
 - `subagent_start`
 - `subagent_stop`
 
-Observer plugin 是后续阶段，不是 MVP。
+plugin 不是 MVP 的第一入口。只有 gateway hook MVP 稳定后才启动。
 
-## 9. MVP 事件映射
+## 12. 事件模型
 
-| Hermes event | Hermeship event | clawhip 入口 | clawhip event |
-| --- | --- | --- | --- |
-| `gateway:startup` | `gateway.started` | `clawhip emit` | `hermes.gateway.started` |
-| `session:start` | `session.started` | `clawhip emit` | `hermes.session.started` |
-| `session:end` | `session.finished` | `clawhip emit` | `hermes.session.finished` |
-| `session:reset` | `session.reset` | `clawhip emit` | `hermes.session.reset` |
-| `agent:start` | `agent.started` | `clawhip agent started` | `agent.started` |
-| `agent:end` | `agent.finished` | `clawhip agent finished` | `agent.finished` |
-| `agent:end` with error | `agent.failed` | `clawhip agent failed` | `agent.failed` |
+外部 ingress 使用 `IncomingEvent`：
 
-`agent:end` 默认映射为完成。只有当 context 中存在明确的 `error`、`exception` 或 `status=failed` 时才映射为失败。
-
-## 10. Hermeship 事件模型
-
-内部事件建议使用不可变 dataclass：
-
-```python
-@dataclass(frozen=True)
-class MappedEvent:
-    kind: str
-    agent_name: str = "hermes"
-    session_id: str | None = None
-    project: str | None = None
-    summary: str | None = None
-    error_message: str | None = None
-    channel: str | None = None
-    mention: str | None = None
-    payload: dict[str, Any] = field(default_factory=dict)
+```rust
+pub struct IncomingEvent {
+    pub kind: String,
+    pub channel: Option<String>,
+    pub mention: Option<String>,
+    pub format: Option<MessageFormat>,
+    pub template: Option<String>,
+    pub payload: serde_json::Value,
+}
 ```
 
-payload 默认只允许以下字段：
+内部使用 typed envelope：
 
-- `provider`
-- `origin`
-- `session_id`
-- `platform`
-- `chat_id`
-- `thread_id`
-- `user_id`
-- `project`
-- `summary`
-- `error_message`
+```rust
+pub struct EventEnvelope {
+    pub id: Uuid,
+    pub timestamp: OffsetDateTime,
+    pub source: String,
+    pub body: EventBody,
+    pub metadata: EventMetadata,
+}
+```
 
-必须设置：
+首批 `EventBody`：
+
+- `Custom`
+- `HermesGatewayStarted`
+- `HermesSessionStarted`
+- `HermesSessionFinished`
+- `HermesSessionReset`
+- `HermesAgentStarted`
+- `HermesAgentStep`
+- `HermesAgentFinished`
+- `HermesAgentFailed`
+- `GitCommit`
+- `GitBranchChanged`
+- `GitHubIssue`
+- `GitHubPR`
+- `TmuxKeyword`
+- `TmuxStale`
+
+## 13. Hermes 事件契约
+
+Hermes hook envelope：
+
+```json
+{
+  "provider": "hermes",
+  "source": "gateway",
+  "event": "agent:start",
+  "context": {
+    "platform": "telegram",
+    "user_id": "...",
+    "chat_id": "...",
+    "thread_id": "",
+    "chat_type": "group",
+    "session_id": "...",
+    "message": "..."
+  }
+}
+```
+
+规范化事件：
+
+| Hermes hook | Hermeship canonical event | 状态 |
+| --- | --- | --- |
+| `gateway:startup` | `hermes.gateway.started` | MVP |
+| `session:start` | `hermes.session.started` | MVP |
+| `session:end` | `hermes.session.finished` | MVP |
+| `session:reset` | `hermes.session.reset` | MVP |
+| `agent:start` | `hermes.agent.started` | MVP |
+| `agent:step` | `hermes.agent.step` | 后续可默认关闭 |
+| `agent:end` | `hermes.agent.finished` | MVP |
+| `agent:end` with explicit failure | `hermes.agent.failed` | 仅当 payload 明确失败 |
+| `command:*` | `hermes.command.<name>` | 后续 opt-in |
+
+说明：
+
+- Hermes gateway 当前 `agent:end` 成功路径主要提供 `response`，真实异常路径未必触发失败 hook。MVP 不声明完整捕获所有 agent failure。
+- `message`、`response` 默认不进入通知正文；只保留长度、存在性和可选 opt-in 摘要。
+- `origin = "hermeship"` 用于防递归。
+
+## 14. 路由设计
+
+路由配置参考 clawhip：
+
+```toml
+[[routes]]
+event = "hermes.agent.*"
+filter = { platform = "telegram", project = "hermes" }
+sink = "discord"
+channel = "1234567890"
+mention = "<@123>"
+format = "compact"
+```
+
+路由要求：
+
+- 一个事件可匹配多条 route。
+- route filter 基于结构化 metadata，不基于渲染文本。
+- 支持 glob event，例如 `hermes.*`、`hermes.agent.*`、`git.*`。
+- 支持 route-level format/template/mention/channel。
+- `explain` 命令能展示匹配和未匹配原因。
+
+## 15. Renderer 设计
+
+消息格式：
+
+- `compact`：默认，低噪声一行摘要。
+- `inline`：密集上下文摘要。
+- `alert`：高优先级前缀和 mention。
+- `raw`：调试用 JSON。
+
+Hermes 默认 compact 示例：
 
 ```text
-provider = hermes
-origin = hermeship
+hermes agent started (platform=telegram, session=abc123, project=hermes)
+hermes agent finished (platform=telegram, session=abc123, response_chars=412)
+hermes session reset (platform=discord, session=abc123)
 ```
 
-`origin=hermeship` 用于避免递归通知。
+renderer 不应读取文件、不应调用网络、不应访问 Hermes 内部状态。
 
-## 11. 配置设计
+## 16. Sink 设计
 
-用户配置文件：
+MVP sink：
+
+- Discord bot token + channel delivery。
+- Discord webhook delivery。
+- Fake sink for tests。
+
+后续 sink：
+
+- Slack webhook。
+- Generic webhook。
+- Local JSONL audit sink。
+
+sink 必须处理：
+
+- rate limit。
+- 非 2xx 响应。
+- token 缺失。
+- channel 缺失。
+- 单个 delivery 失败不影响其他 delivery。
+
+## 17. 配置设计
+
+默认配置：
 
 ```text
 ~/.hermeship/config.toml
@@ -197,65 +399,56 @@ origin = hermeship
 示例：
 
 ```toml
-[clawhip]
-mode = "cli"
-binary = "clawhip"
-daemon_base_url = "http://127.0.0.1:25294"
-timeout_secs = 2.0
+[daemon]
+host = "127.0.0.1"
+port = 25295
+
+[providers.discord]
+token = ""
+default_channel = ""
 
 [defaults]
-channel = ""
-mention = ""
-project = "hermes"
 format = "compact"
+project = "hermes"
 dry_run = false
 
-[events]
-gateway_startup = true
-session_start = true
-session_end = true
-session_reset = true
-agent_start = true
-agent_end = true
-command_events = false
-
 [privacy]
-max_message_chars = 300
-max_response_chars = 500
+include_message_excerpt = false
+include_response_excerpt = false
+max_excerpt_chars = 240
 dedupe_window_secs = 30
 redact_keys = ["token", "api_key", "authorization", "password", "secret", "cookie"]
+
+[hermes]
+hook_timeout_secs = 2.0
+enable_agent_step = false
+enable_command_events = false
+
+[[routes]]
+event = "hermes.agent.*"
+sink = "discord"
+channel = ""
+format = "compact"
 ```
 
 配置优先级：
 
-1. CLI flags
-2. 环境变量覆盖
-3. repo-local override
-4. `~/.hermeship/config.toml`
-5. 内置默认值
+1. CLI flags。
+2. 环境变量。
+3. repo-local `.hermeship/config.toml`，后续 opt-in。
+4. `~/.hermeship/config.toml`。
+5. 内置默认值。
 
-允许的环境变量：
+环境变量：
 
 - `HERMESHIP_CONFIG`
+- `HERMESHIP_DAEMON_URL`
 - `HERMESHIP_DRY_RUN`
-- `HERMESHIP_CLAWHIP_BIN`
-- `HERMESHIP_CLAWHIP_URL`
+- `HERMESHIP_DISCORD_TOKEN`
+- `HERMESHIP_DEFAULT_CHANNEL`
+- `HERMESHIP_HERMES_HOME`
 
-不要新增用户可见的 `HERMES_*` 非 secret 配置。
-
-## 12. 配置校验
-
-配置加载必须满足：
-
-- `mode` 第一版只允许 `cli`。
-- `format` 只允许 clawhip 支持的格式。
-- 空字符串的 `channel`、`mention`、`project` 归一化为 `None`。
-- `timeout_secs` 必须有上下限。
-- `dedupe_window_secs` 必须有上下限。
-- 解析失败时禁用转发并输出短诊断，不抛异常到 Hermes。
-- 未知 key 在 strict mode 下失败，在 permissive mode 下告警。
-
-## 13. 隐私与安全
+## 18. 隐私与安全
 
 默认禁止发送：
 
@@ -276,184 +469,154 @@ redact_keys = ["token", "api_key", "authorization", "password", "secret", "cooki
 处理规则：
 
 - 递归脱敏敏感 key。
-- message 和 response 只保留截断摘要。
+- 短 message/response 也不能因“未超过截断长度”而原样发送。
+- 默认只发送 `message_chars`、`response_chars`、`has_message`、`has_response`。
+- `include_message_excerpt` 和 `include_response_excerpt` 必须显式启用。
+- 启用摘录后也必须先脱敏再截断。
 - 默认不转发 `command:*`。
-- 不读取或上传文件内容。
-- 不复用 Hermes bot token 作为 clawhip 通知 bot token。
-- live verification 使用专用测试频道。
+- live verification 使用专用测试频道和专用通知 bot。
 
-## 14. 失败处理
+## 19. 失败处理
 
 Hermeship 必须 fail-open。
 
 | 失败类型 | 行为 | 记录 |
 | --- | --- | --- |
-| 配置不存在 | 使用默认值或禁用转发 | config path |
-| 配置非法 | 禁用转发 | 解析错误摘要 |
-| clawhip binary 缺失 | 跳过发送 | session_id、binary |
-| clawhip daemon 不可用 | 跳过发送 | stderr tail |
-| clawhip 超时 | 跳过发送 | command、timeout |
-| clawhip 非零退出 | 跳过发送 | exit code、stderr tail |
-| payload 序列化失败 | 跳过事件 | event kind |
+| hook bridge 找不到 binary | 跳过 | stderr 短诊断 |
+| daemon 不可用 | 跳过或落本地诊断 | endpoint |
+| config 不存在 | 使用默认值 | config path |
+| config 非法 | 拒绝启动 daemon；hook 跳过 | 解析错误摘要 |
+| payload 非法 | 返回 4xx 或跳过 | event kind |
+| sink token 缺失 | delivery failed，不影响 daemon | sink name |
+| Discord rate limit | 尊重响应，短重试或记录 | status、retry |
+| 单个 route/sink 失败 | 继续其他 delivery | delivery id |
 | 重复事件 | dedupe suppress | dedupe key |
 | 递归事件 | drop | origin |
 
-任何 handler 异常都不能逃逸到 Hermes。
+Hermes hook bridge 的异常不能逃逸到 Hermes。
 
-## 15. 去重与防递归
-
-防递归：
-
-- 如果 context 或 payload 中已有 `origin=hermeship`，直接忽略。
-
-去重：
-
-- 使用内存级短窗口去重。
-- dedupe key 建议为：
-
-```text
-event_type + session_id + summary_hash
-```
-
-去重状态必须有界，不持久化。
-
-## 16. 性能要求
-
-- 本地 mapping 应在 50 ms 内完成。
-- clawhip CLI 调用默认 2 秒超时。
-- dry-run 不调用 subprocess。
-- 不在 Hermes hook handler 内执行不必要网络请求。
-- 不阻塞 Hermes shutdown。
-
-## 17. 安装与回滚
+## 20. 安装与回滚
 
 安装：
 
 ```bash
-python -m pip install -e ".[dev]"
-hermeship install-hook
-hermeship doctor
+cargo install --path .
+hermeship install
+hermeship setup
+hermeship hermes install-hooks --scope global
+hermeship start
+hermeship status
 ```
 
-hook 目录：
+Hermes hook 目录：
 
 ```text
-~/.hermes/hooks/hermeship-clawhip/
+~/.hermes/hooks/hermeship/
   HOOK.yaml
   handler.py
+```
+
+Hermeship config/state：
+
+```text
+~/.hermeship/
+  config.toml
+  state/
+  hooks/
+  logs/
 ```
 
 回滚：
 
 ```bash
-rm -rf ~/.hermes/hooks/hermeship-clawhip
-python -m pip uninstall hermeship
+rm -rf ~/.hermes/hooks/hermeship
+hermeship uninstall
 ```
 
-如果 Hermes 进程缓存 hook，需要重启 Hermes。
+如果 Hermes gateway 缓存 hooks，需要重启 Hermes gateway。
 
-## 18. 测试策略
+## 21. 测试策略
 
 测试矩阵：
 
 | 层 | 必测内容 |
 | --- | --- |
-| config | 默认值、env override、非法 TOML、未知 key |
-| privacy | 递归脱敏、截断、非字符串、大 payload |
-| mapper | 所有支持事件、缺失字段、错误字段、禁用事件 |
-| client | CLI 命令生成、dry-run、timeout、binary 缺失、非零退出 |
-| hook handler | fail-open、去重、防递归 |
-| installer | 首次安装、不覆盖、force、回滚路径 |
-| live clawhip | sample event 到达 daemon |
-| live Discord | 测试频道收到消息 |
-| Hermes gateway | hook 在隔离 `HERMES_HOME` 加载 |
+| CLI | subcommand parse、help、错误参数 |
+| config | 默认值、legacy 兼容、非法 TOML、env override |
+| events | normalize、canonical kind、typed conversion |
+| Hermes hook | gateway payload、session/agent payload、隐私过滤 |
+| router | glob、filter、多 delivery、explain |
+| renderer | compact/inline/alert/raw |
+| sink | fake sink、Discord payload、失败语义 |
+| daemon | `/health`、`/event`、`/api/hermes/hook` |
+| bridge | `HOOK.yaml`、handler fail-open、binary missing |
+| install | config scaffold、hook install、service 文件、回滚 |
+| live | daemon status、Discord delivery、Hermes gateway hook smoke |
 
-CI 建议：
+基础验证命令：
 
 ```bash
-python -m pip install -e ".[dev]"
-ruff check .
-pytest -q
-python -m hermeship --help
-python -m hermeship emit-sample --event agent:start --dry-run
+cargo fmt --all -- --check
+cargo clippy --all-targets -- -D warnings
+cargo test
+cargo run -- --help
+cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'
+cargo run -- explain hermes.agent.started --payload '{"session_id":"demo"}'
 ```
 
-## 19. Live Verification
+## 22. Live Verification
 
 前置条件：
 
-- clawhip 已安装。
-- clawhip daemon 可运行。
-- clawhip 已配置专用 Discord 通知 bot。
-- 有测试频道。
+- Hermes 已安装。
+- Hermes gateway 可启动。
+- Hermeship daemon 可运行。
+- Discord 测试 bot token 可用。
+- Discord 测试频道可用。
 
-命令：
+验证流程：
 
-```bash
-clawhip status
-hermeship doctor
-hermeship emit-sample --event agent:start --dry-run
-hermeship emit-sample --event agent:start
-hermeship emit-sample --event agent:end
-```
+1. `hermeship status` 返回 healthy。
+2. `hermeship send --channel <id> --message "hermeship live check"` 到达 Discord。
+3. `hermeship emit hermes.agent.started --payload ...` 到达 Discord。
+4. `hermeship hermes install-hooks --scope global` 写入 hook。
+5. 使用隔离 `HERMES_HOME` 加载 hook，确认 handler fail-open。
+6. 启动真实 Hermes gateway，触发 `gateway:startup`。
+7. 发送一条测试消息，确认 `agent:start` 和 `agent:end` 通知。
+8. 运行回滚，确认 hook 被移除。
 
-预期：
+未执行的 live check 必须记录原因和剩余风险。
 
-- dry-run 输出 JSON。
-- live start 事件进入 clawhip。
-- live end 事件进入 clawhip。
-- Discord 测试频道收到 compact 通知。
-
-## 20. 版本与发布
+## 23. 版本与发布
 
 版本策略：
 
-- `0.1.0`：CLI transport、hook install、dry-run、sample events。
-- `0.2.0`：live verification 文档与诊断增强。
-- `0.3.0`：可选 observer plugin 研究。
-- `1.0.0`：配置 schema、事件映射、回滚和 live verification 稳定。
+- `0.1.0`：Rust daemon、CLI、config、router、renderer、Discord sink、Hermes gateway hook ingress、install/status/send/emit/explain。
+- `0.2.0`：git/GitHub/tmux sources、cron、Slack sink、release preflight。
+- `0.3.0`：Hermes plugin/observer、更细粒度 tool/LLM telemetry。
+- `1.0.0`：配置 schema、事件契约、安装、回滚、live verification 稳定。
 
 发布前必须运行：
 
 ```bash
-ruff check .
-pytest -q
-python -m hermeship --help
-python -m hermeship emit-sample --event agent:start --dry-run
-python -m build
+cargo fmt --all -- --check
+cargo clippy --all-targets -- -D warnings
+cargo test
+cargo run -- --help
+cargo run -- release preflight <version>
 ```
 
-## 21. 后续演进
+## 24. 参考
 
-MVP 稳定后再考虑：
-
-- HTTP transport。
-- Hermes observer plugin。
-- 更细粒度 tool/API telemetry。
-- 更丰富的 clawhip renderer。
-- 与 repo-local `.hermeship/config.toml` 的更完整合并策略。
-
-不建议过早做：
-
-- 通用 AgentPort。
-- 多 agent orchestration。
-- 自动修复/自动 PR。
-- 修改 clawhip native hook v1 contract。
-
-## 22. 开放问题
-
-- live Discord verification 凭据是否可用？
-- v0.1.0 是否要求真实 Hermes gateway run，还是允许先用 hook smoke test？
-- `repo-local override` 是否第一版就实现？
-- `ruff` 是否立即纳入 dev extra？
-- 是否需要为 `clawhip emit --payload` 补充上游文档？
-
-## 23. 参考
-
-- `../clawhip/docs/event-contract-v1.md`
-- `../clawhip/docs/native-event-contract.md`
-- `../clawhip/src/cli.rs`
-- `/home/zq/work-space/repo/ai-projs/agents/hermes-agent/gateway/hooks.py`
-- `/home/zq/work-space/repo/ai-projs/agents/hermes-agent/docs/observability/README.md`
-- `/home/zq/work-space/repo/ai-projs/agents/hermes-agent/docs/middleware/README.md`
+- `/Users/zq/Desktop/ai-projs/posp/template/clawhip/ARCHITECTURE.md`
+- `/Users/zq/Desktop/ai-projs/posp/template/clawhip/src/cli.rs`
+- `/Users/zq/Desktop/ai-projs/posp/template/clawhip/src/main.rs`
+- `/Users/zq/Desktop/ai-projs/posp/template/clawhip/src/daemon.rs`
+- `/Users/zq/Desktop/ai-projs/posp/template/clawhip/src/events.rs`
+- `/Users/zq/Desktop/ai-projs/posp/template/clawhip/src/event/compat.rs`
+- `/Users/zq/Desktop/ai-projs/posp/template/clawhip/src/router.rs`
+- `/Users/zq/Desktop/ai-projs/posp/template/clawhip/src/render/default.rs`
+- `/Users/zq/Desktop/ai-projs/posp/template/clawhip/docs/live-verification.md`
+- `/Users/zq/Desktop/ai-projs/posp/agents-contributions/hermes-agent/gateway/hooks.py`
+- `/Users/zq/Desktop/ai-projs/posp/agents-contributions/hermes-agent/hermes_cli/plugins.py`
 - `tasks/development-checklist.md`
