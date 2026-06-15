@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-15 21:15:53 CST
+最后更新：2026-06-15 22:43:57 CST
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -12,9 +12,9 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 当前最新功能阶段提交：`b799415 feat: 实现 Hermes typed event model`。
-- 当前工作树在本次状态更新前为干净状态；如后续继续开发，仍需先运行 `git status --short --branch` 确认。
-- 当前下一步：从 Milestone 2.3 继续，优先执行任务 2.3：隐私与 payload 清洗。
+- 当前最新功能阶段提交：`feat: 增加 Hermes 事件隐私清洗`。
+- 当前工作树在本次状态更新前只包含 Milestone 2.3 预期变更；如后续继续开发，仍需先运行 `git status --short --branch` 确认。
+- 当前下一步：从 Milestone 3 继续，优先执行任务 3.1：Daemon health 与 client。
 
 ## 已完成
 
@@ -85,15 +85,21 @@
 - 已运行验证：`cargo test event`、`cargo test events`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
 - 已提交：`b799415 feat: 实现 Hermes typed event model`。
 
+### Milestone 2.3：隐私与 payload 清洗
+
+- 已新增 `src/privacy.rs`，并在 `src/lib.rs` 导出 `hermeship::privacy`。
+- 已实现 `sanitize_payload`、`redact_value`、`excerpt_policy`，保持为纯 `serde_json::Value` 清洗逻辑。
+- 已默认递归脱敏敏感 key：`token`、`api_key`、`authorization`、`password`、`secret`、`cookie`；支持大小写不敏感、camelCase 和常见缩写 key 匹配。
+- 已默认删除完整正文类字段：`message`、`response`、`conversation_history`、`request`、`provider_response`、`tool_result`；同时清洗 `messages`、`prompt`、`user_message`、`assistant_response`、`provider_request`、`provider_request_body`、`provider_response_body`、`tool_results`、`tool_result_body` 等同类高风险别名。
+- 已保留安全摘要：`message_chars`、`response_chars`、`has_message`、`has_response`；非法摘要字段类型会被丢弃，computed summary 不会被原始 payload 覆盖。
+- 已实现 opt-in 摘录：`include_message_excerpt`、`include_response_excerpt`、`max_excerpt_chars`；摘录先经过完整 sanitizer，再按 char 边界截断。
+- 已新增合成 fixture：`tests/fixtures/privacy/sensitive_payload.json`，不包含真实 token、cookie、secret、完整 prompt、完整对话或 provider request/response body。
+- 已根据代码审查修复摘要字段泄漏、`Authorization: Bearer ...` / `api_key = ...` inline secret 泄漏、URL query secret 泄漏、camelCase/acronym alias 绕过、结构化摘录泄漏和 fixture body hygiene 问题。
+- 已运行验证：`cargo test privacy`（10 passed）、`cargo test event`（14 passed）、`cargo test events`（6 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（41 passed）。
+- 已提交：`feat: 增加 Hermes 事件隐私清洗`。
+
 ## 未完成
 
-- Milestone 2.3：隐私与 payload 清洗尚未实现。
-  - `src/privacy.rs` 尚未创建。
-  - `sanitize_payload`、`redact_value`、`excerpt_policy` 尚未实现。
-  - 敏感 key 递归脱敏尚未实现。
-  - `message`、`response`、`conversation_history`、`request`、`provider_response`、`tool_result` 默认禁发尚未实现。
-  - opt-in 摘录策略尚未实现。
-  - `tests/fixtures/privacy/sensitive_payload.json` 尚未创建。
 - Milestone 3 到 Milestone 10 均未执行。
 - daemon、client、HTTP ingress、队列、router、renderer、dispatcher、Discord sink、Hermes hook bridge、安装/回滚、release preflight、live verification 均未实现。
 - live Discord verification 凭据是否可用尚未确认。
@@ -102,7 +108,7 @@
 
 ## 下一步入口
 
-从 `tasks/development-checklist.md` 的 **Milestone 2：事件模型与兼容层** 继续，优先执行 **任务 2.3：隐私与 payload 清洗**。
+从 `tasks/development-checklist.md` 的 **Milestone 3：Daemon、队列与 HTTP ingress** 继续，优先执行 **任务 3.1：Daemon health 与 client**。
 
 建议第一段工作：
 
@@ -110,20 +116,21 @@
 2. 确认当前分支、最新提交和未提交变更：
    - `git status --short --branch`
    - `git log -3 --oneline`
-3. 确认最新已完成功能阶段提交为 `b799415 feat: 实现 Hermes typed event model`。
+3. 确认最新已完成功能阶段提交为 `feat: 增加 Hermes 事件隐私清洗`。
 4. 读取当前相关代码：
+   - `src/cli.rs`
+   - `src/config.rs`
    - `src/events.rs`
    - `src/event/mod.rs`
    - `src/event/body.rs`
    - `src/event/compat.rs`
-   - `src/config.rs`
+   - `src/privacy.rs`
    - `tests/fixtures/README.md`
-5. 从任务 2.3 继续，先写失败测试，再实现 `src/privacy.rs`。
-6. 注意本阶段只实现 privacy 清洗纯逻辑与 fixture；不进入 daemon、client、HTTP ingress、队列、router、renderer、sink、hook bridge、install 或 release preflight。
-7. 运行任务 2.3 验证命令：
-   - `cargo test privacy`
-   - `cargo test event`
-   - `cargo test events`
+5. 从任务 3.1 继续，先写失败测试，再实现 daemon health 与 client 纯本地路径。
+6. 注意任务 3.1 只实现 daemon health/status 与 client health 查询；不要进入 event ingress、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。
+7. 运行任务 3.1 验证命令：
+   - `cargo test daemon`
+   - `cargo run -- status`
    - `cargo fmt --all -- --check`
    - `cargo clippy --all-targets -- -D warnings`
    - `cargo test`
@@ -144,32 +151,30 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新功能阶段提交：b799415 feat: 实现 Hermes typed event model。
+- 最新功能阶段提交：feat: 增加 Hermes 事件隐私清洗。
 - Milestone 0 已完成并提交：af57c49 docs: 明确 hermeship 完整项目方向。
 - Milestone 1.1 已完成并提交：d03170e chore: 搭建 Hermeship Rust CLI 骨架。
 - Milestone 1.2 已完成并提交：50723af feat: 实现 hermeship 配置模型与 config CLI。
 - Milestone 1.3 已完成并提交：70c8f03 chore: 增加 Rust 质量门禁与仓库基础。
 - Milestone 2.1 已完成并提交：5584b13 feat: 完成 Hermes 入口事件模型与 emit 解析。
 - Milestone 2.2 已完成并提交：b799415 feat: 实现 Hermes typed event model。
+- Milestone 2.3 已完成并提交：feat: 增加 Hermes 事件隐私清洗。
 - 已实现 src/events.rs：IncomingEvent、RoutingMetadata、字段别名反序列化、空/null payload 归一，以及 MessageFormat 的单一复用/重导出策略。
 - 已实现 src/event/：EventEnvelope、EventBody、EventMetadata、EventPriority、Hermes canonical mapping、IncomingEvent -> EventEnvelope conversion。
+- 已实现 src/privacy.rs：sanitize_payload、redact_value、excerpt_policy、敏感 key 递归脱敏、正文默认禁发、安全摘要和 opt-in 摘录。
 - Hermes canonical mapping 已覆盖 gateway:startup、session:start、session:end、session:reset、agent:start、agent:step、agent:end；显式失败的 agent:end 映射为 hermes.agent.failed；未知 event 降级为 Custom。
-- 已通过验证：cargo test event、cargo test events、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
+- 已通过验证：cargo test privacy、cargo test event、cargo test events、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
 - Hermeship 是 Hermes-native daemon-first event router，不是 thin adapter，不调用 clawhip runtime，也不依赖运行中的 clawhip daemon。
 - 方案文档只维护架构和边界，执行进度维护在 tasks/development-checklist.md 和 tasks/todo.md。
 
-请从 tasks/development-checklist.md 的 Milestone 2 继续，优先执行任务 2.3：隐私与 payload 清洗：
+请从 tasks/development-checklist.md 的 Milestone 3 继续，优先执行任务 3.1：Daemon health 与 client：
 1. 先复习 tasks/lessons.md，并确认当前分支、最新提交和未提交变更：git status --short --branch、git log -3 --oneline。
-2. 确认 tasks/todo.md 的 Milestone 2.3 计划。
-3. 阅读 src/events.rs、src/event/mod.rs、src/event/body.rs、src/event/compat.rs、src/config.rs、tests/fixtures/README.md。
-4. 先写失败测试，再实现 src/privacy.rs。
-5. 实现 sanitize_payload、redact_value、excerpt_policy。
-6. 默认递归脱敏敏感 key：token、api_key、authorization、password、secret、cookie。
-7. 默认禁止完整正文外发：message、response、conversation_history、request、provider_response、tool_result；保留 message_chars、response_chars、has_message、has_response 等安全摘要。
-8. 实现 opt-in 摘录策略：include_message_excerpt、include_response_excerpt、max_excerpt_chars；必须先脱敏再截断。
-9. 新增 tests/fixtures/privacy/sensitive_payload.json，必须是合成脱敏样例，不得包含真实 token、cookie、secret、完整 prompt、完整对话或 provider request/response body。
-10. 本阶段不要实现 daemon、client、HTTP ingress、队列、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。
-11. 运行验证：cargo test privacy、cargo test event、cargo test events、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
-12. 更新 tasks/development-checklist.md 的运行状态日志和 tasks/todo.md 的 Review。
-13. 阶段完成后必须验证并提交，commit 信息使用详细中文，说明变更、验证和影响。
+2. 确认 tasks/development-checklist.md 的 Milestone 3.1 计划，并将当前任务计划写入 tasks/todo.md。
+3. 阅读 src/cli.rs、src/config.rs、src/events.rs、src/event/mod.rs、src/event/body.rs、src/event/compat.rs、src/privacy.rs、tests/fixtures/README.md。
+4. 先写失败测试，再实现 daemon health 与 client。
+5. 本阶段只实现 daemon health/status 与 client health 查询，不实现 event ingress、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。
+6. 隐私 sanitizer 在后续 ingress/daemon 事件入队前接入；任务 3.1 不扩大到事件 ingress。
+7. 运行验证：cargo test daemon、cargo run -- status、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
+8. 更新 tasks/development-checklist.md 的运行状态日志和 tasks/todo.md 的 Review。
+9. 阶段完成后必须验证并提交，commit 信息使用详细中文，说明变更、验证和影响。
 ```

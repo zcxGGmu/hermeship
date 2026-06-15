@@ -1,0 +1,30 @@
+{
+  "provider": "hermes",
+  "source": "gateway",
+  "session_id": "synthetic-session-privacy",
+  "message": "synthetic message sample",
+  "response": "synthetic response sample",
+  "conversation_history": [
+    {
+      "summary": "redacted synthetic prior turn summary"
+    }
+  ],
+  "request": {
+    "summary": "synthetic provider request summary"
+  },
+  "provider_response": {
+    "summary": "synthetic provider response summary"
+  },
+  "tool_result": {
+    "summary": "synthetic tool result summary"
+  },
+  "token": "synthetic-token-value",
+  "nested": {
+    "cookie": "synthetic-cookie-value",
+    "items": [
+      {
+        "secret": "synthetic-secret-value"
+      }
+    ]
+  }
+}

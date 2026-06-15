@@ -220,25 +220,30 @@
 
 ### 任务 2.3：隐私与 payload 清洗
 
-- [ ] 新建隐私模块。
+- [x] 新建隐私模块。
   - 新建：`src/privacy.rs`
   - 函数：`sanitize_payload`、`redact_value`、`excerpt_policy`。
-- [ ] 实现敏感 key 递归脱敏。
+- [x] 实现敏感 key 递归脱敏。
   - key：`token`、`api_key`、`authorization`、`password`、`secret`、`cookie`。
-- [ ] 实现正文默认禁发。
+- [x] 实现正文默认禁发。
   - 默认删除 `message`、`response`、`conversation_history`、`request`、`provider_response`、`tool_result`。
   - 默认保留 `message_chars`、`response_chars`、`has_message`、`has_response`。
-- [ ] 实现 opt-in 摘录。
+- [x] 实现 opt-in 摘录。
   - 配置：`privacy.include_message_excerpt`、`privacy.include_response_excerpt`。
   - 要求：先脱敏，再截断。
-- [ ] 编写隐私测试。
+- [x] 编写隐私测试。
   - 覆盖：短文本不原样泄漏、嵌套 secret、list、非字符串、原始 payload 不被原地修改。
-- [ ] 增加隐私回归 fixture。
+- [x] 增加隐私回归 fixture。
   - 新建：`tests/fixtures/privacy/sensitive_payload.json`
   - 完成标准：测试断言输出不包含原始 `message`、`response`、`conversation_history`、`request`、`provider_response`、`tool_result`、token、cookie、secret。
-- [ ] 验证任务 2.3。
+- [x] 验证任务 2.3。
   - 命令：`cargo test privacy`
-- [ ] 提交任务 2.3。
+  - 命令：`cargo test event`
+  - 命令：`cargo test events`
+  - 命令：`cargo fmt --all -- --check`
+  - 命令：`cargo clippy --all-targets -- -D warnings`
+  - 命令：`cargo test`
+- [x] 提交任务 2.3。
   - commit：`feat: 增加 Hermes 事件隐私清洗`
 
 ## Milestone 3：Daemon、队列与 HTTP ingress
@@ -696,6 +701,21 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-15 - Milestone 2.3 隐私与 payload 清洗
+
+- [x] 已在 `codex/milestone-1-cli` 分支执行本阶段；启动时工作树无未提交代码变更，最新提交为 `dae54b5 docs: 更新 Hermeship Milestone 2.3 交接状态`。
+- [x] 已确认本阶段只实现 privacy 清洗纯逻辑、测试和合成 fixture；未实现 daemon、client、HTTP ingress、队列、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。
+- [x] 已先写失败测试并运行 Red：`cargo test privacy` 在实现前失败于缺少 `redact_value`、`sanitize_payload` 和 `excerpt_policy`。
+- [x] 已新增 `src/privacy.rs`，并在 `src/lib.rs` 导出 `hermeship::privacy`。
+- [x] 已实现 `sanitize_payload`、`redact_value`、`excerpt_policy`；默认递归脱敏 `token`、`api_key`、`authorization`、`password`、`secret`、`cookie`，并支持大小写不敏感、camelCase 和常见缩写 key 匹配。
+- [x] 已默认删除完整正文类字段：`message`、`response`、`conversation_history`、`request`、`provider_response`、`tool_result`；同时清洗 `messages`、`prompt`、`user_message`、`assistant_response`、`provider_request`、`provider_request_body`、`provider_response_body`、`tool_results`、`tool_result_body` 等同类高风险别名。
+- [x] 已保留安全摘要：`message_chars`、`response_chars`、`has_message`、`has_response`；短正文默认不原样泄漏，非法摘要字段类型会被丢弃，computed summary 不会被原始 payload 覆盖。
+- [x] 已实现 opt-in 摘录：`include_message_excerpt`、`include_response_excerpt` 和 `max_excerpt_chars`；摘录先经过完整 sanitizer，再按 char 边界截断。
+- [x] 已新增合成 fixture：`tests/fixtures/privacy/sensitive_payload.json`；fixture 不包含真实 token、cookie、secret、完整 prompt、完整对话或 provider request/response body。
+- [x] 已根据 code/security review 修复摘要字段泄漏、`Authorization: Bearer ...` / `api_key = ...` inline secret 泄漏、URL query secret 泄漏、camelCase/acronym alias 绕过、结构化摘录泄漏和 fixture body hygiene 问题。
+- [x] 已运行验证：`cargo test privacy`（10 passed）、`cargo test event`（14 passed）、`cargo test events`（6 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（41 passed）均通过。
+- [x] 提交状态：随本阶段提交 `feat: 增加 Hermes 事件隐私清洗` 一并完成。
 
 ### 2026-06-15 - Milestone 2.3 入口交接更新
 
