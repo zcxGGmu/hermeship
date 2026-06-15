@@ -694,6 +694,14 @@
 
 最新记录放在最上方。
 
+### 2026-06-15 - Milestone 1.3 完成后状态交接更新
+
+- [x] 已将 `docs/development-status.md` 更新到最新已完成阶段提交：`70c8f03 chore: 增加 Rust 质量门禁与仓库基础`。
+- [x] 已明确 Milestone 0、1.1、1.2、1.3 已完成，Milestone 2.1 及后续仍未完成。
+- [x] 已将 `tasks/todo.md` 切换为下一阶段任务：Milestone 2.1 `IncomingEvent` 与格式。
+- [x] 已更新 `README.md` 的 Development Status，移除 Milestone 1.3 仍是下一步的过期描述。
+- [x] 下一步执行 Milestone 2.1：先写事件入口和 CLI emit 解析测试，再实现 `src/events.rs` 与 Hermes fixture。
+
 ### 2026-06-15 - Milestone 1.3 质量门禁与仓库基础
 
 - [x] 已在 `codex/milestone-1-cli` 分支执行本阶段，启动时工作树干净；最新提交为 `267efba docs: 更新 Hermeship 最新开发状态`，最新功能阶段提交为 `50723af feat: 实现 hermeship 配置模型与 config CLI`。
