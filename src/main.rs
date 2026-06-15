@@ -3,7 +3,7 @@ use clap::Parser;
 use hermeship::cli::{Cli, Commands, ConfigCommand, HermesCommands, ReleaseCommands};
 use hermeship::client::DaemonClient;
 use hermeship::config::AppConfig;
-use hermeship::daemon::HealthResponse;
+use hermeship::daemon::{EventAcceptedResponse, HealthResponse};
 use hermeship::events::IncomingEvent;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -37,9 +37,17 @@ async fn real_main() -> Result<()> {
             Ok(())
         }
         Commands::Send { channel, message } => {
-            print_placeholder("send", IncomingEvent::custom(channel, message))
+            let config = AppConfig::load_or_default(&config_path)?;
+            let accepted = submit_event(&config, IncomingEvent::custom(channel, message)).await?;
+            print_event_accepted("send", &accepted);
+            Ok(())
         }
-        Commands::Emit(args) => print_placeholder("emit", args.into_event()?),
+        Commands::Emit(args) => {
+            let config = AppConfig::load_or_default(&config_path)?;
+            let accepted = submit_event(&config, args.into_event()?).await?;
+            print_event_accepted("emit", &accepted);
+            Ok(())
+        }
         Commands::Explain(args) => print_placeholder("explain", args.into_event()?),
         Commands::Config { command } => match command.unwrap_or(ConfigCommand::Show) {
             ConfigCommand::Show => {
@@ -79,6 +87,22 @@ fn print_placeholder(name: &str, _args: impl std::fmt::Debug) -> Result<()> {
     Ok(())
 }
 
+async fn submit_event(config: &AppConfig, event: IncomingEvent) -> Result<EventAcceptedResponse> {
+    let client = DaemonClient::from_config(&config.daemon);
+    client.post_event(&event).await
+}
+
+fn print_event_accepted(name: &str, accepted: &EventAcceptedResponse) {
+    println!(
+        "{name} queued: id={} kind={} queue={} pending={} capacity={}",
+        accepted.id,
+        accepted.canonical_kind,
+        accepted.queue.status,
+        accepted.queue.pending,
+        accepted.queue.capacity
+    );
+}
+
 fn print_health(health: &HealthResponse) {
     println!("hermeship daemon: {}", health.status);
     println!("version: {}", health.version);
@@ -92,4 +116,86 @@ fn print_health(health: &HealthResponse) {
         health.configured_sinks.join(", ")
     };
     println!("configured sinks: {sinks}");
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+    use tokio::sync::mpsc;
+
+    use hermeship::config::AppConfig;
+    use hermeship::daemon::daemon_router_with_queue;
+    use hermeship::event::{EventBody, EventEnvelope};
+    use hermeship::events::IncomingEvent;
+
+    use super::{VERSION, submit_event};
+
+    #[tokio::test]
+    async fn daemon_emit_command_posts_event_to_daemon() {
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config.clone(), queue_tx).await;
+        let mut config = config;
+        config.daemon.base_url = Some(base_url);
+
+        let accepted = submit_event(
+            &config,
+            IncomingEvent::new("hermes.agent.started", json!({ "session_id": "demo" })),
+        )
+        .await
+        .unwrap();
+
+        assert!(accepted.queued);
+        assert_eq!(accepted.canonical_kind, "hermes.agent.started");
+        assert_eq!(accepted.queue.pending, 1);
+
+        let envelope = queue_rx.try_recv().unwrap();
+        server.abort();
+
+        assert_eq!(envelope.canonical_kind(), "hermes.agent.started");
+    }
+
+    #[tokio::test]
+    async fn daemon_send_command_posts_custom_event_to_daemon() {
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config.clone(), queue_tx).await;
+        let mut config = config;
+        config.daemon.base_url = Some(base_url);
+
+        let accepted = submit_event(
+            &config,
+            IncomingEvent::custom(Some("ops".to_string()), "hello".to_string()),
+        )
+        .await
+        .unwrap();
+
+        assert!(accepted.queued);
+        assert_eq!(accepted.canonical_kind, "custom");
+        assert_eq!(accepted.queue.pending, 1);
+
+        let envelope = queue_rx.try_recv().unwrap();
+        server.abort();
+
+        assert_eq!(envelope.canonical_kind(), "custom");
+        match envelope.body {
+            EventBody::Custom(body) => {
+                assert_eq!(body.message, "hello");
+                assert_eq!(body.payload.unwrap()["summary"], "hello");
+            }
+            other => panic!("expected custom event, got {other:?}"),
+        }
+    }
+
+    async fn spawn_test_daemon(
+        config: AppConfig,
+        queue_tx: mpsc::Sender<EventEnvelope>,
+    ) -> (String, tokio::task::JoinHandle<std::io::Result<()>>) {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let router = daemon_router_with_queue(config, VERSION, queue_tx);
+        let server = tokio::spawn(async move { axum::serve(listener, router).await });
+
+        (format!("http://{address}"), server)
+    }
 }

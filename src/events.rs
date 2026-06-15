@@ -101,7 +101,7 @@ impl IncomingEvent {
             mention: None,
             format: None,
             template: None,
-            payload: json!({ "message": message }),
+            payload: json!({ "summary": message }),
         }
     }
 

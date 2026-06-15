@@ -273,22 +273,22 @@
 
 ### 任务 3.2：Event ingress 与队列
 
-- [ ] 实现 `/event`。
+- [x] 实现 `/event`。
   - 接收 `IncomingEvent`。
   - 规范化并转为 `EventEnvelope`。
   - 写入 `tokio::mpsc` 队列。
-- [ ] 实现 `hermeship emit`。
+- [x] 实现 `hermeship emit`。
   - 通过 client POST `/event`。
-- [ ] 实现 `hermeship send`。
+- [x] 实现 `hermeship send`。
   - 作为 custom event 发送。
-- [ ] 编写 ingress 测试。
+- [x] 编写 ingress 测试。
   - 覆盖：有效事件入队、非法 payload 4xx、daemon unavailable 错误。
   - 要求：使用随机端口和本地 test queue，不绑定固定端口。
-- [ ] 验证任务 3.2。
+- [x] 验证任务 3.2。
   - 命令：`cargo test daemon`
   - 命令：`cargo test event`
   - 命令：`cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'`
-- [ ] 提交任务 3.2。
+- [x] 提交任务 3.2。
   - commit：`feat: 增加 daemon event ingress`
 
 ### 任务 3.3：Hermes hook ingress
@@ -702,6 +702,22 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-16 - Milestone 3.2 Event ingress 与队列
+
+- [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
+- [x] 已确认启动时工作树干净：`git status --short --branch` 只有分支行；最近提交为 `dbe6597`、`ff5c589`、`2e74184`。
+- [x] 已先写失败测试并运行 Red：`cargo test daemon` 在实现前失败于缺少 `daemon_router_with_queue` 与 `DaemonClient::post_event`；后续针对 `send --message` 消息被 sanitizer 吃掉的问题补充失败测试并修复。
+- [x] 已实现 daemon 通用 `POST /event`：接收 `IncomingEvent`，入队前调用 `privacy::sanitize_payload()`，再通过 `event::compat::from_incoming_event()` 转为 `EventEnvelope`，最后写入 bounded `tokio::mpsc` 队列。
+- [x] 已新增 typed `EventAcceptedResponse`，返回 event id、canonical kind、queued 状态和 queue health；`/health` 现在报告真实 queue pending/capacity/status。
+- [x] 已实现 `DaemonClient::post_event()`、`event_url()`、daemon unavailable 和非 2xx 清晰错误。
+- [x] 已将 `hermeship emit` 与 `hermeship send` 从 placeholder 替换为 client POST `/event`，并打印 queued 摘要；`explain`、`hermes hook`、install、release 仍保持后续 milestone placeholder。
+- [x] 已调整 `IncomingEvent::custom()` 使用安全 `summary` 字段承载显式 `send --message` 文本，避免与 Hermes 对话正文 `message` 字段共用隐私语义。
+- [x] 已覆盖 ingress 测试：有效 fixture 入队、隐私清洗后入队、非法 JSON 4xx、缺失 kind 4xx、daemon unavailable、queue full 503、health pending、`send`/`emit` client 投递。
+- [x] 已确认本阶段没有实现 Hermes hook ingress、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。
+- [x] 已运行验证：`cargo test daemon`（11 passed + bin 2 passed）、`cargo test event`（21 passed + bin 2 passed）、临时 daemon 下 `cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'` 返回 queued 摘要、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（52 passed + bin 2 passed）均通过。
+- [x] 剩余风险：本阶段 daemon 只负责入队，不启动 consumer；队列满时 `/event` 返回 503，dispatcher/consumer 会在 Milestone 4.3 实现。
+- [x] 提交状态：随本阶段提交 `feat: 增加 daemon event ingress` 一并完成。
 
 ### 2026-06-16 - Milestone 3.2 入口交接更新
 

@@ -1,11 +1,24 @@
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{
+    Json, Router,
+    extract::State,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    routing::{get, post},
+};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
+use tokio::sync::{Mutex, mpsc};
 
 use crate::config::AppConfig;
+use crate::event::{EventEnvelope, compat::from_incoming_event};
+use crate::events::IncomingEvent;
+use crate::privacy::sanitize_payload;
+
+pub const DEFAULT_QUEUE_CAPACITY: usize = 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct HealthResponse {
@@ -21,6 +34,19 @@ impl HealthResponse {
             version: version.into(),
             status: "ok".to_string(),
             queue: QueueHealth::not_configured(),
+            configured_sinks: configured_sinks(config),
+        }
+    }
+
+    fn from_config_and_queue(
+        config: &AppConfig,
+        version: impl Into<String>,
+        queue: &mpsc::Sender<EventEnvelope>,
+    ) -> Self {
+        Self {
+            version: version.into(),
+            status: "ok".to_string(),
+            queue: QueueHealth::from_sender(queue),
             configured_sinks: configured_sinks(config),
         }
     }
@@ -41,11 +67,101 @@ impl QueueHealth {
             capacity: 0,
         }
     }
+
+    fn from_sender(sender: &mpsc::Sender<EventEnvelope>) -> Self {
+        let capacity = sender.max_capacity();
+        let available = sender.capacity();
+        let pending = capacity.saturating_sub(available);
+        let status = if sender.is_closed() {
+            "closed"
+        } else if available == 0 {
+            "full"
+        } else {
+            "ready"
+        };
+
+        Self {
+            status: status.to_string(),
+            pending,
+            capacity,
+        }
+    }
 }
 
 #[derive(Clone)]
 struct DaemonState {
-    health: HealthResponse,
+    config: AppConfig,
+    version: String,
+    queue: QueueHandle,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct EventAcceptedResponse {
+    pub id: String,
+    pub canonical_kind: String,
+    pub queued: bool,
+    pub queue: QueueHealth,
+}
+
+#[derive(Clone)]
+struct QueueHandle {
+    sender: mpsc::Sender<EventEnvelope>,
+    _receiver_guard: Option<Arc<Mutex<mpsc::Receiver<EventEnvelope>>>>,
+}
+
+impl QueueHandle {
+    fn new(capacity: usize) -> Self {
+        let (sender, receiver) = mpsc::channel(capacity);
+        Self {
+            sender,
+            _receiver_guard: Some(Arc::new(Mutex::new(receiver))),
+        }
+    }
+
+    fn from_sender(sender: mpsc::Sender<EventEnvelope>) -> Self {
+        Self {
+            sender,
+            _receiver_guard: None,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct ErrorResponse {
+    error: String,
+}
+
+struct DaemonApiError {
+    status: StatusCode,
+    message: String,
+}
+
+impl DaemonApiError {
+    fn bad_request(message: impl Into<String>) -> Self {
+        Self {
+            status: StatusCode::BAD_REQUEST,
+            message: message.into(),
+        }
+    }
+
+    fn queue_unavailable(message: impl Into<String>) -> Self {
+        Self {
+            status: StatusCode::SERVICE_UNAVAILABLE,
+            message: message.into(),
+        }
+    }
+}
+
+impl IntoResponse for DaemonApiError {
+    fn into_response(self) -> Response {
+        (
+            self.status,
+            Json(ErrorResponse {
+                error: self.message,
+            }),
+        )
+            .into_response()
+    }
 }
 
 pub async fn serve(config: AppConfig, version: impl Into<String>) -> Result<()> {
@@ -72,17 +188,76 @@ pub async fn serve_listener(
 }
 
 pub fn health_router(config: AppConfig, version: impl Into<String>) -> Router {
+    daemon_router(config, version)
+}
+
+pub fn daemon_router(config: AppConfig, version: impl Into<String>) -> Router {
     let state = DaemonState {
-        health: HealthResponse::from_config(&config, version),
+        config,
+        version: version.into(),
+        queue: QueueHandle::new(DEFAULT_QUEUE_CAPACITY),
     };
 
     Router::new()
         .route("/health", get(health))
+        .route("/event", post(event))
+        .with_state(state)
+}
+
+pub fn daemon_router_with_queue(
+    config: AppConfig,
+    version: impl Into<String>,
+    queue_tx: mpsc::Sender<EventEnvelope>,
+) -> Router {
+    let state = DaemonState {
+        config,
+        version: version.into(),
+        queue: QueueHandle::from_sender(queue_tx),
+    };
+
+    Router::new()
+        .route("/health", get(health))
+        .route("/event", post(event))
         .with_state(state)
 }
 
 async fn health(State(state): State<DaemonState>) -> Json<HealthResponse> {
-    Json(state.health)
+    Json(HealthResponse::from_config_and_queue(
+        &state.config,
+        state.version.clone(),
+        &state.queue.sender,
+    ))
+}
+
+async fn event(
+    State(state): State<DaemonState>,
+    Json(mut incoming): Json<IncomingEvent>,
+) -> std::result::Result<(StatusCode, Json<EventAcceptedResponse>), DaemonApiError> {
+    if incoming.kind.trim().is_empty() {
+        return Err(DaemonApiError::bad_request(
+            "event kind must not be empty; set type, kind, or event",
+        ));
+    }
+
+    incoming.payload = sanitize_payload(&incoming.payload, &state.config.privacy);
+    let envelope = from_incoming_event(&incoming)
+        .map_err(|error| DaemonApiError::bad_request(format!("invalid event payload: {error}")))?;
+
+    let id = envelope.id.to_string();
+    let canonical_kind = envelope.canonical_kind().to_string();
+    state.queue.sender.try_send(envelope).map_err(|error| {
+        DaemonApiError::queue_unavailable(format!("event queue unavailable: {error}"))
+    })?;
+
+    Ok((
+        StatusCode::ACCEPTED,
+        Json(EventAcceptedResponse {
+            id,
+            canonical_kind,
+            queued: true,
+            queue: QueueHealth::from_sender(&state.queue.sender),
+        }),
+    ))
 }
 
 fn configured_sinks(config: &AppConfig) -> Vec<String> {
@@ -105,7 +280,13 @@ fn configured_sinks(config: &AppConfig) -> Vec<String> {
 mod tests {
     use std::collections::BTreeMap;
 
+    use axum::http::header::CONTENT_TYPE;
+    use serde_json::json;
+    use tokio::sync::mpsc;
+
     use crate::config::{AppConfig, RouteRule};
+    use crate::event::{EventBody, EventEnvelope};
+    use crate::events::IncomingEvent;
 
     use super::*;
 
@@ -163,7 +344,236 @@ mod tests {
 
         assert_eq!(health.version, "test-version");
         assert_eq!(health.status, "ok");
-        assert_eq!(health.queue.status, "not_configured");
+        assert_eq!(health.queue.status, "ready");
+        assert_eq!(health.queue.pending, 0);
+        assert!(health.queue.capacity > 0);
         assert_eq!(health.configured_sinks, vec!["discord"]);
+    }
+
+    #[tokio::test]
+    async fn daemon_event_endpoint_accepts_incoming_event_and_enqueues_envelope() {
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config, queue_tx).await;
+        let client = crate::client::DaemonClient::from_base_url(base_url);
+        let event: IncomingEvent =
+            serde_json::from_str(include_str!("../tests/fixtures/hermes/agent_start.json"))
+                .unwrap();
+
+        let accepted = client.post_event(&event).await.unwrap();
+
+        assert!(accepted.queued);
+        assert_eq!(accepted.canonical_kind, "hermes.agent.started");
+        assert_eq!(accepted.queue.status, "ready");
+        assert_eq!(accepted.queue.pending, 1);
+        assert_eq!(accepted.queue.capacity, 8);
+
+        let envelope = queue_rx.try_recv().unwrap();
+        server.abort();
+
+        assert_eq!(envelope.id.to_string(), accepted.id);
+        assert_eq!(envelope.canonical_kind(), "hermes.agent.started");
+        assert_eq!(envelope.metadata.provider.as_deref(), Some("hermes"));
+        assert_eq!(envelope.metadata.source.as_deref(), Some("gateway"));
+        assert_eq!(envelope.metadata.platform.as_deref(), Some("telegram"));
+        assert_eq!(
+            envelope.metadata.session_id.as_deref(),
+            Some("synthetic-session-001")
+        );
+        assert!(matches!(envelope.body, EventBody::HermesAgentStarted(_)));
+    }
+
+    #[tokio::test]
+    async fn daemon_event_endpoint_sanitizes_payload_before_enqueuing() {
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config, queue_tx).await;
+        let client = crate::client::DaemonClient::from_base_url(base_url);
+        let event = IncomingEvent::new(
+            "plugin.custom",
+            json!({
+                "message": "synthetic full message should not leak",
+                "response": "synthetic full response should not leak",
+                "token": "synthetic-token-value",
+                "cookie": "synthetic-cookie-value",
+                "secret": "synthetic-secret-value",
+                "provider_response": {
+                    "body": "synthetic provider response should not leak"
+                },
+                "tool_result": {
+                    "body": "synthetic tool result should not leak"
+                }
+            }),
+        );
+
+        let accepted = client.post_event(&event).await.unwrap();
+        let envelope = queue_rx.try_recv().unwrap();
+        server.abort();
+
+        assert_eq!(accepted.canonical_kind, "plugin.custom");
+        match &envelope.body {
+            EventBody::Custom(body) => {
+                assert_eq!(body.kind, "plugin.custom");
+                assert_eq!(body.message, "plugin.custom");
+                let payload = body.payload.as_ref().unwrap();
+                assert_eq!(payload["has_message"], json!(true));
+                assert_eq!(payload["has_response"], json!(true));
+                assert_eq!(payload["message_chars"], json!(38));
+                assert_eq!(payload["response_chars"], json!(39));
+                assert_eq!(payload["token"], json!("[REDACTED]"));
+                assert_eq!(payload["cookie"], json!("[REDACTED]"));
+                assert_eq!(payload["secret"], json!("[REDACTED]"));
+                assert!(payload.get("message").is_none());
+                assert!(payload.get("response").is_none());
+                assert!(payload.get("provider_response").is_none());
+                assert!(payload.get("tool_result").is_none());
+            }
+            other => panic!("expected Custom event, got {other:?}"),
+        }
+
+        let rendered = format!("{envelope:?}");
+        for forbidden in [
+            "synthetic full message should not leak",
+            "synthetic full response should not leak",
+            "synthetic-token-value",
+            "synthetic-cookie-value",
+            "synthetic-secret-value",
+            "synthetic provider response should not leak",
+            "synthetic tool result should not leak",
+        ] {
+            assert!(!rendered.contains(forbidden), "leaked `{forbidden}`");
+        }
+    }
+
+    #[tokio::test]
+    async fn daemon_event_endpoint_returns_4xx_for_invalid_json_without_enqueuing() {
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config, queue_tx).await;
+        let response = reqwest::Client::new()
+            .post(format!("{base_url}/event"))
+            .header(CONTENT_TYPE, "application/json")
+            .body(include_str!(
+                "../tests/fixtures/hermes/invalid_payload.json"
+            ))
+            .send()
+            .await
+            .unwrap();
+
+        let status = response.status();
+        let body = response.text().await.unwrap();
+        server.abort();
+
+        assert!(
+            status.is_client_error(),
+            "expected 4xx, got {status}: {body}"
+        );
+        assert!(!body.trim().is_empty());
+        assert!(queue_rx.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn daemon_event_endpoint_returns_4xx_for_missing_event_kind_without_enqueuing() {
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config, queue_tx).await;
+        let response = reqwest::Client::new()
+            .post(format!("{base_url}/event"))
+            .json(&json!({ "payload": { "session_id": "demo" } }))
+            .send()
+            .await
+            .unwrap();
+
+        let status = response.status();
+        let body = response.text().await.unwrap();
+        server.abort();
+
+        assert!(
+            status.is_client_error(),
+            "expected 4xx, got {status}: {body}"
+        );
+        assert!(
+            body.contains("missing field") || body.contains("event") || body.contains("type"),
+            "unexpected error body: {body}"
+        );
+        assert!(queue_rx.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn daemon_health_reports_queue_pending_after_event_ingress() {
+        let config = AppConfig::default();
+        let (queue_tx, _queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config, queue_tx).await;
+        let client = crate::client::DaemonClient::from_base_url(base_url);
+
+        let initial = client.health().await.unwrap();
+        assert_eq!(initial.queue.status, "ready");
+        assert_eq!(initial.queue.pending, 0);
+        assert_eq!(initial.queue.capacity, 8);
+
+        client
+            .post_event(&IncomingEvent::new(
+                "hermes.agent.started",
+                json!({ "session_id": "demo" }),
+            ))
+            .await
+            .unwrap();
+
+        let after = client.health().await.unwrap();
+        server.abort();
+
+        assert_eq!(after.queue.status, "ready");
+        assert_eq!(after.queue.pending, 1);
+        assert_eq!(after.queue.capacity, 8);
+    }
+
+    #[tokio::test]
+    async fn daemon_event_endpoint_returns_503_when_queue_is_full() {
+        let config = AppConfig::default();
+        let (queue_tx, _queue_rx) = mpsc::channel(1);
+        let (base_url, server) = spawn_test_daemon(config, queue_tx).await;
+        let client = crate::client::DaemonClient::from_base_url(base_url);
+
+        client
+            .post_event(&IncomingEvent::new(
+                "hermes.agent.started",
+                json!({ "session_id": "first" }),
+            ))
+            .await
+            .unwrap();
+
+        let error = client
+            .post_event(&IncomingEvent::new(
+                "hermes.agent.started",
+                json!({ "session_id": "second" }),
+            ))
+            .await
+            .unwrap_err()
+            .to_string();
+        let health = client.health().await.unwrap();
+        server.abort();
+
+        assert!(error.contains("/event"), "{error}");
+        assert!(error.contains("HTTP 503"), "{error}");
+        assert!(error.contains("event queue unavailable"), "{error}");
+        assert_eq!(health.queue.status, "full");
+        assert_eq!(health.queue.pending, 1);
+        assert_eq!(health.queue.capacity, 1);
+    }
+
+    async fn spawn_test_daemon(
+        config: AppConfig,
+        queue_tx: mpsc::Sender<EventEnvelope>,
+    ) -> (String, tokio::task::JoinHandle<anyhow::Result<()>>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let router = daemon_router_with_queue(config, "test-version", queue_tx);
+        let server = tokio::spawn(async move {
+            axum::serve(listener, router)
+                .await
+                .context("test daemon failed")
+        });
+
+        (format!("http://{address}"), server)
     }
 }

@@ -106,7 +106,9 @@ fn body_for(kind: &str, payload: &Value, metadata: &EventMetadata) -> EventBody 
         }
         _ => EventBody::Custom(CustomEvent {
             kind: kind.to_string(),
-            message: string_field(payload, "message").unwrap_or_else(|| kind.to_string()),
+            message: string_field(payload, "message")
+                .or_else(|| string_field(payload, "summary"))
+                .unwrap_or_else(|| kind.to_string()),
             payload: if payload.is_null() {
                 None
             } else {
