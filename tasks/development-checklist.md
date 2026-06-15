@@ -56,31 +56,34 @@
 
 目标：先锁定“参考 clawhip、适配 Hermes”的真实边界，避免再次滑回 thin adapter 方向。
 
-- [ ] 确认当前分支和远程。
+- [x] 确认当前分支和远程。
   - 命令：`git status --short --branch`
   - 完成标准：分支、远程和未提交变更清楚。
-- [ ] 复习 lessons。
+- [x] 复习 lessons。
   - 文件：`tasks/lessons.md`
   - 完成标准：确认 Hermeship 不是 thin adapter。
-- [ ] 固化 clawhip 参考路径。
+- [x] 固化 clawhip 参考路径。
   - 路径：`/Users/zq/Desktop/ai-projs/posp/template/clawhip`
   - 阅读：`ARCHITECTURE.md`、`Cargo.toml`、`src/cli.rs`、`src/main.rs`、`src/daemon.rs`、`src/events.rs`、`src/event/compat.rs`、`src/router.rs`、`src/render/default.rs`
   - 完成标准：记录可移植模块和必须替换的 OpenClaw/Codex/Claude 耦合点。
-- [ ] 固化 Hermes 参考路径。
+  - 记录：可移植模块包括 Rust 2024 CLI、daemon HTTP API、mpsc queue、typed event compat、dispatcher、multi-delivery router、renderer/sink split、config/lifecycle/release preflight；必须替换的耦合点包括 OpenClaw/Codex/Claude/OMC/OMX 命名、provider-native hook 契约、agent/session 事件别名、prompt delivery/tmux wrapper 语义。
+- [x] 固化 Hermes 参考路径。
   - 路径：`/Users/zq/Desktop/ai-projs/posp/agents-contributions/hermes-agent`
   - 阅读：`gateway/hooks.py`、`hermes_cli/plugins.py`
   - 完成标准：确认 gateway hook 事件、context 字段、plugin hook 后续能力。
-- [ ] 确认项目技术栈。
+  - 补充阅读：`gateway/run.py`、`gateway/slash_commands.py`
+  - 记录：gateway hook 支持 `gateway:startup`、`session:start`、`session:end`、`session:reset`、`agent:start`、`agent:step`、`agent:end`、`command:*`，hook 错误被捕获并记录，不阻塞主流程；plugin hook 提供 `on_session_start`、`on_session_end`、`pre_tool_call`、`post_tool_call`、`pre_llm_call`、`post_llm_call`、`api_request_error`、`subagent_start`、`subagent_stop` 等后续 observer 能力。
+- [x] 确认项目技术栈。
   - 决策：Rust 2024 daemon-first，Python 只用于 Hermes hook bridge 模板。
   - 完成标准：记录到本清单决策记录。
-- [ ] 更新 README 项目定位。
+- [x] 更新 README 项目定位。
   - 文件：`README.md`
   - 完成标准：说明 Hermeship 是 Hermes-native event router，不是 clawhip runtime client。
-- [ ] 验证 Milestone 0。
+- [x] 验证 Milestone 0。
   - 命令：`rg -n "Hermes 到 clawhip 的适配层|通过 clawhip 已有 CLI 入口|python -m hermeship|src/hermeship|pyproject.toml|pytest|ruff|ClawhipClient|clawhip_client|HERMESHIP_CLAWHIP" docs/plans README.md`
   - 命令：`rg -n "Hermes 到 clawhip 的适配层|通过 clawhip 已有 CLI 入口|python -m hermeship|src/hermeship|pyproject.toml|pytest|ruff|ClawhipClient|clawhip_client|HERMESHIP_CLAWHIP" tasks/development-checklist.md | rg -v "rg -n"`
   - 预期：无旧 Python/thin-adapter 方案残留。
-- [ ] 提交 Milestone 0。
+- [x] 提交 Milestone 0。
   - commit：`docs: 明确 hermeship 完整项目方向`
 
 ## Milestone 1：Rust 项目骨架与质量门禁
@@ -690,6 +693,16 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-15 - Milestone 0
+
+- [x] 已复习 `tasks/lessons.md`，确认 Hermeship 目标是 Hermes-native daemon-first event router。
+- [x] 已确认当前分支状态：`main...origin/main [ahead 3]`，启动时无未提交变更。
+- [x] 已复核 `template/clawhip` 指定参考文件，确认可移植架构为 Rust CLI、daemon、typed event、router、renderer、sink、source、install 和 verification 表面。
+- [x] 已复核 Hermes gateway hook 与 plugin 参考源码，确认 MVP 先接 gateway hooks，plugin/observer 在后续阶段进入。
+- [x] 已更新 `README.md`，明确项目定位、实现边界、Hermes 接入、隐私默认值、计划 CLI 和验证策略。
+- [x] 已运行 Milestone 0 验证命令，旧 Python/thin-adapter 方向没有回流。
+- [x] 已准备提交 Milestone 0。
 
 ### 2026-06-15
 
