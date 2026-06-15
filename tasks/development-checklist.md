@@ -694,6 +694,14 @@
 
 最新记录放在最上方。
 
+### 2026-06-15 - Milestone 1 续接状态
+
+- [x] Milestone 0 已完成并提交：`af57c49 docs: 明确 hermeship 完整项目方向`。
+- [x] `README.md` 已更新为正式项目定位，明确 Hermeship 是 Hermes-native daemon-first event router，不是 clawhip runtime client。
+- [x] `tasks/todo.md` 已切换为下一阶段任务：Milestone 1.1 Cargo 项目与 CLI 入口。
+- [x] `docs/development-status.md` 已更新为 Milestone 0 完成后的状态入口和下次启动提示词。
+- [ ] 下一步执行 Milestone 1.1：创建 Rust 2024 工程骨架、CLI parse 测试、公开命令 fixture 和最小 `hermeship --help`。
+
 ### 2026-06-15 - Milestone 0
 
 - [x] 已复习 `tasks/lessons.md`，确认 Hermeship 目标是 Hermes-native daemon-first event router。
@@ -702,7 +710,7 @@
 - [x] 已复核 Hermes gateway hook 与 plugin 参考源码，确认 MVP 先接 gateway hooks，plugin/observer 在后续阶段进入。
 - [x] 已更新 `README.md`，明确项目定位、实现边界、Hermes 接入、隐私默认值、计划 CLI 和验证策略。
 - [x] 已运行 Milestone 0 验证命令，旧 Python/thin-adapter 方向没有回流。
-- [x] 已准备提交 Milestone 0。
+- [x] 已提交 Milestone 0：`af57c49 docs: 明确 hermeship 完整项目方向`。
 
 ### 2026-06-15
 
@@ -715,8 +723,8 @@
 - [x] 新增 `docs/development-status.md`，作为下次启动的状态入口。
 - [x] 当前已完成提交：`d69dbb4 docs: 重写 hermeship 完整项目方案`。
 - [x] 当前已完成提交：`9771968 docs: 集成 hermeship 测试计划`。
-- [ ] `README.md` 尚未更新为正式项目定位。
-- [ ] Milestone 0 尚未正式执行。
+- [x] `README.md` 已更新为正式项目定位。
+- [x] Milestone 0 已正式执行并提交。
 - [ ] 实现尚未开始。
 
 ## 阻塞项
