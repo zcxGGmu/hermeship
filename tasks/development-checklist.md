@@ -163,24 +163,27 @@
 
 ### 任务 2.1：IncomingEvent 与格式
 
-- [ ] 新建事件入口模型。
+- [x] 新建事件入口模型。
   - 新建：`src/events.rs`
   - 类型：`IncomingEvent`、`MessageFormat`、`RoutingMetadata`。
-- [ ] 实现 `MessageFormat`。
+- [x] 实现 `MessageFormat`。
   - 支持：`compact`、`inline`、`alert`、`raw`。
-- [ ] 实现 `emit` 参数解析。
+- [x] 实现 `emit` 参数解析。
   - 支持：`--channel`、`--mention`、`--format`、`--template`、`--payload`、任意 `--key value`。
-- [ ] 编写测试。
+- [x] 编写测试。
   - 覆盖：payload JSON 合并、非法 format、奇数 key/value 拒绝、字段别名。
-- [ ] 增加事件 fixture。
+- [x] 增加事件 fixture。
   - 新建：`tests/fixtures/hermes/agent_start.json`
   - 新建：`tests/fixtures/hermes/session_end.json`
   - 新建：`tests/fixtures/hermes/invalid_payload.json`
   - 完成标准：fixture 能驱动 CLI emit、daemon ingress 和 hook normalization 测试。
-- [ ] 验证任务 2.1。
+- [x] 验证任务 2.1。
   - 命令：`cargo test events`
   - 命令：`cargo test cli`
-- [ ] 提交任务 2.1。
+  - 命令：`cargo fmt --all -- --check`
+  - 命令：`cargo clippy --all-targets -- -D warnings`
+  - 命令：`cargo test`
+- [x] 提交任务 2.1。
   - commit：`feat: 增加 IncomingEvent 事件入口`
 
 ### 任务 2.2：Typed EventEnvelope
@@ -693,6 +696,18 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-15 - Milestone 2.1 IncomingEvent 与格式
+
+- [x] 已在 `codex/milestone-1-cli` 分支执行本阶段；启动时工作树无未提交代码变更，最新提交为 `b026e9c docs: 更新 Hermeship Milestone 2.1 交接状态`。
+- [x] 已确认本阶段只实现 `IncomingEvent`、`RoutingMetadata`、`MessageFormat` 复用/重导出、`emit`/`explain` 参数事件构造和 Hermes fixture；未实现 daemon、typed `EventEnvelope`、privacy 清洗、router、renderer、sink、hook bridge、install 或 release preflight。
+- [x] 已采用单一 `MessageFormat` 策略：继续在 `src/config.rs` 定义 enum，新增 `from_label()`；`src/events.rs` 通过 `pub use crate::config::MessageFormat` 提供事件层导出，避免两套不一致格式 enum。
+- [x] 已先写失败测试并运行 Red：`cargo test events` / `cargo test cli` 在实现前失败于缺少 `events::MessageFormat`、`IncomingEvent`、`RoutingMetadata` 和 `EventArgs::into_event`。
+- [x] 已新增 `src/events.rs`，实现 `IncomingEvent`、`RoutingMetadata`、字段别名反序列化、空/null payload 归一为空对象、缺省 payload 时 top-level extra 字段进入 payload。
+- [x] 已将 `hermeship emit` / `hermeship explain` 参数解析接入 `EventArgs::into_event()`，支持 `--payload`、`--channel`、`--mention`、`--format`、`--template` 和任意 `--key value`；支持 `--agent`、`--session`、`--elapsed`、`--error` 别名；非法 format、奇数 key/value 和缺少 `--` 前缀会返回错误。
+- [x] 已新增 Hermes fixture：`tests/fixtures/hermes/agent_start.json`、`tests/fixtures/hermes/session_end.json`、`tests/fixtures/hermes/invalid_payload.json`，内容为合成脱敏样例，不包含真实 token、cookie、secret、完整 prompt、完整对话或 provider request/response body。
+- [x] 已运行验证：`cargo test events`、`cargo test cli`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test` 均通过。
+- [x] 提交状态：随本阶段提交 `feat: 增加 IncomingEvent 事件入口` 一并完成。
 
 ### 2026-06-15 - Milestone 1.3 完成后状态交接更新
 

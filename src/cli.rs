@@ -1,6 +1,10 @@
 use std::path::PathBuf;
 
+use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
+use serde_json::Value;
+
+use crate::events::{IncomingEvent, MessageFormat};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -75,9 +79,88 @@ pub enum Commands {
 pub struct EventArgs {
     /// Canonical event name, such as hermes.agent.started.
     pub event: String,
-    /// JSON payload for the event. Use `-` in later milestones to read stdin.
-    #[arg(long)]
-    pub payload: Option<String>,
+    /// Event fields as `--key value` pairs. Includes --payload, --channel, --mention, --format, and --template.
+    #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+    pub fields: Vec<String>,
+}
+
+impl EventArgs {
+    pub fn into_event(self) -> Result<IncomingEvent> {
+        let mut channel = None;
+        let mut mention = None;
+        let mut format = None;
+        let mut template = None;
+        let mut payload = None;
+        let mut payload_map = serde_json::Map::new();
+
+        if !self.fields.len().is_multiple_of(2) {
+            anyhow::bail!("emit fields must be provided as --key value pairs");
+        }
+
+        for pair in self.fields.chunks_exact(2) {
+            let key = pair[0]
+                .strip_prefix("--")
+                .ok_or_else(|| anyhow::anyhow!("emit field names must start with --"))?;
+            let key = normalize_emit_key(key);
+            let raw_value = pair[1].clone();
+
+            match key {
+                "channel" => channel = normalize_cli_text(raw_value),
+                "mention" => mention = normalize_cli_text(raw_value),
+                "format" => format = Some(MessageFormat::from_label(&raw_value)?),
+                "template" => template = normalize_cli_text(raw_value),
+                "payload" => {
+                    payload = Some(
+                        serde_json::from_str::<Value>(&raw_value)
+                            .with_context(|| "emit --payload must be valid JSON")?,
+                    );
+                }
+                _ => {
+                    payload_map.insert(key.to_string(), parse_emit_value(&raw_value));
+                }
+            }
+        }
+
+        let payload = match payload {
+            Some(Value::Object(mut object)) => {
+                object.extend(payload_map);
+                Value::Object(object)
+            }
+            Some(other) if payload_map.is_empty() => other,
+            Some(_) => anyhow::bail!(
+                "emit --payload must be a JSON object when additional --key value fields are provided"
+            ),
+            None => Value::Object(payload_map),
+        };
+
+        Ok(IncomingEvent {
+            kind: self.event,
+            channel,
+            mention,
+            format,
+            template,
+            payload,
+        })
+    }
+}
+
+fn normalize_emit_key(key: &str) -> &str {
+    match key {
+        "agent" => "agent_name",
+        "session" => "session_id",
+        "elapsed" => "elapsed_secs",
+        "error" => "error_message",
+        other => other,
+    }
+}
+
+fn parse_emit_value(raw: &str) -> Value {
+    serde_json::from_str(raw).unwrap_or_else(|_| Value::String(raw.to_string()))
+}
+
+fn normalize_cli_text(value: String) -> Option<String> {
+    let trimmed = value.trim();
+    (!trimmed.is_empty()).then(|| trimmed.to_string())
 }
 
 #[derive(Debug, Clone, Subcommand)]
@@ -131,7 +214,10 @@ pub enum ReleaseCommands {
 mod tests {
     use clap::Parser;
 
+    use serde_json::json;
+
     use super::{Cli, Commands, ConfigCommand, HermesCommands, ReleaseCommands};
+    use crate::events::MessageFormat;
 
     #[test]
     fn parses_send_command() {
@@ -165,8 +251,106 @@ mod tests {
 
         match cli.command {
             Some(Commands::Emit(args)) => {
-                assert_eq!(args.event, "hermes.agent.started");
-                assert_eq!(args.payload.as_deref(), Some(r#"{"session_id":"demo"}"#));
+                let event = args.into_event().unwrap();
+                assert_eq!(event.kind, "hermes.agent.started");
+                assert_eq!(event.payload["session_id"], json!("demo"));
+            }
+            other => panic!("expected emit command, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn emit_args_construct_incoming_event_from_payload_and_flags() {
+        let cli = Cli::parse_from([
+            "hermeship",
+            "emit",
+            "hermes.agent.started",
+            "--payload",
+            r#"{"session_id":"demo","attempt":1}"#,
+            "--channel",
+            "ops",
+            "--mention",
+            "@here",
+            "--format",
+            "alert",
+            "--template",
+            "agent {session_id}",
+            "--platform",
+            "telegram",
+            "--retry",
+            "false",
+        ]);
+
+        match cli.command {
+            Some(Commands::Emit(args)) => {
+                let event = args.into_event().unwrap();
+                assert_eq!(event.kind, "hermes.agent.started");
+                assert_eq!(event.channel.as_deref(), Some("ops"));
+                assert_eq!(event.mention.as_deref(), Some("@here"));
+                assert_eq!(event.format, Some(MessageFormat::Alert));
+                assert_eq!(event.template.as_deref(), Some("agent {session_id}"));
+                assert_eq!(event.payload["session_id"], json!("demo"));
+                assert_eq!(event.payload["attempt"], json!(1));
+                assert_eq!(event.payload["platform"], json!("telegram"));
+                assert_eq!(event.payload["retry"], json!(false));
+            }
+            other => panic!("expected emit command, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn emit_args_reject_invalid_key_value_pairs() {
+        let cli = Cli::parse_from([
+            "hermeship",
+            "emit",
+            "hermes.agent.started",
+            "--payload",
+            r#"{"session_id":"demo"}"#,
+            "--platform",
+        ]);
+
+        match cli.command {
+            Some(Commands::Emit(args)) => {
+                let error = args.into_event().unwrap_err().to_string();
+                assert!(error.contains("emit fields must be provided as --key value pairs"));
+            }
+            other => panic!("expected emit command, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn emit_args_reject_invalid_format() {
+        let cli = Cli::parse_from([
+            "hermeship",
+            "emit",
+            "hermes.agent.started",
+            "--format",
+            "verbose",
+        ]);
+
+        match cli.command {
+            Some(Commands::Emit(args)) => {
+                let error = args.into_event().unwrap_err().to_string();
+                assert!(error.contains("unsupported message format"));
+            }
+            other => panic!("expected emit command, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn emit_args_reject_fields_without_flag_prefix() {
+        let cli = Cli::parse_from([
+            "hermeship",
+            "emit",
+            "hermes.agent.started",
+            "platform",
+            "telegram",
+        ]);
+
+        match cli.command {
+            Some(Commands::Emit(args)) => {
+                let error = args.into_event().unwrap_err().to_string();
+                assert!(error.contains("emit field names must start with --"));
             }
             other => panic!("expected emit command, got {other:?}"),
         }

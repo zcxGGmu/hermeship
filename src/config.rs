@@ -186,6 +186,16 @@ impl MessageFormat {
             Self::Raw => "raw",
         }
     }
+
+    pub fn from_label(label: &str) -> Result<Self> {
+        match label.trim().to_ascii_lowercase().as_str() {
+            "compact" => Ok(Self::Compact),
+            "inline" => Ok(Self::Inline),
+            "alert" => Ok(Self::Alert),
+            "raw" => Ok(Self::Raw),
+            other => anyhow::bail!("unsupported message format: {other}"),
+        }
+    }
 }
 
 pub fn default_config_path() -> PathBuf {

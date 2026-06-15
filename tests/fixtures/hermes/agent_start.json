@@ -1,0 +1,17 @@
+{
+  "provider": "hermes",
+  "source": "gateway",
+  "event": "agent:start",
+  "context": {
+    "platform": "telegram",
+    "user_id": "synthetic-user-001",
+    "chat_id": "synthetic-chat-001",
+    "thread_id": "synthetic-thread-001",
+    "chat_type": "group",
+    "session_id": "synthetic-session-001",
+    "agent_name": "demo-agent",
+    "project": "hermes",
+    "message_chars": 42,
+    "has_message": true
+  }
+}

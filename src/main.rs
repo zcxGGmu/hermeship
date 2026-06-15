@@ -2,6 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 use hermeship::cli::{Cli, Commands, ConfigCommand, HermesCommands, ReleaseCommands};
 use hermeship::config::AppConfig;
+use hermeship::events::IncomingEvent;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -20,9 +21,11 @@ async fn real_main() -> Result<()> {
     match cli.command.unwrap_or(Commands::Start { port: None }) {
         Commands::Start { port } => print_placeholder("start", port),
         Commands::Status => print_placeholder("status", ()),
-        Commands::Send { channel, message } => print_placeholder("send", (channel, message)),
-        Commands::Emit(args) => print_placeholder("emit", (args.event, args.payload)),
-        Commands::Explain(args) => print_placeholder("explain", (args.event, args.payload)),
+        Commands::Send { channel, message } => {
+            print_placeholder("send", IncomingEvent::custom(channel, message))
+        }
+        Commands::Emit(args) => print_placeholder("emit", args.into_event()?),
+        Commands::Explain(args) => print_placeholder("explain", args.into_event()?),
         Commands::Config { command } => match command.unwrap_or(ConfigCommand::Show) {
             ConfigCommand::Show => {
                 let config = AppConfig::load_or_default(&config_path)?;

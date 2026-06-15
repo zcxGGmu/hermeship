@@ -1,0 +1,17 @@
+{
+  "provider": "hermes",
+  "source": "gateway",
+  "event": "session:end",
+  "context": {
+    "platform": "telegram",
+    "user_id": "synthetic-user-001",
+    "chat_id": "synthetic-chat-001",
+    "thread_id": "synthetic-thread-001",
+    "chat_type": "group",
+    "session_id": "synthetic-session-002",
+    "project": "hermes",
+    "response_chars": 128,
+    "has_response": true,
+    "success": true
+  }
+}

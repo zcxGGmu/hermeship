@@ -1,0 +1,6 @@
+{
+  "provider": "hermes",
+  "source": "gateway",
+  "event": "agent:start",
+  "context": {
+    "session_id": "synthetic-session-invalid"
