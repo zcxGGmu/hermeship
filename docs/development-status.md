@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-15 23:35:35 CST
+最后更新：2026-06-16 00:01:45 CST
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -12,8 +12,8 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 当前最新已验证功能阶段：Milestone 3.1 `feat: 增加 hermeship daemon health`，本阶段提交完成后以 `git log -3 --oneline` 为准。
-- 当前工作树在本次交接更新前为干净状态；如后续继续开发，仍需先运行 `git status --short --branch` 确认。
+- 当前最新功能阶段提交：`ff5c589 feat: 增加 hermeship daemon health`。
+- 当前工作树在本次状态更新前为干净状态；如后续继续开发，仍需先运行 `git status --short --branch` 确认。
 - 当前下一步：从 Milestone 3 继续，优先执行任务 3.2：Event ingress 与队列。
 
 ## 已完成
@@ -111,7 +111,7 @@
 - 已覆盖 health response schema、队列状态、configured sinks、随机端口 HTTP `/health` 和 daemon 未运行错误。
 - 本阶段没有实现 event ingress、`/event`、Hermes hook ingress、队列入队、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。
 - 已运行验证：`cargo test daemon`（4 passed）、`cargo run -- status`（daemon 未运行时返回清晰错误且无 panic）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（45 passed）。
-- 提交状态：随本阶段提交 `feat: 增加 hermeship daemon health` 一并完成。
+- 已提交：`ff5c589 feat: 增加 hermeship daemon health`。
 
 ## 未完成
 
@@ -131,7 +131,7 @@
 2. 确认当前分支、最新提交和未提交变更：
    - `git status --short --branch`
    - `git log -3 --oneline`
-3. 确认最新已完成功能阶段为 Milestone 3.1：`feat: 增加 hermeship daemon health`。
+3. 确认最新已完成功能阶段提交为 `ff5c589 feat: 增加 hermeship daemon health`。
 4. 读取当前相关代码：
    - `src/cli.rs`
    - `src/config.rs`
@@ -167,7 +167,7 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新已验证功能阶段：Milestone 3.1 `feat: 增加 hermeship daemon health`。
+- 最新功能阶段提交：ff5c589 feat: 增加 hermeship daemon health。
 - Milestone 0 已完成并提交：af57c49 docs: 明确 hermeship 完整项目方向。
 - Milestone 1.1 已完成并提交：d03170e chore: 搭建 Hermeship Rust CLI 骨架。
 - Milestone 1.2 已完成并提交：50723af feat: 实现 hermeship 配置模型与 config CLI。
@@ -175,7 +175,7 @@
 - Milestone 2.1 已完成并提交：5584b13 feat: 完成 Hermes 入口事件模型与 emit 解析。
 - Milestone 2.2 已完成并提交：b799415 feat: 实现 Hermes typed event model。
 - Milestone 2.3 已完成并提交：175009d feat: 增加 Hermes 事件隐私清洗。
-- Milestone 3.1 已完成并提交：feat: 增加 hermeship daemon health。
+- Milestone 3.1 已完成并提交：ff5c589 feat: 增加 hermeship daemon health。
 - 已实现 src/events.rs：IncomingEvent、RoutingMetadata、字段别名反序列化、空/null payload 归一，以及 MessageFormat 的单一复用/重导出策略。
 - 已实现 src/event/：EventEnvelope、EventBody、EventMetadata、EventPriority、Hermes canonical mapping、IncomingEvent -> EventEnvelope conversion。
 - 已实现 src/privacy.rs：sanitize_payload、redact_value、excerpt_policy、敏感 key 递归脱敏、正文默认禁发、安全摘要和 opt-in 摘录。

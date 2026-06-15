@@ -1,93 +1,103 @@
-# Task: Milestone 3.1 - Daemon health 与 client
+# Task: Milestone 3.2 - Event ingress 与队列
 
-更新时间：2026-06-15 23:35:35 CST
+更新时间：2026-06-16 00:01:45 CST
 
-本阶段目标：在已完成 `IncomingEvent -> EventEnvelope` 和 privacy 清洗纯逻辑的基础上，建立 Hermeship daemon 的最小 health/status 闭环。实现本地 daemon health endpoint、daemon client health 查询和 `hermeship status` 的真实逻辑，为后续 `/event` ingress 与队列做准备。
+本阶段目标：在已完成 daemon `/health` 与 `DaemonClient` 的基础上，建立 Hermeship daemon 的通用事件入口和内存队列。实现 `/event` HTTP ingress、`IncomingEvent -> EventEnvelope` conversion、入队前隐私清洗、`hermeship emit` 与 `hermeship send` 的 client 投递路径，为后续 Hermes hook ingress、router、renderer、dispatcher 和 sink 做准备。
 
-本阶段边界：只实现 daemon health/status 与 client health 查询；不实现 event ingress、HTTP `/event`、Hermes hook ingress、队列入队、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。privacy sanitizer 在后续 ingress/daemon 事件入队前接入，任务 3.1 不扩大到事件处理。
+本阶段边界：只实现通用 event ingress、队列入队、`emit`/`send` 到 daemon 的 client 路径；不实现 Hermes hook ingress、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。隐私 sanitizer 必须在事件入队前接入，默认测试仍只使用本地 deterministic fixture。
 
 ## 当前基线
 
 - 当前分支：`codex/milestone-1-cli`。
-- 最新功能阶段提交：`175009d feat: 增加 Hermes 事件隐私清洗`。
-- 已完成 Milestone 2.3：`src/privacy.rs`、`sanitize_payload`、`redact_value`、`excerpt_policy`、隐私 fixture 与 10 个 privacy 回归测试。
-- `src/main.rs` 中 `start` 和 `status` 已替换为真实 health/status 行为；后续 `send`、`emit`、`explain`、`hermes hook` 等仍按对应 milestone 保持 placeholder。
+- 最新功能阶段提交：`ff5c589 feat: 增加 hermeship daemon health`。
+- 已完成 Milestone 3.1：`src/daemon.rs`、`src/client.rs`、typed `HealthResponse`、`QueueHealth`、daemon `/health`、daemon listener、`hermeship start`、`hermeship status`。
+- 已完成事件前置能力：`IncomingEvent`、`EventEnvelope`、Hermes canonical mapping、privacy sanitizer、Hermes 合成 fixture。
+- 当前 `send`、`emit`、`explain`、`hermes hook` 仍按各自 milestone 保持 placeholder；任务 3.2 只替换 `send` 和 `emit` 的 daemon event client 路径，不接入 `explain`、Hermes hook、路由或投递。
 
 ## 执行计划
 
-- [x] 复习项目规则与状态入口。
+- [ ] 复习项目规则与状态入口。
   - 阅读：`tasks/lessons.md`
   - 阅读：`docs/development-status.md`
   - 阅读：`docs/plans/2026-06-15-hermeship-development-plan.md`
   - 阅读：`tasks/development-checklist.md`
   - 阅读：`tasks/todo.md`
 
-- [x] 确认当前分支、最新提交和未提交变更。
+- [ ] 确认当前分支、最新提交和未提交变更。
   - 命令：`git status --short --branch`
   - 命令：`git log -3 --oneline`
-  - 预期：当前分支为 `codex/milestone-1-cli`；最新功能阶段提交为 `175009d feat: 增加 Hermes 事件隐私清洗`；启动时不要混入无关改动。
+  - 预期：当前分支为 `codex/milestone-1-cli`；最新功能阶段提交为 `ff5c589 feat: 增加 hermeship daemon health`；启动时不要混入无关改动。
 
-- [x] 检查现有代码边界。
+- [ ] 检查现有代码边界。
   - 查看：`src/cli.rs`
   - 查看：`src/main.rs`
   - 查看：`src/config.rs`
-  - 查看：`src/lib.rs`
+  - 查看：`src/client.rs`
+  - 查看：`src/daemon.rs`
   - 查看：`src/events.rs`
   - 查看：`src/event/mod.rs`
   - 查看：`src/event/body.rs`
   - 查看：`src/event/compat.rs`
   - 查看：`src/privacy.rs`
   - 查看：`tests/fixtures/README.md`
-  - 完成标准：确认任务 3.1 只替换 `start`/`status` placeholder，不接入 event ingress 或路由投递。
+  - 完成标准：确认任务 3.2 只接入 `/event`、队列和 `send`/`emit`，不进入后续 route/render/dispatch/sink。
 
-- [x] 先写失败测试。
-  - 新建或修改：`src/daemon.rs`
-  - 新建或修改：`src/client.rs`
+- [ ] 先写失败测试。
+  - 修改：`src/daemon.rs`
+  - 修改：`src/client.rs`
   - 必要时修改：`src/main.rs`
-  - 覆盖：health response schema、默认 host/port、configured sinks 摘要、daemon unavailable 时 client 返回清晰错误、`status` 不 panic。
+  - 覆盖：有效事件入队、入队前隐私清洗、非法 JSON/非法 event 返回清晰错误、daemon unavailable 时 client 返回清晰错误、`send` 构造 custom event 后 POST `/event`。
   - 命令：`cargo test daemon`
-  - 预期：实现前测试失败于缺少 daemon/client 模块或真实 health/status 逻辑。
+  - 预期：实现前测试失败于缺少 `/event` route、队列状态和 client POST event 能力。
 
-- [x] 新建 daemon/client 模块。
-  - 新建：`src/daemon.rs`
-  - 新建：`src/client.rs`
-  - 修改：`src/lib.rs`
-  - 导出：`hermeship::daemon`、`hermeship::client`
+- [ ] 实现 daemon `/event`。
+  - 接收：`IncomingEvent` JSON。
+  - 处理：用 `privacy::sanitize_payload()` 清洗 payload，再转为 typed `EventEnvelope`。
+  - 入队：写入本地 `tokio::mpsc` queue。
+  - 返回：事件 id、canonical kind、queued 状态和 queue 状态摘要。
+  - 当前阶段只入队，不消费、不路由、不渲染、不投递。
 
-- [x] 实现 daemon health。
-  - `hermeship start` 使用 `AppConfig.daemon` 默认监听 `127.0.0.1:25295`，支持 CLI `--port` 覆盖。
-  - `/health` 返回 version、status、queue 状态、configured sinks。
-  - 当前阶段只暴露 health endpoint，不实现 `/event` 或队列消费。
+- [ ] 实现 daemon client event POST。
+  - 在 `src/client.rs` 增加 POST `/event` 方法。
+  - 成功时解析 typed response。
+  - daemon 不可用、非 2xx、无效响应时返回清晰错误。
 
-- [x] 实现 daemon client 与 status CLI。
-  - `client` 使用 `DaemonConfig::base_url()` 构造 health URL。
-  - `hermeship status` 调用 `/health` 并打印可读摘要。
-  - daemon 不可用时返回清晰错误；命令可以非 0 退出，但不能 panic。
+- [ ] 实现 `hermeship emit`。
+  - 复用 `EventArgs::into_event()`。
+  - 通过 `DaemonClient` POST `/event`。
+  - 打印 queued event 摘要。
 
-- [x] 运行任务 3.1 验证命令。
+- [ ] 实现 `hermeship send`。
+  - 复用 `IncomingEvent::custom(channel, message)`。
+  - 通过 `DaemonClient` POST `/event`。
+  - 本阶段不实现 sink delivery。
+
+- [ ] 编写 ingress 测试。
+  - 覆盖：有效 Hermes fixture 入队。
+  - 覆盖：敏感 payload 入队前清洗，不泄漏 token、cookie、secret、完整 message/response。
+  - 覆盖：队列状态在 health response 中可见。
+  - 覆盖：daemon unavailable client 错误。
+  - 要求：使用随机端口和本地 test queue，不绑定固定端口，不依赖外部服务。
+
+- [ ] 运行任务 3.2 验证命令。
   - `cargo test daemon`
-  - `cargo run -- status`
+  - `cargo test event`
+  - `cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'`
   - `cargo fmt --all -- --check`
   - `cargo clippy --all-targets -- -D warnings`
   - `cargo test`
 
-- [x] 更新开发状态文档。
+- [ ] 更新开发状态文档。
   - 更新：`tasks/development-checklist.md`
   - 更新：`tasks/todo.md`
   - 必要时更新：`docs/development-status.md`
   - 完成标准：记录实现、验证、边界和剩余风险。
 
-- [x] 提交任务 3.1。
-  - commit：`feat: 增加 hermeship daemon health`
+- [ ] 提交任务 3.2。
+  - commit：`feat: 增加 daemon event ingress`
   - commit 信息使用中文，说明变更、验证和影响。
 
 ## Review
 
-- 已完成 Milestone 3.1 的 daemon health/status 最小闭环。
-- 新增 `src/daemon.rs`：typed `HealthResponse`、`QueueHealth`、configured sinks 摘要、`/health` Axum route、listener 绑定和 daemon serve 入口。
-- 新增 `src/client.rs`：daemon health client、base URL 规范化、2 秒 timeout、daemon unreachable 和非 2xx 错误摘要。
-- 更新 `src/main.rs`：`hermeship start` 加载配置并启动 daemon；`hermeship status` 调用 `/health` 并打印 version、status、queue 和 configured sinks。
-- 已确认本阶段未实现 event ingress、`/event`、Hermes hook ingress、队列入队、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。
-- Red 验证：实现前 `cargo test daemon` 失败于缺少 `DaemonClient`、`HealthResponse`、`bind_listener` 和 `serve_listener`。
-- Green/门禁验证：`cargo test daemon` 4 passed；`cargo run -- status` 在 daemon 未运行时返回 `daemon is not reachable at http://127.0.0.1:25295/health` 且无 panic；`cargo fmt --all -- --check` 通过；`cargo clippy --all-targets -- -D warnings` 通过；`cargo test` 45 passed。
-- 下一步：Milestone 3.2 实现 `/event` ingress 与队列；仍不进入 router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。
+- 待任务 3.2 实施、验证和提交后填写。
+- 上一阶段 Milestone 3.1 已完成并提交：`ff5c589 feat: 增加 hermeship daemon health`。

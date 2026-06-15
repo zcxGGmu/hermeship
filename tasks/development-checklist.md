@@ -703,6 +703,15 @@
 
 最新记录放在最上方。
 
+### 2026-06-16 - Milestone 3.2 入口交接更新
+
+- [x] 已确认当前最新功能阶段提交为 `ff5c589 feat: 增加 hermeship daemon health`。
+- [x] 已确认 Milestone 3.1 完成：daemon `/health`、typed health response、daemon client、`hermeship start`、`hermeship status` 均已实现并验证。
+- [x] 已将 `tasks/todo.md` 切换为下一阶段任务：Milestone 3.2 `Event ingress 与队列`。
+- [x] 当前下一步为 Milestone 3.2：实现通用 `/event` ingress、`IncomingEvent -> EventEnvelope` conversion、隐私清洗和队列入队。
+- [x] 已确认任务 3.2 边界：不实现 Hermes hook ingress、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。
+- [x] 任务 3.2 验证命令使用分开的 Cargo filter：`cargo test daemon`、`cargo test event`，不要把两个 filter 合并为一个 `cargo test` 命令。
+
 ### 2026-06-15 - Milestone 3.1 Daemon health 与 client
 
 - [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
