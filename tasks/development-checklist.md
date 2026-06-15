@@ -117,24 +117,24 @@
 
 ### 任务 1.2：配置模型
 
-- [ ] 新建配置模块。
+- [x] 新建配置模块。
   - 新建：`src/config.rs`
   - 包含：`AppConfig`、`DaemonConfig`、`ProvidersConfig`、`DiscordConfig`、`DefaultsConfig`、`PrivacyConfig`、`HermesConfig`、`RouteRule`。
-- [ ] 实现默认配置路径。
+- [x] 实现默认配置路径。
   - 默认：`~/.hermeship/config.toml`
   - 环境变量：`HERMESHIP_CONFIG`
-- [ ] 实现默认配置与 TOML 加载。
+- [x] 实现默认配置与 TOML 加载。
   - 要求：缺失配置返回默认值；非法 TOML 返回错误。
-- [ ] 实现 config CLI。
+- [x] 实现 config CLI。
   - `hermeship config path`
   - `hermeship config show`
   - `hermeship config verify`
-- [ ] 编写配置测试。
+- [x] 编写配置测试。
   - 覆盖：默认值、env override、非法 TOML、未知 key、空 channel/token 归一化。
-- [ ] 验证任务 1.2。
+- [x] 验证任务 1.2。
   - 命令：`cargo test config`
   - 命令：`cargo run -- config show`
-- [ ] 提交任务 1.2。
+- [x] 提交任务 1.2。
   - commit：`feat: 实现 hermeship 配置模型`
 
 ### 任务 1.3：质量门禁与仓库基础
@@ -693,6 +693,19 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-15 - Milestone 1.2 配置模型
+
+- [x] 已复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且不混入无关改动。
+- [x] 已参考 `/Users/zq/Desktop/ai-projs/posp/template/clawhip/src/config.rs` 和 Hermeship 当前 CLI 结构，只借鉴配置 schema、路径/env override、TOML 加载、归一化和 `config` 子命令接入方式。
+- [x] 已先写配置测试并运行 Red：`cargo test config` 在实现前失败于缺少 `AppConfig`、`RouteRule`、`MessageFormat` 和 `config_path_from_env`。
+- [x] 已新增 `src/config.rs`，包含 `AppConfig`、`DaemonConfig`、`ProvidersConfig`、`DiscordConfig`、`DefaultsConfig`、`PrivacyConfig`、`HermesConfig`、`RouteRule` 和 `MessageFormat`。
+- [x] 已实现默认配置路径：`HERMESHIP_CONFIG` 优先，否则 `$HOME/.hermeship/config.toml`。
+- [x] 已实现缺失配置返回默认值、非法 TOML 返回错误、未知 key 前向兼容忽略、空 token/channel/webhook/mention/template/filter 归一化、空 route sink 回退为 `discord`。
+- [x] 已实现配置环境变量覆盖：`HERMESHIP_DAEMON_URL`、`HERMESHIP_DISCORD_TOKEN`、`HERMESHIP_DEFAULT_CHANNEL`、`HERMESHIP_DRY_RUN`。
+- [x] 已将 `hermeship config path`、`hermeship config show`、`hermeship config verify` 接入真实配置逻辑，不再使用 Milestone 1.1 占位输出。
+- [x] 已运行验证：`cargo fmt --all -- --check`、`cargo test config`、`cargo run -- config show` 均通过。
+- [x] 提交状态：随本阶段提交 `feat: 实现 hermeship 配置模型` 一并完成。
 
 ### 2026-06-15 - 开发状态交接更新
 

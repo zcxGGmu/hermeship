@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 use hermeship::cli::{Cli, Commands, ConfigCommand, HermesCommands, ReleaseCommands};
+use hermeship::config::AppConfig;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -23,12 +24,21 @@ async fn real_main() -> Result<()> {
         Commands::Emit(args) => print_placeholder("emit", (args.event, args.payload)),
         Commands::Explain(args) => print_placeholder("explain", (args.event, args.payload)),
         Commands::Config { command } => match command.unwrap_or(ConfigCommand::Show) {
-            ConfigCommand::Show => print_placeholder("config show", ()),
+            ConfigCommand::Show => {
+                let config = AppConfig::load_or_default(&config_path)?;
+                println!("{}", config.to_pretty_toml()?);
+                Ok(())
+            }
             ConfigCommand::Path => {
                 println!("{}", config_path.display());
                 Ok(())
             }
-            ConfigCommand::Verify => print_placeholder("config verify", ()),
+            ConfigCommand::Verify => {
+                let config = AppConfig::load_or_default(&config_path)?;
+                config.validate()?;
+                println!("config ok: {}", config_path.display());
+                Ok(())
+            }
         },
         Commands::Hermes { command } => match command {
             HermesCommands::Hook(args) => print_placeholder("hermes hook", args.payload),

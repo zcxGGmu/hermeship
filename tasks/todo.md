@@ -1,54 +1,74 @@
 # Task: Milestone 1.2 - 配置模型
 
-- [ ] 复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交。
-- [ ] 复习阶段上下文。
+- [x] 本阶段执行顺序已确认。
+  - 先写配置测试，再实现 `src/config.rs`，最后接入 `config path/show/verify`。
+  - 配置范围只覆盖本 milestone 需要的 schema、默认路径、加载、归一化和 CLI 输出，不提前实现 daemon/router/install 逻辑。
+- [x] 本阶段参考文件已复习。
+  - `tasks/lessons.md`
+  - `docs/development-status.md`
+  - `docs/plans/2026-06-15-hermeship-development-plan.md`
+  - `tasks/development-checklist.md`
+  - `tasks/todo.md`
+- [x] 本阶段参考实现已对照。
+  - `/Users/zq/Desktop/ai-projs/posp/template/clawhip/src/config.rs`
+  - `/Users/zq/Desktop/ai-projs/posp/template/clawhip/src/cli.rs`
+- [x] 本阶段验证命令已预设。
+  - `cargo test config`
+  - `cargo run -- config show`
+
+- [x] 复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交。
+- [x] 复习阶段上下文。
   - 阅读：`docs/development-status.md`
   - 阅读：`docs/plans/2026-06-15-hermeship-development-plan.md`
   - 阅读：`tasks/development-checklist.md`
   - 阅读：`tasks/todo.md`
-- [ ] 确认当前分支、远程和未提交变更。
+- [x] 确认当前分支、远程和未提交变更。
   - 命令：`git status --short --branch`
   - 完成标准：分支、远程和未提交变更清楚；不要混入无关改动。
-- [ ] 参考 clawhip 配置模型。
+- [x] 参考 clawhip 配置模型。
   - 路径：`/Users/zq/Desktop/ai-projs/posp/template/clawhip`
   - 重点文件：`src/config.rs`、`src/cli.rs`
   - 完成标准：只参考 TOML schema、默认值、路径/env override 和 CLI 接入形态；不复用或调用 clawhip runtime、binary、daemon。
-- [ ] 先写配置模型测试。
+- [x] 先写配置模型测试。
   - 新建或修改：`src/config.rs`
   - 覆盖：默认值、默认配置路径、`HERMESHIP_CONFIG` env override、非法 TOML、未知 key、空 channel/token 归一化。
-- [ ] 运行配置 Red 验证。
+- [x] 运行配置 Red 验证。
   - 命令：`cargo test config`
   - 预期：实现前失败，证明测试锁定配置模型契约。
-- [ ] 新建配置模块。
+- [x] 新建配置模块。
   - 新建：`src/config.rs`
   - 类型：`AppConfig`、`DaemonConfig`、`ProvidersConfig`、`DiscordConfig`、`DefaultsConfig`、`PrivacyConfig`、`HermesConfig`、`RouteRule`。
-- [ ] 实现默认配置路径。
+- [x] 实现默认配置路径。
   - 默认：`~/.hermeship/config.toml`
   - 环境变量：`HERMESHIP_CONFIG`
   - 要求：路径逻辑可测试，不依赖真实 HOME 写文件。
-- [ ] 实现默认配置与 TOML 加载。
+- [x] 实现默认配置与 TOML 加载。
   - 缺失配置：返回默认值。
   - 非法 TOML：返回清晰错误。
   - 未知 key：按本阶段测试要求处理。
   - 空 channel/token：归一化为 `None` 或空安全状态。
-- [ ] 接入 config CLI 真实逻辑。
+- [x] 接入 config CLI 真实逻辑。
   - 修改：`src/main.rs`
   - 命令：`hermeship config path`
   - 命令：`hermeship config show`
   - 命令：`hermeship config verify`
   - 完成标准：不再只是 Milestone 1.1 的占位输出。
-- [ ] 运行任务 1.2 验证命令。
+- [x] 运行任务 1.2 验证命令。
   - `cargo test config`
   - `cargo run -- config show`
-- [ ] 更新 `tasks/development-checklist.md`。
+- [x] 更新 `tasks/development-checklist.md`。
   - 勾选任务 1.2 已完成项。
   - 在运行状态日志顶部记录本阶段实现、验证和提交状态。
-- [ ] 更新 `tasks/todo.md` Review。
+- [x] 更新 `tasks/todo.md` Review。
   - 记录实现、测试、验证、边界和剩余风险。
-- [ ] 提交任务 1.2。
+- [x] 提交任务 1.2。
   - commit：`feat: 实现 hermeship 配置模型`
   - commit 信息使用详细中文，说明变更、验证和影响。
 
 ## Review
 
-- 待任务 1.2 实施、验证和提交后填写。
+- 已按 TDD 执行：先新增配置测试，`cargo test config` 在实现前失败于缺少 `AppConfig`、`RouteRule`、`MessageFormat` 和 `config_path_from_env`；实现后同一命令通过。
+- 已新增 `src/config.rs` 并导出 `hermeship::config`，覆盖默认值、默认配置路径、`HERMESHIP_CONFIG`、TOML 加载、非法 TOML、未知 key、空值归一化和 route 校验。
+- 已接入 `hermeship config path/show/verify` 真实逻辑：`path` 打印展开后的配置路径，`show` 输出归一化 pretty TOML，`verify` 运行配置校验。
+- 已运行验证：`cargo fmt --all -- --check`、`cargo test config`、`cargo run -- config show` 均通过。
+- 本阶段未实现 daemon/router/install/Discord sink；这些仍按后续 Milestone 推进。

@@ -21,7 +21,8 @@ impl Cli {
     pub fn config_path(&self) -> PathBuf {
         self.config
             .clone()
-            .unwrap_or_else(|| PathBuf::from("~/.hermeship/config.toml"))
+            .filter(|path| !path.as_os_str().is_empty())
+            .unwrap_or_else(crate::config::default_config_path)
     }
 }
 
