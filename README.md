@@ -2,7 +2,7 @@
 
 Hermeship is a Hermes-native event-to-channel notification router. It keeps notification delivery outside Hermes gateway sessions so lifecycle events can reach Discord, Slack, webhooks, or other sinks without polluting the agent conversation context.
 
-The project is currently ready for Milestone 3.1 implementation. The Rust CLI skeleton, configuration model, repository quality gates, fixture directory baseline, `IncomingEvent` model, `emit`/`explain` event construction path, typed `EventEnvelope` model, and privacy sanitization are implemented; daemon health/client, routing, sinks, and Hermes hook installation are still pending.
+The project has completed Milestone 3.1. The Rust CLI skeleton, configuration model, repository quality gates, fixture directory baseline, `IncomingEvent` model, `emit`/`explain` event construction path, typed `EventEnvelope` model, privacy sanitization, daemon `/health`, and daemon client status path are implemented; event ingress, routing, sinks, and Hermes hook installation are still pending.
 
 ## Project Direction
 
@@ -146,5 +146,7 @@ Current state:
 - Milestone 1.3 completed repository quality gates, fixture directories, and rustfmt/clippy documentation.
 - Milestone 2.1 implemented `IncomingEvent`, `RoutingMetadata`, `MessageFormat` reuse, `emit`/`explain` event construction, and initial Hermes fixtures.
 - Milestone 2.2 implemented typed `EventEnvelope`, Hermes event bodies, canonical event mapping, and `IncomingEvent` conversion.
+- Milestone 2.3 implemented privacy sanitization for sensitive keys, body suppression, safe summaries, and opt-in excerpts.
+- Milestone 3.1 implemented daemon `/health`, typed health responses, daemon client health queries, `hermeship start`, and `hermeship status`.
 
-Next implementation phase is Milestone 3.1: daemon health and client support, starting with `/health`, `hermeship status`, and clear daemon-unavailable error handling.
+Next implementation phase is Milestone 3.2: `/event` ingress and queue scaffolding, keeping router, renderer, dispatcher, sink, hook bridge, install, and release preflight out of scope until their milestones.

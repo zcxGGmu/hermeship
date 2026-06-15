@@ -252,23 +252,23 @@
 
 ### 任务 3.1：Daemon health 与 client
 
-- [ ] 新建 daemon/client 模块。
+- [x] 新建 daemon/client 模块。
   - 新建：`src/daemon.rs`
   - 新建：`src/client.rs`
-- [ ] 实现 `hermeship start`。
+- [x] 实现 `hermeship start`。
   - 默认监听：`127.0.0.1:25295`。
-- [ ] 实现 `/health`。
+- [x] 实现 `/health`。
   - 返回：version、status、queue 状态、configured sinks。
-- [ ] 实现 `hermeship status`。
+- [x] 实现 `hermeship status`。
   - 调用 daemon `/health`。
-- [ ] 编写 daemon health 测试。
+- [x] 编写 daemon health 测试。
   - 使用随机端口或 test server。
   - 覆盖：健康响应 schema、队列状态、configured sinks、daemon 未运行时 client 错误。
-- [ ] 验证任务 3.1。
+- [x] 验证任务 3.1。
   - 命令：`cargo test daemon`
   - 命令：`cargo run -- status`
   - 预期：daemon 未运行时返回清晰错误；不 panic。
-- [ ] 提交任务 3.1。
+- [x] 提交任务 3.1。
   - commit：`feat: 增加 hermeship daemon health`
 
 ### 任务 3.2：Event ingress 与队列
@@ -285,7 +285,8 @@
   - 覆盖：有效事件入队、非法 payload 4xx、daemon unavailable 错误。
   - 要求：使用随机端口和本地 test queue，不绑定固定端口。
 - [ ] 验证任务 3.2。
-  - 命令：`cargo test daemon event`
+  - 命令：`cargo test daemon`
+  - 命令：`cargo test event`
   - 命令：`cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'`
 - [ ] 提交任务 3.2。
   - commit：`feat: 增加 daemon event ingress`
@@ -701,6 +702,19 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-15 - Milestone 3.1 Daemon health 与 client
+
+- [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
+- [x] 已确认最新提交为 `2e74184 docs: 更新 Hermeship Milestone 3.1 交接状态`，上一功能阶段提交为 `175009d feat: 增加 Hermes 事件隐私清洗`。
+- [x] 已阅读 `src/cli.rs`、`src/main.rs`、`src/config.rs`、`src/lib.rs`、`src/events.rs`、`src/event/mod.rs`、`src/event/body.rs`、`src/event/compat.rs`、`src/privacy.rs` 与 `tests/fixtures/README.md`，确认本阶段只接入 daemon health/status。
+- [x] 已先写失败测试并确认 `cargo test daemon` 在实现前失败于缺少 `DaemonClient`、`HealthResponse`、`bind_listener` 与 `serve_listener`。
+- [x] 已新增 `src/daemon.rs` 与 `src/client.rs`，并在 `src/lib.rs` 导出 daemon/client 模块。
+- [x] 已实现 `/health`、typed `HealthResponse`、`QueueHealth`、daemon listener 绑定、`hermeship start` daemon 启动路径和 `hermeship status` client 查询路径。
+- [x] 已实现 client 基础 URL 规范化、2 秒健康检查超时和非 2xx 错误摘要。
+- [x] 已确认本阶段没有实现 event ingress、队列入队、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。
+- [x] 已运行验证：`cargo test daemon`（4 passed）、`cargo run -- status`（daemon 未运行时返回清晰错误且无 panic）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（45 passed）均通过。
+- [x] 提交状态：随本阶段提交 `feat: 增加 hermeship daemon health` 一并完成。
 
 ### 2026-06-15 - Milestone 3.1 入口交接更新
 

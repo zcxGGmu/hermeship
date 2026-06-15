@@ -1,7 +1,9 @@
 use anyhow::Result;
 use clap::Parser;
 use hermeship::cli::{Cli, Commands, ConfigCommand, HermesCommands, ReleaseCommands};
+use hermeship::client::DaemonClient;
 use hermeship::config::AppConfig;
+use hermeship::daemon::HealthResponse;
 use hermeship::events::IncomingEvent;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -19,8 +21,21 @@ async fn real_main() -> Result<()> {
     let config_path = cli.config_path();
 
     match cli.command.unwrap_or(Commands::Start { port: None }) {
-        Commands::Start { port } => print_placeholder("start", port),
-        Commands::Status => print_placeholder("status", ()),
+        Commands::Start { port } => {
+            let mut config = AppConfig::load_or_default(&config_path)?;
+            if let Some(port) = port {
+                config.daemon.port = port;
+                config.daemon.base_url = None;
+            }
+            config.validate()?;
+            hermeship::daemon::serve(config, VERSION).await
+        }
+        Commands::Status => {
+            let config = AppConfig::load_or_default(&config_path)?;
+            let health = DaemonClient::from_config(&config.daemon).health().await?;
+            print_health(&health);
+            Ok(())
+        }
         Commands::Send { channel, message } => {
             print_placeholder("send", IncomingEvent::custom(channel, message))
         }
@@ -62,4 +77,19 @@ async fn real_main() -> Result<()> {
 fn print_placeholder(name: &str, _args: impl std::fmt::Debug) -> Result<()> {
     println!("{name} command parsed; implementation will arrive in a later milestone");
     Ok(())
+}
+
+fn print_health(health: &HealthResponse) {
+    println!("hermeship daemon: {}", health.status);
+    println!("version: {}", health.version);
+    println!(
+        "queue: {} (pending={}, capacity={})",
+        health.queue.status, health.queue.pending, health.queue.capacity
+    );
+    let sinks = if health.configured_sinks.is_empty() {
+        "none".to_string()
+    } else {
+        health.configured_sinks.join(", ")
+    };
+    println!("configured sinks: {sinks}");
 }
