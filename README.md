@@ -2,7 +2,7 @@
 
 Hermeship is a Hermes-native event-to-channel notification router. It keeps notification delivery outside Hermes gateway sessions so lifecycle events can reach Discord, Slack, webhooks, or other sinks without polluting the agent conversation context.
 
-The project is currently ready for Milestone 2.1 implementation. The Rust CLI skeleton, configuration model, repository quality gates, and fixture directory baseline are implemented; daemon, event pipeline, routing, sinks, and Hermes hook installation are still pending.
+The project is currently ready for Milestone 2.2 implementation. The Rust CLI skeleton, configuration model, repository quality gates, fixture directory baseline, `IncomingEvent` model, and `emit`/`explain` event construction path are implemented; typed event envelopes, daemon, routing, sinks, and Hermes hook installation are still pending.
 
 ## Project Direction
 
@@ -144,5 +144,6 @@ Current state:
 - Milestone 1.1 created the Rust 2024 Cargo project and minimal CLI command tree.
 - Milestone 1.2 implemented the configuration model and real `config path/show/verify` logic.
 - Milestone 1.3 completed repository quality gates, fixture directories, and rustfmt/clippy documentation.
+- Milestone 2.1 implemented `IncomingEvent`, `RoutingMetadata`, `MessageFormat` reuse, `emit`/`explain` event construction, and initial Hermes fixtures.
 
-Next implementation phase is Milestone 2.1: `IncomingEvent`, message format handling, `emit` parsing, and initial Hermes fixture payloads.
+Next implementation phase is Milestone 2.2: typed `EventEnvelope`, Hermes event bodies, canonical event mapping, and `IncomingEvent` conversion.
