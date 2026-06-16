@@ -2,7 +2,7 @@
 
 Hermeship is a Hermes-native event-to-channel notification router. It keeps notification delivery outside Hermes gateway sessions so lifecycle events can reach Discord, Slack, webhooks, or other sinks without polluting the agent conversation context.
 
-The project has completed Milestone 3.1. The Rust CLI skeleton, configuration model, repository quality gates, fixture directory baseline, `IncomingEvent` model, `emit`/`explain` event construction path, typed `EventEnvelope` model, privacy sanitization, daemon `/health`, and daemon client status path are implemented; event ingress, routing, sinks, and Hermes hook installation are still pending.
+The project has completed Milestone 5.3. The Rust CLI skeleton, configuration model, repository quality gates, event model, privacy sanitization, daemon HTTP ingress, Hermes hook ingress, router, renderer, dispatcher, fake sink, Discord sink, sink failure handling, and local daemon-to-fake-sink smoke coverage are implemented. Hermes hook bridge installation, install/uninstall lifecycle, release preflight, live verification, Slack sink, and Hermes plugin/observer work are still pending.
 
 ## Project Direction
 
@@ -140,13 +140,13 @@ Current state:
 - Architecture and test strategy are documented in `docs/plans/2026-06-15-hermeship-development-plan.md`.
 - Execution progress is tracked in `tasks/development-checklist.md`.
 - Session handoff status is tracked in `docs/development-status.md`.
-- Milestone 0 establishes the repository baseline and project positioning.
-- Milestone 1.1 created the Rust 2024 Cargo project and minimal CLI command tree.
-- Milestone 1.2 implemented the configuration model and real `config path/show/verify` logic.
-- Milestone 1.3 completed repository quality gates, fixture directories, and rustfmt/clippy documentation.
-- Milestone 2.1 implemented `IncomingEvent`, `RoutingMetadata`, `MessageFormat` reuse, `emit`/`explain` event construction, and initial Hermes fixtures.
-- Milestone 2.2 implemented typed `EventEnvelope`, Hermes event bodies, canonical event mapping, and `IncomingEvent` conversion.
-- Milestone 2.3 implemented privacy sanitization for sensitive keys, body suppression, safe summaries, and opt-in excerpts.
-- Milestone 3.1 implemented daemon `/health`, typed health responses, daemon client health queries, `hermeship start`, and `hermeship status`.
+- Milestone 0 through Milestone 5.3 are complete and committed.
+- Milestone 1 completed the Rust project skeleton, CLI command tree, configuration model, repository quality gates, and fixture baseline.
+- Milestone 2 completed `IncomingEvent`, typed `EventEnvelope`, Hermes canonical mapping, and privacy sanitization.
+- Milestone 3 completed daemon `/health`, `/event`, `/api/hermes/hook`, bounded queue ingress, and daemon client POST paths.
+- Milestone 4 completed router, default renderer, dispatcher, fake sink, and queue consumer wiring.
+- Milestone 5 completed Discord sink payload/request handling, sink failure semantics, and deterministic local daemon-to-fake-sink smoke coverage.
 
-Next implementation phase is Milestone 3.2: `/event` ingress and queue scaffolding, keeping router, renderer, dispatcher, sink, hook bridge, install, and release preflight out of scope until their milestones.
+Latest completed implementation commit: `026e80c test: 增加 daemon 到 sink 的端到端覆盖`.
+
+Next implementation phase is Milestone 6: Hermes Hook Bridge installation. It should add local hook templates, installer/uninstaller behavior, fake Hermes home tests, fake hermeship binary smoke coverage, and fail-open Python handler checks while keeping release preflight, live verification, Slack sink, and Hermes plugin/observer work out of scope.

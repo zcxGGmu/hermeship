@@ -738,7 +738,7 @@
 - [x] 已确认默认隐私保护生效：smoke payload 中的完整 message、response、token、cookie、secret 不会出现在 fake sink 消息中。
 - [x] 已运行验证：`cargo test dispatch`（12 passed）、`cargo test daemon`（19 lib-filtered tests + 4 bin-filtered tests passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（103 lib tests + 6 bin tests passed）均通过。
 - [x] 已更新 `tasks/todo.md` Review，并将下一入口切到 Milestone 6 Hermes Hook Bridge 安装。
-- [x] 提交状态：随本阶段提交 `test: 增加 daemon 到 sink 的端到端覆盖` 一并完成。
+- [x] 提交状态：已提交 `026e80c test: 增加 daemon 到 sink 的端到端覆盖`。
 
 ### 2026-06-16 - Milestone 5.2 Sink 失败语义
 

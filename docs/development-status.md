@@ -12,7 +12,7 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 当前最新功能阶段提交主题：`test: 增加 daemon 到 sink 的端到端覆盖`。
+- 当前最新功能阶段提交：`026e80c test: 增加 daemon 到 sink 的端到端覆盖`。
 - 下次继续开发前必须先运行 `git status --short --branch` 确认工作树，只在预期文档/代码变更上继续。
 - 当前下一步：继续 Milestone 6，执行 Hermes Hook Bridge 安装。
 
@@ -211,7 +211,7 @@
 - 已通过现有本地 test daemon/client 测试继续覆盖 `send` 和 `emit` 进入 `/event` 的本地路径。
 - 已运行验证：`cargo test dispatch`、`cargo test daemon`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
 - 本阶段没有实现 Hermes hook bridge install、install/uninstall lifecycle、release preflight、真实 live verification、Slack sink 或 Hermes plugin/observer。
-- 已提交：`test: 增加 daemon 到 sink 的端到端覆盖`。
+- 已提交：`026e80c test: 增加 daemon 到 sink 的端到端覆盖`。
 
 ## 未完成
 
@@ -272,7 +272,7 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新功能阶段提交主题：test: 增加 daemon 到 sink 的端到端覆盖。
+- 最新功能阶段提交：026e80c test: 增加 daemon 到 sink 的端到端覆盖。
 - Milestone 0 已完成并提交：af57c49 docs: 明确 hermeship 完整项目方向。
 - Milestone 1.1 已完成并提交：d03170e chore: 搭建 Hermeship Rust CLI 骨架。
 - Milestone 1.2 已完成并提交：50723af feat: 实现 hermeship 配置模型与 config CLI。
@@ -288,7 +288,7 @@
 - Milestone 4.3 已完成并提交：a336e01 feat: 实现事件 dispatcher 与 fake sink。
 - Milestone 5.1 已完成并提交：0cd6e4e feat: 增加 Discord sink。
 - Milestone 5.2 已完成并提交：ea9b789 feat: 完善 sink 失败处理。
-- Milestone 5.3 已完成并提交：test: 增加 daemon 到 sink 的端到端覆盖。
+- Milestone 5.3 已完成并提交：026e80c test: 增加 daemon 到 sink 的端到端覆盖。
 - 已实现 src/events.rs：IncomingEvent、RoutingMetadata、字段别名反序列化、空/null payload 归一，以及 MessageFormat 的单一复用/重导出策略。
 - 已实现 src/event/：EventEnvelope、EventBody、EventMetadata、EventPriority、Hermes canonical mapping、IncomingEvent -> EventEnvelope conversion。
 - 已实现 src/privacy.rs：sanitize_payload、redact_value、excerpt_policy、敏感 key 递归脱敏、正文默认禁发、安全摘要和 opt-in 摘录。

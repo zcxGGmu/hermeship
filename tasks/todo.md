@@ -1,20 +1,20 @@
-# Task: Milestone 5.3 - 本地端到端 smoke
+# Task: Milestone 6 - Hermes Hook Bridge 安装
 
-更新时间：2026-06-16 Milestone 5.3 已完成，下一步 Milestone 6
+更新时间：2026-06-16 Milestone 5.3 已完成，Milestone 6 待执行
 
-本阶段目标：在 Milestone 5.2 已完成 Discord sink 失败语义的基础上，补齐本地可重复的端到端 smoke。重点验证 daemon HTTP ingress、队列、router、renderer、fake sink 和 CLI client 路径能形成最小闭环，同时继续证明默认隐私保护生效。
+本阶段目标：让 Hermes gateway 能通过本地 hook bridge 将生命周期事件投递到 Hermeship。先实现可安装的 hook 模板和本地 deterministic handler smoke，再实现安装、卸载和回滚路径。
 
-本阶段边界：只做本地 deterministic smoke，不实现 Hermes hook bridge install、install/uninstall lifecycle、release preflight、真实 live verification 或 Slack sink。默认测试不能依赖真实 Discord、真实 Hermes、外网状态或真实凭据。
+本阶段边界：只做本地 deterministic hook bridge 模板、安装器、handler fail-open smoke 和回滚测试；不实现 release preflight、真实 live verification、Slack sink、Hermes plugin/observer 或外网验证。默认测试不能依赖真实 Discord、真实 Hermes gateway、外网状态或真实凭据。
 
 ## 当前基线
 
 - 当前分支：`codex/milestone-1-cli`。
-- 最新功能阶段提交主题：`test: 增加 daemon 到 sink 的端到端覆盖`。
+- 最新功能阶段提交：`026e80c test: 增加 daemon 到 sink 的端到端覆盖`。
 - 启动时应先确认工作树状态：`git status --short --branch`。
 - 已完成 Milestone 0 到 Milestone 5.3。
 - 已实现 daemon `/health`、`/event`、`/api/hermes/hook`、bounded queue、privacy sanitizer、DaemonClient health/event/hook POST、`hermeship start/status/emit/send/hermes hook`。
-- 已实现 Router、DefaultRenderer、Dispatcher、Sink trait、FakeSink、daemon queue consumer，以及 Discord sink payload/request builder、bot channel/webhook 发送路径、allowed mentions、内容长度截断、非 2xx 诊断、429 retry-after 诊断和本地 fake HTTP 失败矩阵。
-- 当前 install、release、Hermes hook bridge install、真实 live verification、Slack sink 仍保持后续 milestone placeholder。
+- 已实现 Router、DefaultRenderer、Dispatcher、Sink trait、FakeSink、daemon queue consumer、Discord sink 和本地 daemon -> fake sink smoke。
+- 当前 Hermes hook bridge install、install/uninstall lifecycle、release preflight、真实 live verification、Slack sink 和 Hermes plugin/observer 仍未完成。
 
 ## 已完成
 
@@ -35,7 +35,7 @@
 - [x] Milestone 5.2：Sink 失败语义。
 - [x] Milestone 5.3：本地端到端 smoke。
 
-## 下一步待执行
+## 当前待执行
 
 - [ ] Milestone 6：Hermes Hook Bridge 安装。
 
@@ -48,78 +48,88 @@
 
 ## 执行计划
 
-- [x] 复习项目规则与状态入口。
+- [ ] 复习项目规则与状态入口。
   - 阅读：`tasks/lessons.md`
   - 阅读：`docs/development-status.md`
   - 阅读：`docs/plans/2026-06-15-hermeship-development-plan.md`
   - 阅读：`tasks/development-checklist.md`
   - 阅读：`tasks/todo.md`
 
-- [x] 确认当前分支、最新提交和未提交变更。
+- [ ] 确认当前分支、最新提交和未提交变更。
   - 命令：`git status --short --branch`
   - 命令：`git log -3 --oneline`
-  - 预期：当前分支为 `codex/milestone-1-cli`；最新功能阶段提交为 `ea9b789 feat: 完善 sink 失败处理`；启动时不要混入无关改动。
+  - 预期：当前分支为 `codex/milestone-1-cli`；最新功能阶段提交为 `026e80c test: 增加 daemon 到 sink 的端到端覆盖`；启动时不要混入无关改动。
 
-- [x] 检查现有代码边界。
-  - 查看：`src/daemon.rs`
+- [ ] 检查 Milestone 6 相关代码和参考文档。
+  - 查看：`src/cli.rs`
+  - 查看：`src/main.rs`
+  - 查看：`src/hermes.rs`
   - 查看：`src/client.rs`
-  - 查看：`src/router.rs`
-  - 查看：`src/render/mod.rs`
-  - 查看：`src/render/default.rs`
-  - 查看：`src/dispatch.rs`
-  - 查看：`src/sink/mod.rs`
-  - 查看：`src/sink/fake.rs`
+  - 查看：`src/daemon.rs`
+  - 查看：`src/config.rs`
   - 查看：`tests/fixtures/README.md`
-  - 完成标准：确认本阶段只做本地 smoke，不进入 hook bridge install、release preflight、真实 live verification 或 Slack sink。
+  - 查看：`docs/plans/2026-06-15-hermeship-development-plan.md` 的 Hermes Hook Bridge 章节。
+  - 完成标准：确认本阶段只做本地 hook bridge 安装和 fail-open handler smoke，不进入 release preflight、真实 live verification 或 Slack sink。
 
-- [x] 先写失败测试。
-  - 优先修改：`src/dispatch.rs` 或 `src/daemon.rs`
-  - 覆盖：启动 test daemon，POST `/api/hermes/hook`，事件进入 queue 后由 dispatcher route -> render -> fake sink。
-  - 覆盖：fake sink 收到渲染后的 Hermes 消息，包含安全 metadata 摘要。
-  - 覆盖：默认隐私保护仍生效，不泄漏完整 message、response、token、cookie、secret。
-  - 覆盖：本地 smoke 不依赖真实 Discord token、真实 Hermes gateway 或外网。
-  - 命令：`cargo test dispatch`
-  - 命令：`cargo test daemon`
-  - 预期：实现前测试失败于本地 smoke 闭环不足或缺少测试辅助。
+- [ ] 任务 6.1：先写 Hook 模板失败测试。
+  - 优先新增或修改：`src/hooks/mod.rs` 或合适的 hook 模板测试模块。
+  - 覆盖：`templates/hermes-hook/HOOK.yaml` 可解析并声明 gateway/session/agent 事件。
+  - 覆盖：`templates/hermes-hook/handler.py` 只使用 Python 标准库，不 import Hermeship package，不包含 secret。
+  - 覆盖：handler 通过 stdin 调用 `hermeship hermes hook --payload -`，并具备 timeout/fail-open 逻辑。
+  - 命令：`cargo test hooks`
+  - 预期：实现前失败于缺少 hook 模板或 hooks 模块。
 
-- [x] 实现 daemon + fake sink 本地 E2E smoke。
-  - 修改：`src/dispatch.rs` 或 `src/daemon.rs`
-  - 行为：使用随机本地端口、test queue、fake sink 和 deterministic fixture 完成 daemon ingress 到 fake sink 的最小闭环。
-  - 完成标准：测试不启动真实 daemon 固定端口，不访问真实 Discord/Hermes，不需要外网或凭据。
+- [ ] 任务 6.1：实现 Hook 模板。
+  - 新建：`templates/hermes-hook/HOOK.yaml`
+  - 新建：`templates/hermes-hook/handler.py`
+  - 行为：handler 读取 Hermes hook event/context，序列化 compact JSON，调用 `hermeship hermes hook --payload -`，捕获所有异常并 fail-open。
+  - 完成标准：`cargo test hooks` 通过；模板不依赖真实 Hermes gateway 或外网。
 
-- [x] 验证 `send` 本地路径。
-  - 可选实现方式：使用 test daemon/client 或 CLI command test 覆盖 `send --channel test --message "hello"` 到 `/event`。
-  - 完成标准：验证 send 构造 custom event 并进入 daemon client POST 路径；不做真实 Discord 投递。
-  - 记录：`cargo test daemon` 覆盖 `daemon_send_command_posts_custom_event_to_daemon`。
+- [ ] 任务 6.2：先写 Installer 失败测试。
+  - 新增：`src/hooks/mod.rs`
+  - 覆盖：首次安装、不覆盖、`--force` 覆盖、dry-run 不写磁盘、返回写入路径。
+  - 使用：临时 fake Hermes home。
+  - 命令：`cargo test hooks`
 
-- [x] 验证 `emit` 本地路径。
-  - 可选实现方式：使用 test daemon/client 或 CLI command test 覆盖 `emit hermes.agent.started --payload '{"session_id":"demo"}'` 到 `/event`。
-  - 完成标准：验证 emit 构造 Hermes event 并进入 daemon client POST 路径；不做真实 Discord 投递。
-  - 记录：`cargo test daemon` 覆盖 `daemon_emit_command_posts_event_to_daemon`。
+- [ ] 任务 6.2：实现 Installer 与 CLI。
+  - 实现：`install_hermes_hooks(home, force)`。
+  - CLI：`hermeship hermes install-hooks --home <path> --force`。
+  - 支持 dry-run：打印将写入的文件，不修改磁盘。
+  - 验证命令：`cargo test hooks`
+  - 验证命令：`cargo run -- hermes install-hooks --home /tmp/hermeship-test-home --force`
+  - 验证命令：`find /tmp/hermeship-test-home/hooks/hermeship -maxdepth 1 -type f -print`
 
-- [x] 运行任务 5.3 验证命令。
-  - `cargo test dispatch`
-  - `cargo test daemon`
+- [ ] 任务 6.3：先写 Bridge smoke 与回滚失败测试。
+  - 覆盖：fake `hermeship` binary 接收 stdin payload。
+  - 覆盖：binary missing、调用 timeout、子进程失败时 handler fail-open。
+  - 覆盖：安装 -> 卸载 -> 确认 hook 文件删除或 marker 删除。
+  - 命令：`cargo test hooks`
+
+- [ ] 任务 6.3：实现 uninstall/remove hooks。
+  - CLI：`hermeship hermes uninstall-hooks --home <path>`。
+  - 完成标准：可回滚 fake Hermes home，不误删非 Hermeship 文件。
+  - 验证命令：`cargo test hooks`
+  - 验证命令：`cargo run -- hermes uninstall-hooks --home /tmp/hermeship-test-home`
+
+- [ ] 运行 Milestone 6 验证命令。
+  - `cargo test hooks`
   - `cargo fmt --all -- --check`
   - `cargo clippy --all-targets -- -D warnings`
   - `cargo test`
 
-- [x] 更新开发状态文档。
+- [ ] 更新开发状态文档。
   - 更新：`tasks/development-checklist.md`
   - 更新：`tasks/todo.md`
   - 必要时更新：`docs/development-status.md`
-  - 完成标准：记录实现、验证、边界和剩余风险，并把下一入口切到 Milestone 6。
+  - 完成标准：记录实现、验证、边界和剩余风险，并把下一入口切到 Milestone 7 或 Milestone 6 未完成子任务。
 
-- [x] 提交任务 5.3。
-  - commit：`test: 增加 daemon 到 sink 的端到端覆盖`
-  - commit 信息使用中文，说明变更、验证和影响。
+- [ ] 提交 Milestone 6 对应任务。
+  - 任务 6.1 commit：`feat: 增加 Hermes hook bridge 模板`
+  - 任务 6.2 commit：`feat: 支持安装 Hermes gateway hooks`
+  - 任务 6.3 commit：`feat: 支持 Hermes hook 回滚`
+  - commit 信息使用中文正文，说明变更、验证和影响。
 
 ## Review
 
-- 已完成 Milestone 5.3 本地端到端 smoke：新增 daemon 内部 sink registry 注入 helper，生产 `daemon_router()` 仍使用真实 Discord sink registry；测试通过同一条内部 queue consumer 路径注入 `FakeSink`。
-- 已新增 deterministic smoke：随机端口 test daemon 接收 `POST /api/hermes/hook`，内部 dispatcher 执行 `Router -> DefaultRenderer -> FakeSink`，断言 fake sink 收到 `hermes.agent.started` 的 compact 渲染消息。
-- 已确认默认隐私保护生效：smoke payload 中的完整 message、response、token、cookie、secret 不出现在 fake sink 消息中。
-- 已通过现有本地 test daemon/client 覆盖 `send` 与 `emit` 到 `/event` 的本地路径；本阶段未实现 hook bridge install、release preflight、真实 live verification 或 Slack sink。
-- Red 证据：新增 smoke 初次运行 `cargo test daemon` 失败于缺少 `daemon_router_with_sink_registry`，随后实现内部 helper 后通过。
-- 验证通过：`cargo test dispatch`（12 passed）、`cargo test daemon`（19 lib-filtered tests + 4 bin-filtered tests passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（103 lib tests + 6 bin tests passed）。
-- 下一入口：Milestone 6 Hermes Hook Bridge 安装。
+- 待 Milestone 6 实施、验证和提交后填写。
+- 上一阶段 Milestone 5.3 已完成并提交：`026e80c test: 增加 daemon 到 sink 的端到端覆盖`。
