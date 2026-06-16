@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-16 Milestone 4.3 完成
+最后更新：2026-06-16 Milestone 4.3 已完成，Milestone 5.1 待执行
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -12,8 +12,8 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 当前最新功能阶段：Milestone 4.3 `feat: 实现事件 dispatcher 与 fake sink`。
-- 当前工作树在本次状态更新前为干净状态；如后续继续开发，仍需先运行 `git status --short --branch` 确认。
+- 当前最新功能阶段提交：`a336e01 feat: 实现事件 dispatcher 与 fake sink`。
+- 下次继续开发前必须先运行 `git status --short --branch` 确认工作树，只在预期文档/代码变更上继续。
 - 当前下一步：继续 Milestone 5，执行 Discord Sink 与基础 Live Path。
 
 ## 已完成
@@ -175,6 +175,7 @@
 - 原计划命令 `cargo test dispatch sink` 是无效 Cargo 语法，执行时返回 `unexpected argument 'sink'`；实际验证拆分为 `cargo test dispatch` 与 `cargo test sink`。
 - 已运行验证：`cargo test dispatch`（8 passed）、`cargo test sink`（8 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（87 lib tests + 6 bin tests passed）。
 - 已确认本阶段没有实现 Discord sink、Hermes hook bridge install、install/uninstall lifecycle 或 release preflight。
+- 已提交：`a336e01 feat: 实现事件 dispatcher 与 fake sink`。
 
 ## 未完成
 
@@ -235,7 +236,7 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新功能阶段：Milestone 4.3 feat: 实现事件 dispatcher 与 fake sink。
+- 最新功能阶段提交：a336e01 feat: 实现事件 dispatcher 与 fake sink。
 - Milestone 0 已完成并提交：af57c49 docs: 明确 hermeship 完整项目方向。
 - Milestone 1.1 已完成并提交：d03170e chore: 搭建 Hermeship Rust CLI 骨架。
 - Milestone 1.2 已完成并提交：50723af feat: 实现 hermeship 配置模型与 config CLI。
@@ -248,7 +249,7 @@
 - Milestone 3.3 已完成并提交：7b10816 feat: 增加 Hermes hook ingress。
 - Milestone 4.1 已完成并提交：864e7f4 feat: 实现多投递路由。
 - Milestone 4.2 已完成并提交：d4303ae feat: 增加 Hermes 默认渲染器。
-- Milestone 4.3 已完成：feat: 实现事件 dispatcher 与 fake sink。
+- Milestone 4.3 已完成并提交：a336e01 feat: 实现事件 dispatcher 与 fake sink。
 - 已实现 src/events.rs：IncomingEvent、RoutingMetadata、字段别名反序列化、空/null payload 归一，以及 MessageFormat 的单一复用/重导出策略。
 - 已实现 src/event/：EventEnvelope、EventBody、EventMetadata、EventPriority、Hermes canonical mapping、IncomingEvent -> EventEnvelope conversion。
 - 已实现 src/privacy.rs：sanitize_payload、redact_value、excerpt_policy、敏感 key 递归脱敏、正文默认禁发、安全摘要和 opt-in 摘录。

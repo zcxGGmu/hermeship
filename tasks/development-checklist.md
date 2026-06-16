@@ -375,7 +375,7 @@
   - 使用：`tests/fixtures/hermes/agent_start.json` + fake sink。
   - 断言：daemon 入队事件经过 route -> render -> fake sink 后保存 delivery，且 message 不泄漏敏感字段。
 - [x] 验证任务 4.3。
-  - 命令：`cargo test dispatch sink`
+  - 记录：原计划命令 `cargo test dispatch sink` 为无效 Cargo 语法，实际验证已拆分执行。
   - 命令：`cargo test dispatch`
   - 命令：`cargo test sink`
   - 命令：`cargo fmt --all -- --check`
@@ -420,7 +420,8 @@
 - [ ] 测试多个 delivery 其中一个失败。
   - 预期：其他 delivery 继续。
 - [ ] 验证任务 5.2。
-  - 命令：`cargo test sink dispatch`
+  - 命令：`cargo test sink`
+  - 命令：`cargo test dispatch`
 - [ ] 提交任务 5.2。
   - commit：`feat: 完善 sink 失败处理`
 
@@ -610,7 +611,8 @@
   - CLI：`hermeship memory init/status`
 - [ ] 编写测试。
 - [ ] 验证任务 8.4。
-  - 命令：`cargo test cron memory`
+  - 命令：`cargo test cron`
+  - 命令：`cargo test memory`
 - [ ] 提交任务 8.4。
   - commit：`feat: 增加 cron 与 memory scaffold`
 
@@ -711,6 +713,14 @@
 
 最新记录放在最上方。
 
+### 2026-06-16 - Milestone 5.1 开发入口交接
+
+- [x] 已确认最新功能阶段为 `a336e01 feat: 实现事件 dispatcher 与 fake sink`，Milestone 0 到 Milestone 4.3 均已完成并提交。
+- [x] 已将 `docs/development-status.md` 更新为 Milestone 4.3 已完成、Milestone 5.1 待执行的状态入口。
+- [x] 已将 `tasks/todo.md` 更新为 Milestone 5.1 执行计划，当前待执行任务为 Discord sink payload 与配置接入。
+- [x] 已明确未完成范围：Discord sink、Hermes hook bridge install、install/uninstall lifecycle、release preflight、live verification、Slack sink 和 Hermes plugin/observer。
+- [x] 下次开发应从 Milestone 5 的任务 5.1 继续，先写失败测试，再实现 Discord sink，并使用本地 deterministic fixture 或 fake HTTP/request builder 验证。
+
 ### 2026-06-16 - Milestone 4.3 Dispatcher 与 fake sink
 
 - [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
@@ -724,7 +734,7 @@
 - [x] 已覆盖测试：多投递、单 sink failure 不阻断后续 delivery、无 route、render failure、missing sink、队列消费、daemon ingress -> dispatcher -> fake sink E2E 和隐私不泄漏。
 - [x] 已运行验证：`cargo test dispatch`（8 passed）、`cargo test sink`（8 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（87 lib tests + 6 bin tests passed）均通过。
 - [x] 已确认本阶段没有实现 Discord sink、Hermes hook bridge install、install/uninstall lifecycle 或 release preflight。
-- [x] 提交状态：随本阶段提交一并完成。
+- [x] 提交状态：已提交 `a336e01 feat: 实现事件 dispatcher 与 fake sink`。
 
 ### 2026-06-16 - Milestone 4.2 Renderer
 
