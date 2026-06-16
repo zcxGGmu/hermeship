@@ -9,7 +9,7 @@
 ## 当前基线
 
 - 当前分支：`codex/milestone-1-cli`。
-- 最新功能阶段提交：Milestone 6 Hermes Hook Bridge 安装将在本次阶段提交中归档。
+- 最新功能阶段提交：`f6f98a3 feat: 支持 Hermes hook bridge 安装`。
 - 启动时应先确认工作树状态：`git status --short --branch`。
 - 已完成 Milestone 0 到 Milestone 6。
 - 已实现 daemon `/health`、`/event`、`/api/hermes/hook`、bounded queue、privacy sanitizer、DaemonClient health/event/hook POST、`hermeship start/status/emit/send/hermes hook`。
@@ -58,7 +58,7 @@
 - [x] 确认当前分支、最新提交和未提交变更。
   - 命令：`git status --short --branch`
   - 命令：`git log -3 --oneline`
-  - 预期：当前分支为 `codex/milestone-1-cli`；最新功能阶段提交为 `026e80c test: 增加 daemon 到 sink 的端到端覆盖`；启动时不要混入无关改动。
+  - 执行记录：本阶段启动时当前分支为 `codex/milestone-1-cli`，上一功能阶段提交为 `026e80c test: 增加 daemon 到 sink 的端到端覆盖`；Milestone 6 完成后最新功能阶段提交为 `f6f98a3 feat: 支持 Hermes hook bridge 安装`。
 
 - [x] 检查 Milestone 6 相关代码和参考文档。
   - 查看：`src/cli.rs`
@@ -121,7 +121,7 @@
   - 更新：`tasks/development-checklist.md`
   - 更新：`tasks/todo.md`
   - 必要时更新：`docs/development-status.md`
-  - 完成标准：记录实现、验证、边界和剩余风险，并把下一入口切到 Milestone 7 或 Milestone 6 未完成子任务。
+  - 完成标准：记录实现、验证、边界和剩余风险，并把下一入口切到 Milestone 7。
 
 - [x] 提交 Milestone 6 对应任务。
   - 本阶段统一提交：`feat: 支持 Hermes hook bridge 安装`
@@ -130,6 +130,7 @@
 ## Review
 
 - Milestone 6 已实现本地 deterministic Hermes hook bridge 安装：新增 `templates/hermes-hook/HOOK.yaml` 与 `templates/hermes-hook/handler.py`。
+- Milestone 6 已提交：`f6f98a3 feat: 支持 Hermes hook bridge 安装`。
 - `HOOK.yaml` 声明默认启用的 Hermes gateway 生命周期事件：`gateway:startup`、`session:start`、`session:end`、`session:reset`、`agent:start`、`agent:end`；`agent:step` 与 `command:*` 当前不默认安装，避免绕过默认关闭的 Hermes 配置开关。
 - `handler.py` 只使用 Python 标准库，暴露 `handle(event_type, context)`，通过 stdin 调用 `hermeship hermes hook --payload -`，并对 missing binary、子进程失败和 timeout fail-open；安装时会把当前 hermeship binary 路径渲染进 handler，仍支持 `HERMESHIP_BIN` 覆盖。
 - 新增 `src/hooks.rs`，支持 fake Hermes home 安装、不覆盖、`--force` 覆盖、dry-run、卸载回滚、`.hermeship-managed.json` 安全卸载 marker 和返回路径报告。
@@ -138,5 +139,5 @@
 - 已完成本地 CLI 验证：`cargo run -- hermes install-hooks --home /tmp/hermeship-test-home --force` 写入 hook 文件；`find /tmp/hermeship-test-home/hooks/hermeship -maxdepth 1 -type f -print` 显示 `HOOK.yaml` 与 `handler.py`；`cargo run -- hermes uninstall-hooks --home /tmp/hermeship-test-home` 删除 hook 目录。
 - 已完成验证：`cargo test hooks`（19 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（120 lib tests + 6 bin tests passed）。
 - 本阶段没有实现 release preflight、真实 live verification、Slack sink 或 Hermes plugin/observer；这些仍在后续 Milestone。
-- 下一入口：从 `tasks/development-checklist.md` 的 Milestone 7 安装、生命周期与运维 CLI 继续。
+- 下一入口：从 `tasks/development-checklist.md` 的 Milestone 7 安装、生命周期与运维 CLI 继续；Milestone 7 到 Milestone 10 未完成。
 - 上一阶段 Milestone 5.3 已完成并提交：`026e80c test: 增加 daemon 到 sink 的端到端覆盖`。

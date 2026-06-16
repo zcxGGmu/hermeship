@@ -12,9 +12,25 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 当前最新功能阶段：Milestone 6 Hermes Hook Bridge 安装。
+- 当前最新功能阶段提交：`f6f98a3 feat: 支持 Hermes hook bridge 安装`。
 - 下次继续开发前必须先运行 `git status --short --branch` 确认工作树，只在预期文档/代码变更上继续。
 - 当前下一步：继续 Milestone 7，执行安装、生命周期与运维 CLI。
+
+## 阶段状态总览
+
+| 阶段 | 状态 | 备注 |
+| --- | --- | --- |
+| Milestone 0 | 已完成并提交 | 契约与仓库基线 |
+| Milestone 1.1 - 1.3 | 已完成并提交 | Rust 项目骨架、配置模型、质量门禁 |
+| Milestone 2.1 - 2.3 | 已完成并提交 | 事件模型、typed envelope、隐私清洗 |
+| Milestone 3.1 - 3.3 | 已完成并提交 | daemon health、event ingress、Hermes hook ingress |
+| Milestone 4.1 - 4.3 | 已完成并提交 | router、renderer、dispatcher 与 fake sink |
+| Milestone 5.1 - 5.3 | 已完成并提交 | Discord sink、sink 失败语义、本地端到端 smoke |
+| Milestone 6 | 已完成并提交 | `f6f98a3 feat: 支持 Hermes hook bridge 安装` |
+| Milestone 7 | 未完成 | 下一入口：安装、生命周期与运维 CLI |
+| Milestone 8 | 未完成 | clawhip 功能 parity 扩展 |
+| Milestone 9 | 未完成 | 文档与 live verification |
+| Milestone 10 | 未完成 | Hermes plugin / observer 研究 |
 
 ## 已完成
 
@@ -225,6 +241,7 @@
 - 已完成本地 deterministic CLI 验证：安装到 `/tmp/hermeship-test-home`，确认 `HOOK.yaml` 与 `handler.py` 写入，再卸载删除 Hermeship hook 目录。
 - 已运行验证：`cargo test hooks`（19 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（120 lib tests + 6 bin tests passed）。
 - 本阶段没有实现 release preflight、真实 live verification、Slack sink、Hermes plugin/observer 或通用服务 lifecycle。
+- 已提交：`f6f98a3 feat: 支持 Hermes hook bridge 安装`。
 
 ## 未完成
 
@@ -284,7 +301,7 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新功能阶段：Milestone 6 Hermes Hook Bridge 安装（见最新提交）。
+- 最新功能阶段提交：f6f98a3 feat: 支持 Hermes hook bridge 安装。
 - Milestone 0 已完成并提交：af57c49 docs: 明确 hermeship 完整项目方向。
 - Milestone 1.1 已完成并提交：d03170e chore: 搭建 Hermeship Rust CLI 骨架。
 - Milestone 1.2 已完成并提交：50723af feat: 实现 hermeship 配置模型与 config CLI。
@@ -301,7 +318,9 @@
 - Milestone 5.1 已完成并提交：0cd6e4e feat: 增加 Discord sink。
 - Milestone 5.2 已完成并提交：ea9b789 feat: 完善 sink 失败处理。
 - Milestone 5.3 已完成并提交：026e80c test: 增加 daemon 到 sink 的端到端覆盖。
-- Milestone 6 已完成：Hermes Hook Bridge 安装、handler fail-open smoke 和 hook 卸载回滚。
+- Milestone 6 已完成并提交：f6f98a3 feat: 支持 Hermes hook bridge 安装。
+- Milestone 6 范围：Hermes Hook Bridge 安装、handler fail-open smoke 和 hook 卸载回滚。
+- Milestone 7 到 Milestone 10 未完成。
 - 已实现 src/events.rs：IncomingEvent、RoutingMetadata、字段别名反序列化、空/null payload 归一，以及 MessageFormat 的单一复用/重导出策略。
 - 已实现 src/event/：EventEnvelope、EventBody、EventMetadata、EventPriority、Hermes canonical mapping、IncomingEvent -> EventEnvelope conversion。
 - 已实现 src/privacy.rs：sanitize_payload、redact_value、excerpt_policy、敏感 key 递归脱敏、正文默认禁发、安全摘要和 opt-in 摘录。

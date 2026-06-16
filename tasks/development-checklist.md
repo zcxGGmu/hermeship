@@ -726,6 +726,13 @@
 
 最新记录放在最上方。
 
+### 2026-06-16 - Milestone 6 完成后交接更新
+
+- [x] 已确认当前分支为 `codex/milestone-1-cli`，工作树在更新前干净，最新提交为 `f6f98a3 feat: 支持 Hermes hook bridge 安装`。
+- [x] 已更新 `docs/development-status.md`，明确 Milestone 0 到 Milestone 6 已完成并提交，Milestone 7 到 Milestone 10 未完成。
+- [x] 已更新 `tasks/todo.md`，将最新功能阶段提交改为 `f6f98a3 feat: 支持 Hermes hook bridge 安装`，并明确下一入口为 Milestone 7 安装、生命周期与运维 CLI。
+- [x] 本次只做文档交接更新，不进入 Milestone 7 实现，不修改功能代码，不执行 release preflight、真实 live verification、Slack sink 或 Hermes plugin/observer。
+
 ### 2026-06-16 - Milestone 6 Hermes Hook Bridge 安装
 
 - [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
@@ -739,6 +746,7 @@
 - [x] 已完成本地 deterministic CLI 验证：`cargo run -- hermes install-hooks --home /tmp/hermeship-test-home --force` 写入 hook 文件；`find /tmp/hermeship-test-home/hooks/hermeship -maxdepth 1 -type f -print` 显示 `HOOK.yaml` 与 `handler.py`；`cargo run -- hermes uninstall-hooks --home /tmp/hermeship-test-home` 删除 Hermeship hook 目录。
 - [x] 已运行验证：`cargo test hooks`（19 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（120 lib tests + 6 bin tests passed）均通过。
 - [x] 已确认本阶段没有实现 release preflight、真实 live verification、Slack sink 或 Hermes plugin/observer；默认测试只使用 fake Hermes home、fake hermeship binary、本地 handler 和本地 CLI。
+- [x] 提交状态：已提交 `f6f98a3 feat: 支持 Hermes hook bridge 安装`。
 
 ### 2026-06-16 - Milestone 5.3 本地端到端 smoke
 
