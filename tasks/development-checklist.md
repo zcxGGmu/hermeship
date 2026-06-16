@@ -289,7 +289,7 @@
   - 命令：`cargo test event`
   - 命令：`cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'`
 - [x] 提交任务 3.2。
-  - commit：`feat: 增加 daemon event ingress`
+  - commit：`0b63e49 feat: 增加 daemon event ingress`
 
 ### 任务 3.3：Hermes hook ingress
 
@@ -717,7 +717,7 @@
 - [x] 已确认本阶段没有实现 Hermes hook ingress、router、renderer、dispatcher、sink、hook bridge、install 或 release preflight。
 - [x] 已运行验证：`cargo test daemon`（11 passed + bin 2 passed）、`cargo test event`（21 passed + bin 2 passed）、临时 daemon 下 `cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'` 返回 queued 摘要、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（52 passed + bin 2 passed）均通过。
 - [x] 剩余风险：本阶段 daemon 只负责入队，不启动 consumer；队列满时 `/event` 返回 503，dispatcher/consumer 会在 Milestone 4.3 实现。
-- [x] 提交状态：随本阶段提交 `feat: 增加 daemon event ingress` 一并完成。
+- [x] 提交状态：随本阶段提交 `0b63e49 feat: 增加 daemon event ingress` 一并完成。
 
 ### 2026-06-16 - Milestone 3.2 入口交接更新
 
