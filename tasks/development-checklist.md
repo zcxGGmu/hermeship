@@ -308,7 +308,7 @@
   - 命令：`cargo clippy --all-targets -- -D warnings`
   - 命令：`cargo test`
 - [x] 提交任务 3.3。
-  - commit：`feat: 增加 Hermes hook ingress`
+  - commit：`7b10816 feat: 增加 Hermes hook ingress`
 
 ## Milestone 4：Router、Renderer、Dispatcher
 
@@ -720,7 +720,7 @@
 - [x] 已确认本阶段没有实现 router、renderer、dispatcher、sink、hook bridge install、install/uninstall lifecycle 或 release preflight。
 - [x] 已运行验证：`cargo test hermes`（14 lib tests + 3 bin tests passed）、临时 daemon 下 `printf '%s' '{"event":"agent:start","context":{"session_id":"demo"}}' | cargo run -- hermes hook --payload -` 返回 queued 摘要、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（61 lib tests + 5 bin tests passed）均通过。
 - [x] 剩余风险：daemon 队列仍只入队不消费；队列满时 hook ingress 会与 `/event` 一样返回 503，dispatcher/consumer 会在 Milestone 4.3 实现。
-- [x] 提交状态：随本阶段提交 `feat: 增加 Hermes hook ingress` 一并完成。
+- [x] 提交状态：随本阶段提交 `7b10816 feat: 增加 Hermes hook ingress` 一并完成。
 
 ### 2026-06-16 - Milestone 3.2 Event ingress 与队列
 
