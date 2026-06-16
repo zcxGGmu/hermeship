@@ -186,7 +186,7 @@ pub struct HermesHookArgs {
     /// Source provider for the hook payload.
     #[arg(long, default_value = "gateway")]
     pub provider: String,
-    /// Hook payload JSON. Use `-` in later milestones to read stdin.
+    /// Hook payload JSON. Use `-` to read stdin.
     #[arg(long)]
     pub payload: String,
 }

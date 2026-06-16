@@ -16,6 +16,7 @@ use tokio::sync::{Mutex, mpsc};
 use crate::config::AppConfig;
 use crate::event::{EventEnvelope, compat::from_incoming_event};
 use crate::events::IncomingEvent;
+use crate::hermes::HermesHookEnvelope;
 use crate::privacy::sanitize_payload;
 
 pub const DEFAULT_QUEUE_CAPACITY: usize = 1024;
@@ -201,6 +202,7 @@ pub fn daemon_router(config: AppConfig, version: impl Into<String>) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/event", post(event))
+        .route("/api/hermes/hook", post(hermes_hook))
         .with_state(state)
 }
 
@@ -218,6 +220,7 @@ pub fn daemon_router_with_queue(
     Router::new()
         .route("/health", get(health))
         .route("/event", post(event))
+        .route("/api/hermes/hook", post(hermes_hook))
         .with_state(state)
 }
 
@@ -231,7 +234,24 @@ async fn health(State(state): State<DaemonState>) -> Json<HealthResponse> {
 
 async fn event(
     State(state): State<DaemonState>,
-    Json(mut incoming): Json<IncomingEvent>,
+    Json(incoming): Json<IncomingEvent>,
+) -> std::result::Result<(StatusCode, Json<EventAcceptedResponse>), DaemonApiError> {
+    enqueue_incoming_event(&state, incoming)
+}
+
+async fn hermes_hook(
+    State(state): State<DaemonState>,
+    Json(hook): Json<HermesHookEnvelope>,
+) -> std::result::Result<(StatusCode, Json<EventAcceptedResponse>), DaemonApiError> {
+    let incoming = hook
+        .into_incoming_event()
+        .map_err(|error| DaemonApiError::bad_request(error.to_string()))?;
+    enqueue_incoming_event(&state, incoming)
+}
+
+fn enqueue_incoming_event(
+    state: &DaemonState,
+    mut incoming: IncomingEvent,
 ) -> std::result::Result<(StatusCode, Json<EventAcceptedResponse>), DaemonApiError> {
     if incoming.kind.trim().is_empty() {
         return Err(DaemonApiError::bad_request(
@@ -559,6 +579,134 @@ mod tests {
         assert_eq!(health.queue.status, "full");
         assert_eq!(health.queue.pending, 1);
         assert_eq!(health.queue.capacity, 1);
+    }
+
+    #[tokio::test]
+    async fn daemon_hermes_hook_endpoint_accepts_hook_and_enqueues_envelope() {
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config, queue_tx).await;
+        let response = reqwest::Client::new()
+            .post(format!("{base_url}/api/hermes/hook"))
+            .json(&json!({
+                "event": "agent:start",
+                "context": {
+                    "platform": "telegram",
+                    "session_id": "synthetic-session-001",
+                    "agent_name": "demo-agent"
+                }
+            }))
+            .send()
+            .await
+            .unwrap();
+
+        let status = response.status();
+        let accepted = response.json::<EventAcceptedResponse>().await.unwrap();
+
+        assert_eq!(status, StatusCode::ACCEPTED);
+        assert!(accepted.queued);
+        assert_eq!(accepted.canonical_kind, "hermes.agent.started");
+        assert_eq!(accepted.queue.pending, 1);
+
+        let envelope = queue_rx.try_recv().unwrap();
+        server.abort();
+
+        assert_eq!(envelope.id.to_string(), accepted.id);
+        assert_eq!(envelope.canonical_kind(), "hermes.agent.started");
+        assert_eq!(envelope.metadata.provider.as_deref(), Some("hermes"));
+        assert_eq!(envelope.metadata.source.as_deref(), Some("gateway"));
+        assert_eq!(envelope.metadata.platform.as_deref(), Some("telegram"));
+        assert_eq!(
+            envelope.metadata.session_id.as_deref(),
+            Some("synthetic-session-001")
+        );
+        assert!(matches!(envelope.body, EventBody::HermesAgentStarted(_)));
+    }
+
+    #[tokio::test]
+    async fn daemon_hermes_hook_endpoint_sanitizes_payload_before_enqueuing() {
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config, queue_tx).await;
+
+        let accepted = reqwest::Client::new()
+            .post(format!("{base_url}/api/hermes/hook"))
+            .json(&json!({
+                "event": "agent:end",
+                "context": {
+                    "session_id": "synthetic-session-privacy",
+                    "agent_name": "demo-agent",
+                    "success": false,
+                    "message": "synthetic full message should not leak",
+                    "response": "synthetic full response should not leak",
+                    "token": "synthetic-token-value",
+                    "cookie": "synthetic-cookie-value",
+                    "secret": "synthetic-secret-value"
+                }
+            }))
+            .send()
+            .await
+            .unwrap()
+            .json::<EventAcceptedResponse>()
+            .await
+            .unwrap();
+
+        let envelope = queue_rx.try_recv().unwrap();
+        server.abort();
+
+        assert_eq!(accepted.canonical_kind, "hermes.agent.failed");
+        match &envelope.body {
+            EventBody::HermesAgentFailed(body) => {
+                assert_eq!(body.message_chars, Some(38));
+                assert_eq!(body.response_chars, Some(39));
+                assert_eq!(body.has_message, Some(true));
+                assert_eq!(body.has_response, Some(true));
+                assert_eq!(body.success, Some(false));
+            }
+            other => panic!("expected HermesAgentFailed event, got {other:?}"),
+        }
+
+        let rendered = format!("{envelope:?}");
+        for forbidden in [
+            "synthetic full message should not leak",
+            "synthetic full response should not leak",
+            "synthetic-token-value",
+            "synthetic-cookie-value",
+            "synthetic-secret-value",
+        ] {
+            assert!(!rendered.contains(forbidden), "leaked `{forbidden}`");
+        }
+    }
+
+    #[tokio::test]
+    async fn daemon_hermes_hook_endpoint_returns_4xx_for_missing_event_without_enqueuing() {
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config, queue_tx).await;
+        let response = reqwest::Client::new()
+            .post(format!("{base_url}/api/hermes/hook"))
+            .json(&json!({
+                "context": {
+                    "session_id": "synthetic-session-missing-event"
+                }
+            }))
+            .send()
+            .await
+            .unwrap();
+
+        let status = response.status();
+        let body = response.text().await.unwrap();
+        server.abort();
+
+        assert!(
+            status.is_client_error(),
+            "expected 4xx, got {status}: {body}"
+        );
+        assert!(
+            body.contains("Hermes hook event must not be empty") || body.contains("event"),
+            "unexpected error body: {body}"
+        );
+        assert!(queue_rx.try_recv().is_err());
     }
 
     async fn spawn_test_daemon(

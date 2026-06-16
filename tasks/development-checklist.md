@@ -293,18 +293,21 @@
 
 ### 任务 3.3：Hermes hook ingress
 
-- [ ] 实现 `/api/hermes/hook`。
+- [x] 实现 `/api/hermes/hook`。
   - 接收：`provider`、`source`、`event`、`context`。
   - 输出：标准 `IncomingEvent`。
-- [ ] 实现 `hermeship hermes hook --payload`。
+- [x] 实现 `hermeship hermes hook --payload`。
   - 支持 stdin `--payload -`。
-- [ ] 编写 Hermes hook normalization 测试。
+- [x] 编写 Hermes hook normalization 测试。
   - 覆盖：`gateway:startup`、`session:start`、`session:end`、`session:reset`、`agent:start`、`agent:end`。
   - 要求：复用 `tests/fixtures/hermes/`，并断言隐私清洗发生在入队前。
-- [ ] 验证任务 3.3。
+- [x] 验证任务 3.3。
   - 命令：`cargo test hermes`
   - 命令：`printf '%s' '{"event":"agent:start","context":{"session_id":"demo"}}' | cargo run -- hermes hook --payload -`
-- [ ] 提交任务 3.3。
+  - 命令：`cargo fmt --all -- --check`
+  - 命令：`cargo clippy --all-targets -- -D warnings`
+  - 命令：`cargo test`
+- [x] 提交任务 3.3。
   - commit：`feat: 增加 Hermes hook ingress`
 
 ## Milestone 4：Router、Renderer、Dispatcher
@@ -702,6 +705,22 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-16 - Milestone 3.3 Hermes hook ingress
+
+- [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
+- [x] 已确认启动时工作树干净：`git status --short --branch` 只有分支行；最近提交为 `12713ed`、`0b63e49`、`dbe6597`。
+- [x] 已阅读 `src/cli.rs`、`src/main.rs`、`src/config.rs`、`src/client.rs`、`src/daemon.rs`、`src/events.rs`、`src/event/mod.rs`、`src/event/body.rs`、`src/event/compat.rs`、`src/privacy.rs` 与 `tests/fixtures/README.md`，确认本阶段只实现 Hermes hook ingress。
+- [x] 已先写失败测试并运行 Red：`cargo test hermes` 在实现前失败于缺少 `HermesHookEnvelope`、`DaemonClient::hermes_hook_url()` 与 `DaemonClient::post_hermes_hook()`。
+- [x] 已新增 `src/hermes.rs`，实现 `HermesHookEnvelope` 与 normalization：接收 `provider`、`source`、`event`/`event_type`、`context`，默认 provider/source 为 `hermes`/`gateway`，输出标准 `IncomingEvent`。
+- [x] 已实现 daemon `POST /api/hermes/hook`，并抽出共享入队函数复用 `/event` 的 privacy sanitizer、typed conversion 和 bounded queue `try_send` 管道。
+- [x] 已实现 `DaemonClient::hermes_hook_url()` 与 `post_hermes_hook()`，错误信息包含 `/api/hermes/hook`。
+- [x] 已将 `hermeship hermes hook --payload` 从 placeholder 替换为 daemon client POST 路径，支持 inline JSON 与 `--payload -` stdin，输出 queued 摘要；`hermes install-hooks`、install、release、explain 仍保持后续 milestone placeholder。
+- [x] 已覆盖测试：hook envelope 默认值与 `event_type` alias、gateway/session/agent mapping、`agent:end` failure mapping、daemon hook 入队、入队前隐私清洗、缺失 event 4xx、daemon unavailable、CLI stdin 读取和 hook client 投递。
+- [x] 已确认本阶段没有实现 router、renderer、dispatcher、sink、hook bridge install、install/uninstall lifecycle 或 release preflight。
+- [x] 已运行验证：`cargo test hermes`（14 lib tests + 3 bin tests passed）、临时 daemon 下 `printf '%s' '{"event":"agent:start","context":{"session_id":"demo"}}' | cargo run -- hermes hook --payload -` 返回 queued 摘要、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（61 lib tests + 5 bin tests passed）均通过。
+- [x] 剩余风险：daemon 队列仍只入队不消费；队列满时 hook ingress 会与 `/event` 一样返回 503，dispatcher/consumer 会在 Milestone 4.3 实现。
+- [x] 提交状态：随本阶段提交 `feat: 增加 Hermes hook ingress` 一并完成。
 
 ### 2026-06-16 - Milestone 3.2 Event ingress 与队列
 

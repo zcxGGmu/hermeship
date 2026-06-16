@@ -1,10 +1,13 @@
-use anyhow::Result;
+use std::io::{self, Read};
+
+use anyhow::{Context, Result};
 use clap::Parser;
 use hermeship::cli::{Cli, Commands, ConfigCommand, HermesCommands, ReleaseCommands};
 use hermeship::client::DaemonClient;
 use hermeship::config::AppConfig;
 use hermeship::daemon::{EventAcceptedResponse, HealthResponse};
 use hermeship::events::IncomingEvent;
+use hermeship::hermes::HermesHookEnvelope;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -67,7 +70,16 @@ async fn real_main() -> Result<()> {
             }
         },
         Commands::Hermes { command } => match command {
-            HermesCommands::Hook(args) => print_placeholder("hermes hook", args.payload),
+            HermesCommands::Hook(args) => {
+                let config = AppConfig::load_or_default(&config_path)?;
+                let payload = read_payload_arg(&args.payload, io::stdin().lock())?;
+                let hook = serde_json::from_str::<HermesHookEnvelope>(&payload)
+                    .with_context(|| "hermes hook --payload must be valid JSON")?
+                    .with_source_default(args.provider);
+                let accepted = submit_hermes_hook(&config, &hook).await?;
+                print_event_accepted("hermes hook", &accepted);
+                Ok(())
+            }
             HermesCommands::InstallHooks(args) => {
                 print_placeholder("hermes install-hooks", (args.scope, args.force))
             }
@@ -90,6 +102,30 @@ fn print_placeholder(name: &str, _args: impl std::fmt::Debug) -> Result<()> {
 async fn submit_event(config: &AppConfig, event: IncomingEvent) -> Result<EventAcceptedResponse> {
     let client = DaemonClient::from_config(&config.daemon);
     client.post_event(&event).await
+}
+
+async fn submit_hermes_hook(
+    config: &AppConfig,
+    hook: &HermesHookEnvelope,
+) -> Result<EventAcceptedResponse> {
+    let client = DaemonClient::from_config(&config.daemon);
+    client.post_hermes_hook(hook).await
+}
+
+fn read_payload_arg(payload: &str, mut stdin: impl Read) -> Result<String> {
+    if payload != "-" {
+        return Ok(payload.to_string());
+    }
+
+    let mut buffer = String::new();
+    stdin
+        .read_to_string(&mut buffer)
+        .context("failed to read hermes hook payload from stdin")?;
+    let payload = buffer.trim();
+    if payload.is_empty() {
+        anyhow::bail!("hermes hook --payload - received empty stdin");
+    }
+    Ok(payload.to_string())
 }
 
 fn print_event_accepted(name: &str, accepted: &EventAcceptedResponse) {
@@ -127,8 +163,9 @@ mod tests {
     use hermeship::daemon::daemon_router_with_queue;
     use hermeship::event::{EventBody, EventEnvelope};
     use hermeship::events::IncomingEvent;
+    use hermeship::hermes::HermesHookEnvelope;
 
-    use super::{VERSION, submit_event};
+    use super::{VERSION, read_payload_arg, submit_event, submit_hermes_hook};
 
     #[tokio::test]
     async fn daemon_emit_command_posts_event_to_daemon() {
@@ -185,6 +222,60 @@ mod tests {
             }
             other => panic!("expected custom event, got {other:?}"),
         }
+    }
+
+    #[tokio::test]
+    async fn daemon_hermes_hook_command_posts_hook_to_daemon() {
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config.clone(), queue_tx).await;
+        let mut config = config;
+        config.daemon.base_url = Some(base_url);
+        let hook: HermesHookEnvelope = serde_json::from_value(json!({
+            "event": "agent:start",
+            "context": {
+                "session_id": "demo"
+            }
+        }))
+        .unwrap();
+
+        let accepted = submit_hermes_hook(&config, &hook).await.unwrap();
+
+        assert!(accepted.queued);
+        assert_eq!(accepted.canonical_kind, "hermes.agent.started");
+        assert_eq!(accepted.queue.pending, 1);
+
+        let envelope = queue_rx.try_recv().unwrap();
+        server.abort();
+
+        assert_eq!(envelope.canonical_kind(), "hermes.agent.started");
+        assert_eq!(envelope.metadata.provider.as_deref(), Some("hermes"));
+        assert_eq!(envelope.metadata.source.as_deref(), Some("gateway"));
+    }
+
+    #[test]
+    fn hermes_hook_payload_dash_reads_from_stdin() {
+        let payload = read_payload_arg(
+            "-",
+            r#"{"event":"agent:start","context":{"session_id":"demo"}}"#.as_bytes(),
+        )
+        .unwrap();
+
+        assert_eq!(
+            payload,
+            r#"{"event":"agent:start","context":{"session_id":"demo"}}"#
+        );
+    }
+
+    #[test]
+    fn hermes_hook_payload_inline_json_is_used_directly() {
+        let payload = read_payload_arg(
+            r#"{"event":"agent:start"}"#,
+            r#"{"event":"ignored"}"#.as_bytes(),
+        )
+        .unwrap();
+
+        assert_eq!(payload, r#"{"event":"agent:start"}"#);
     }
 
     async fn spawn_test_daemon(

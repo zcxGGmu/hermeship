@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-16 Milestone 3.2 完成
+最后更新：2026-06-16 Milestone 3.3 完成
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -12,9 +12,9 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 当前最新功能阶段提交：`0b63e49 feat: 增加 daemon event ingress`。
+- 当前最新功能阶段提交：`feat: 增加 Hermes hook ingress`。
 - 当前工作树在本次状态更新前为干净状态；如后续继续开发，仍需先运行 `git status --short --branch` 确认。
-- 当前下一步：从 Milestone 3 继续，优先执行任务 3.3：Hermes hook ingress。
+- 当前下一步：从 Milestone 4 继续，优先执行任务 4.1：Router。
 
 ## 已完成
 
@@ -128,18 +128,31 @@
 - 已运行验证：`cargo test daemon`（11 passed + bin 2 passed）、`cargo test event`（21 passed + bin 2 passed）、临时 daemon 下 `cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'` 返回 queued 摘要、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（52 passed + bin 2 passed）。
 - 已提交：`0b63e49 feat: 增加 daemon event ingress`。
 
+### Milestone 3.3：Hermes hook ingress
+
+- 已新增 `src/hermes.rs`，并在 `src/lib.rs` 导出 `hermeship::hermes`。
+- 已实现 `HermesHookEnvelope`：接收 `provider`、`source`、`event`/`event_type`、`context`，默认 provider/source 为 `hermes`/`gateway`。
+- 已实现 Hermes hook envelope -> `IncomingEvent` normalization，payload 保留 provider/source/event/context metadata，并复用既有 Hermes canonical mapping。
+- 已实现 daemon `POST /api/hermes/hook` endpoint，复用 `/event` 的入队前 privacy sanitizer、typed conversion 和 bounded queue `try_send` 管道。
+- 已实现 `DaemonClient::hermes_hook_url()` 与 `DaemonClient::post_hermes_hook()`，daemon unavailable、非 2xx 和无效响应错误包含 `/api/hermes/hook`。
+- 已将 `hermeship hermes hook --payload` 替换为真实 daemon client POST 路径，支持 inline JSON 和 `--payload -` stdin，输出 queued 摘要。
+- 已覆盖 hook envelope 默认值、`event_type` alias、gateway/session/agent mapping、`agent:end` 成功/失败 mapping、daemon hook 入队、入队前隐私清洗、缺失 event 4xx、daemon unavailable、CLI stdin 和 client 投递。
+- 本阶段没有实现 router、renderer、dispatcher、sink、hook bridge install、install/uninstall lifecycle 或 release preflight。
+- 已运行验证：`cargo test hermes`（14 lib tests + 3 bin tests passed）、临时 daemon 下 `printf '%s' '{"event":"agent:start","context":{"session_id":"demo"}}' | cargo run -- hermes hook --payload -` 返回 queued 摘要、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（61 lib tests + 5 bin tests passed）。
+- 提交：`feat: 增加 Hermes hook ingress`。
+
 ## 未完成
 
-- Milestone 3.3 到 Milestone 10 均未执行。
-- Hermes hook ingress、router、renderer、dispatcher、Discord sink、Hermes hook bridge、安装/回滚、release preflight、live verification 均未实现。
-- 当前 daemon 队列只入队不消费，达到容量后 `/event` 会返回 503；dispatcher/consumer 在 Milestone 4.3 实现。
+- Milestone 4 到 Milestone 10 均未执行。
+- Router、renderer、dispatcher、Discord sink、Hermes hook bridge、安装/回滚、release preflight、live verification 均未实现。
+- 当前 daemon 队列只入队不消费，达到容量后 `/event` 和 `/api/hermes/hook` 会返回 503；dispatcher/consumer 在 Milestone 4.3 实现。
 - live Discord verification 凭据是否可用尚未确认。
 - Slack sink、git/GitHub/tmux parity 是否进入 `0.1.0` 尚未最终确认。
 - macOS launchd 是否与 systemd 同期实现尚未最终确认。
 
 ## 下一步入口
 
-从 `tasks/development-checklist.md` 的 **Milestone 3：Daemon、队列与 HTTP ingress** 继续，优先执行 **任务 3.3：Hermes hook ingress**。
+从 `tasks/development-checklist.md` 的 **Milestone 4：Router、Renderer、Dispatcher** 继续，优先执行 **任务 4.1：Router**。
 
 建议第一段工作：
 
@@ -147,7 +160,7 @@
 2. 确认当前分支、最新提交和未提交变更：
    - `git status --short --branch`
    - `git log -3 --oneline`
-3. 确认最新已完成功能阶段提交为 `0b63e49 feat: 增加 daemon event ingress`。
+3. 确认最新已完成功能阶段提交为 `feat: 增加 Hermes hook ingress`。
 4. 读取当前相关代码：
    - `src/cli.rs`
    - `src/config.rs`
@@ -157,11 +170,11 @@
    - `src/event/compat.rs`
    - `src/privacy.rs`
    - `tests/fixtures/README.md`
-5. 从任务 3.3 继续，先写失败测试，再实现 `/api/hermes/hook` 与 `hermeship hermes hook --payload`。
-6. 注意任务 3.3 只实现 Hermes hook ingress normalization，不进入 router、renderer、dispatcher、sink、hook bridge install 或 release preflight。
-7. 运行任务 3.3 验证命令：
-   - `cargo test hermes`
-   - `printf '%s' '{"event":"agent:start","context":{"session_id":"demo"}}' | cargo run -- hermes hook --payload -`
+5. 从任务 4.1 继续，先写失败测试，再实现 route match 与 `hermeship explain`。
+6. 注意任务 4.1 只实现 router 和 explain，不进入 renderer、dispatcher、sink、hook bridge install 或 release preflight。
+7. 运行任务 4.1 验证命令：
+   - `cargo test router`
+   - `cargo run -- explain hermes.agent.started --payload '{"platform":"telegram","session_id":"demo"}'`
    - `cargo fmt --all -- --check`
    - `cargo clippy --all-targets -- -D warnings`
    - `cargo test`
@@ -182,7 +195,7 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新功能阶段提交：0b63e49 feat: 增加 daemon event ingress。
+- 最新功能阶段提交：feat: 增加 Hermes hook ingress。
 - Milestone 0 已完成并提交：af57c49 docs: 明确 hermeship 完整项目方向。
 - Milestone 1.1 已完成并提交：d03170e chore: 搭建 Hermeship Rust CLI 骨架。
 - Milestone 1.2 已完成并提交：50723af feat: 实现 hermeship 配置模型与 config CLI。
@@ -192,25 +205,27 @@
 - Milestone 2.3 已完成并提交：175009d feat: 增加 Hermes 事件隐私清洗。
 - Milestone 3.1 已完成并提交：ff5c589 feat: 增加 hermeship daemon health。
 - Milestone 3.2 已完成并提交：0b63e49 feat: 增加 daemon event ingress。
+- Milestone 3.3 已完成并提交：feat: 增加 Hermes hook ingress。
 - 已实现 src/events.rs：IncomingEvent、RoutingMetadata、字段别名反序列化、空/null payload 归一，以及 MessageFormat 的单一复用/重导出策略。
 - 已实现 src/event/：EventEnvelope、EventBody、EventMetadata、EventPriority、Hermes canonical mapping、IncomingEvent -> EventEnvelope conversion。
 - 已实现 src/privacy.rs：sanitize_payload、redact_value、excerpt_policy、敏感 key 递归脱敏、正文默认禁发、安全摘要和 opt-in 摘录。
-- 已实现 src/daemon.rs：/health、/event、HealthResponse、QueueHealth、EventAcceptedResponse、bounded mpsc queue、daemon listener 和 serve 入口。
-- 已实现 src/client.rs：DaemonClient health 查询、event POST、base URL 规范化、timeout 和清晰错误。
-- 已接入 hermeship start/status/emit/send 的真实 daemon health/event 行为。
+- 已实现 src/daemon.rs：/health、/event、/api/hermes/hook、HealthResponse、QueueHealth、EventAcceptedResponse、bounded mpsc queue、daemon listener 和 serve 入口。
+- 已实现 src/client.rs：DaemonClient health 查询、event POST、Hermes hook POST、base URL 规范化、timeout 和清晰错误。
+- 已实现 src/hermes.rs：HermesHookEnvelope、event/event_type alias、provider/source 默认值和 Hermes hook envelope -> IncomingEvent normalization。
+- 已接入 hermeship start/status/emit/send/hermes hook 的真实 daemon health/event/hook 行为，hermes hook 支持 `--payload -` stdin。
 - Hermes canonical mapping 已覆盖 gateway:startup、session:start、session:end、session:reset、agent:start、agent:step、agent:end；显式失败的 agent:end 映射为 hermes.agent.failed；未知 event 降级为 Custom。
-- 已通过验证：cargo test daemon、cargo test event、cargo run -- emit hermes.agent.started --payload '{"session_id":"demo"}'、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
+- 已通过验证：cargo test hermes、printf '%s' '{"event":"agent:start","context":{"session_id":"demo"}}' | cargo run -- hermes hook --payload -、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
 - Hermeship 是 Hermes-native daemon-first event router，不是 thin adapter，不调用 clawhip runtime，也不依赖运行中的 clawhip daemon。
 - 方案文档只维护架构和边界，执行进度维护在 tasks/development-checklist.md 和 tasks/todo.md。
 
-请从 tasks/development-checklist.md 的 Milestone 3 继续，优先执行任务 3.3：Hermes hook ingress：
+请从 tasks/development-checklist.md 的 Milestone 4 继续，优先执行任务 4.1：Router：
 1. 先复习 tasks/lessons.md，并确认当前分支、最新提交和未提交变更：git status --short --branch、git log -3 --oneline。
-2. 确认 tasks/development-checklist.md 的 Milestone 3.3 计划，并将当前任务计划写入 tasks/todo.md。
-3. 阅读 src/cli.rs、src/main.rs、src/config.rs、src/client.rs、src/daemon.rs、src/events.rs、src/event/mod.rs、src/event/body.rs、src/event/compat.rs、src/privacy.rs、tests/fixtures/README.md。
-4. 先写失败测试，再实现 /api/hermes/hook 与 hermeship hermes hook --payload。
-5. 本阶段只实现 Hermes hook ingress normalization，不实现 router、renderer、dispatcher、sink、hook bridge install 或 release preflight。
-6. 隐私 sanitizer 仍必须在事件入队前生效；默认测试仍只使用本地 deterministic fixture。
-7. 运行验证：cargo test hermes、printf '%s' '{"event":"agent:start","context":{"session_id":"demo"}}' | cargo run -- hermes hook --payload -、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
+2. 确认 tasks/development-checklist.md 的 Milestone 4.1 计划，并将当前任务计划写入 tasks/todo.md。
+3. 阅读 src/cli.rs、src/main.rs、src/config.rs、src/client.rs、src/daemon.rs、src/events.rs、src/event/mod.rs、src/event/body.rs、src/event/compat.rs、src/privacy.rs、src/hermes.rs、tests/fixtures/README.md。
+4. 先写失败测试，再实现 route match 与 hermeship explain。
+5. 本阶段只实现 Router 和 explain，不实现 renderer、dispatcher、sink、hook bridge install 或 release preflight。
+6. Router filter 基于结构化 metadata；默认测试仍只使用本地 deterministic fixture。
+7. 运行验证：cargo test router、cargo run -- explain hermes.agent.started --payload '{"platform":"telegram","session_id":"demo"}'、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
 8. 更新 tasks/development-checklist.md 的运行状态日志和 tasks/todo.md 的 Review。
 9. 阶段完成后必须验证并提交，commit 信息使用详细中文，说明变更、验证和影响。
 ```
