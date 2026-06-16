@@ -5,12 +5,18 @@ use uuid::Uuid;
 
 use crate::event::{
     CustomEvent, EventBody, EventEnvelope, EventMetadata, EventPriority, GitBranchChangedEvent,
-    GitCommitEvent, HermesAgentEvent, HermesGatewayEvent, HermesSessionEvent,
+    GitCommitEvent, GithubCheckEvent, GithubIssueEvent, GithubPullRequestEvent, GithubReleaseEvent,
+    HermesAgentEvent, HermesGatewayEvent, HermesSessionEvent,
 };
 use crate::events::IncomingEvent;
 use crate::source::git::{
     MAX_DISPLAY_FIELD_CHARS, MAX_SUMMARY_CHARS, validate_commit_sha, validate_optional_single_line,
     validate_single_line,
+};
+use crate::source::github::{
+    short_sha as github_short_sha, validate_display_field, validate_optional_display_field,
+    validate_optional_summary_field, validate_optional_url, validate_positive_number,
+    validate_status, validate_summary_field,
 };
 
 pub fn from_incoming_event(event: &IncomingEvent) -> Result<EventEnvelope> {
@@ -87,6 +93,14 @@ fn body_for(kind: &str, payload: &Value, metadata: &EventMetadata) -> Result<Eve
         "git.commit" => EventBody::GitCommit(git_commit_event(payload, metadata)?),
         "git.branch-changed" => {
             EventBody::GitBranchChanged(git_branch_changed_event(payload, metadata))
+        }
+        "github.issue-opened" => EventBody::GithubIssue(github_issue_event(payload, metadata)?),
+        "github.pr-opened" => {
+            EventBody::GithubPullRequest(github_pull_request_event(payload, metadata)?)
+        }
+        "github.check-failed" => EventBody::GithubCheck(github_check_event(payload, metadata)?),
+        "github.release-published" => {
+            EventBody::GithubRelease(github_release_event(payload, metadata)?)
         }
         "hermes.gateway.started" => EventBody::HermesGatewayStarted(HermesGatewayEvent {
             provider: metadata.provider.clone(),
@@ -183,6 +197,125 @@ fn git_branch_changed_event(payload: &Value, metadata: &EventMetadata) -> GitBra
         repo_path: metadata.repo_path.clone(),
         worktree_path: metadata.worktree_path.clone(),
     }
+}
+
+fn github_issue_event(payload: &Value, metadata: &EventMetadata) -> Result<GithubIssueEvent> {
+    Ok(GithubIssueEvent {
+        owner: required_display_field(payload, "owner")?,
+        repo: required_repo(payload, metadata)?,
+        number: github_number(payload)?,
+        title: required_summary_field(payload, "title")?,
+        author: validate_optional_display_field(
+            "author",
+            string_field(payload, "author").as_deref(),
+        )?,
+        url: validate_optional_url(string_field(payload, "url").as_deref())?,
+    })
+}
+
+fn github_pull_request_event(
+    payload: &Value,
+    metadata: &EventMetadata,
+) -> Result<GithubPullRequestEvent> {
+    let sha = optional_github_sha(payload)?;
+    let short_sha = optional_github_short_sha(payload, sha.as_deref())?;
+
+    Ok(GithubPullRequestEvent {
+        owner: required_display_field(payload, "owner")?,
+        repo: required_repo(payload, metadata)?,
+        number: github_number(payload)?,
+        title: required_summary_field(payload, "title")?,
+        branch: required_branch(payload, metadata)?,
+        base_branch: validate_optional_display_field(
+            "base_branch",
+            string_field(payload, "base_branch").as_deref(),
+        )?,
+        sha,
+        short_sha,
+        author: validate_optional_display_field(
+            "author",
+            string_field(payload, "author").as_deref(),
+        )?,
+        url: validate_optional_url(string_field(payload, "url").as_deref())?,
+    })
+}
+
+fn github_check_event(payload: &Value, metadata: &EventMetadata) -> Result<GithubCheckEvent> {
+    let sha = optional_github_sha(payload)?;
+    let short_sha = optional_github_short_sha(payload, sha.as_deref())?;
+
+    Ok(GithubCheckEvent {
+        owner: required_display_field(payload, "owner")?,
+        repo: required_repo(payload, metadata)?,
+        workflow: required_display_field(payload, "workflow")?,
+        status: validate_status(
+            string_field(payload, "status")
+                .as_deref()
+                .unwrap_or_default(),
+        )?,
+        branch: required_branch(payload, metadata)?,
+        sha,
+        short_sha,
+        title: validate_optional_summary_field("title", string_field(payload, "title").as_deref())?,
+        url: validate_optional_url(string_field(payload, "url").as_deref())?,
+    })
+}
+
+fn github_release_event(payload: &Value, metadata: &EventMetadata) -> Result<GithubReleaseEvent> {
+    Ok(GithubReleaseEvent {
+        owner: required_display_field(payload, "owner")?,
+        repo: required_repo(payload, metadata)?,
+        tag: required_display_field(payload, "tag")?,
+        title: validate_optional_summary_field("title", string_field(payload, "title").as_deref())?,
+        author: validate_optional_display_field(
+            "author",
+            string_field(payload, "author").as_deref(),
+        )?,
+        url: validate_optional_url(string_field(payload, "url").as_deref())?,
+    })
+}
+
+fn required_repo(payload: &Value, metadata: &EventMetadata) -> Result<String> {
+    let repo = string_field(payload, "repo").or_else(|| metadata.repo_name.clone());
+    validate_display_field("repo", repo.as_deref().unwrap_or_default())
+}
+
+fn required_branch(payload: &Value, metadata: &EventMetadata) -> Result<String> {
+    let branch = string_field(payload, "branch").or_else(|| metadata.branch.clone());
+    validate_display_field("branch", branch.as_deref().unwrap_or_default())
+}
+
+fn required_display_field(payload: &Value, key: &str) -> Result<String> {
+    validate_display_field(
+        key,
+        string_field(payload, key).as_deref().unwrap_or_default(),
+    )
+}
+
+fn required_summary_field(payload: &Value, key: &str) -> Result<String> {
+    validate_summary_field(
+        key,
+        string_field(payload, key).as_deref().unwrap_or_default(),
+    )
+}
+
+fn github_number(payload: &Value) -> Result<u64> {
+    validate_positive_number(u64_field(payload, "number").unwrap_or_default())
+}
+
+fn optional_github_sha(payload: &Value) -> Result<Option<String>> {
+    string_field(payload, "commit")
+        .or_else(|| string_field(payload, "sha"))
+        .map(|value| validate_commit_sha(&value))
+        .transpose()
+}
+
+fn optional_github_short_sha(payload: &Value, sha: Option<&str>) -> Result<Option<String>> {
+    string_field(payload, "short_commit")
+        .or_else(|| string_field(payload, "short_sha"))
+        .map(|value| validate_commit_sha(&value).map(|value| github_short_sha(&value)))
+        .transpose()
+        .map(|value| value.or_else(|| sha.map(github_short_sha)))
 }
 
 fn session_event(status: &str, payload: &Value, metadata: &EventMetadata) -> HermesSessionEvent {
@@ -601,6 +734,160 @@ mod tests {
     }
 
     #[test]
+    fn github_issue_pr_check_and_release_events_convert_to_typed_bodies() {
+        let issue = from_incoming_event(&IncomingEvent::new(
+            "github.issue-opened",
+            json!({
+                "owner": "posp",
+                "repo": "hermeship",
+                "repo_name": "hermeship",
+                "number": 42,
+                "title": "Add deterministic GitHub source",
+                "author": "synthetic-user",
+                "url": "https://github.example.invalid/posp/hermeship/issues/42"
+            }),
+        ))
+        .unwrap();
+        assert_eq!(issue.source, "github");
+        assert_eq!(issue.canonical_kind(), "github.issue-opened");
+        assert_eq!(issue.metadata.priority, EventPriority::Low);
+        assert_eq!(issue.metadata.repo_name.as_deref(), Some("hermeship"));
+        match issue.body {
+            EventBody::GithubIssue(body) => {
+                assert_eq!(body.owner, "posp");
+                assert_eq!(body.repo, "hermeship");
+                assert_eq!(body.number, 42);
+                assert_eq!(body.title, "Add deterministic GitHub source");
+                assert_eq!(body.author.as_deref(), Some("synthetic-user"));
+            }
+            other => panic!("expected GithubIssue, got {other:?}"),
+        }
+
+        let pr = from_incoming_event(&IncomingEvent::new(
+            "github.pr-opened",
+            json!({
+                "owner": "posp",
+                "repo": "hermeship",
+                "repo_name": "hermeship",
+                "number": 17,
+                "title": "Ship GitHub source",
+                "branch": "codex/milestone-8-github",
+                "base_branch": "main",
+                "commit": "1234567890abcdef1234567890abcdef12345678",
+                "short_commit": "1234567"
+            }),
+        ))
+        .unwrap();
+        assert_eq!(pr.canonical_kind(), "github.pr-opened");
+        assert_eq!(
+            pr.metadata.branch.as_deref(),
+            Some("codex/milestone-8-github")
+        );
+        match pr.body {
+            EventBody::GithubPullRequest(body) => {
+                assert_eq!(body.number, 17);
+                assert_eq!(body.branch, "codex/milestone-8-github");
+                assert_eq!(body.base_branch.as_deref(), Some("main"));
+                assert_eq!(body.short_sha.as_deref(), Some("1234567"));
+            }
+            other => panic!("expected GithubPullRequest, got {other:?}"),
+        }
+
+        let check = from_incoming_event(&IncomingEvent::new(
+            "github.check-failed",
+            json!({
+                "owner": "posp",
+                "repo": "hermeship",
+                "repo_name": "hermeship",
+                "workflow": "ci",
+                "status": "failure",
+                "branch": "main",
+                "commit": "abcdef1234567890abcdef1234567890abcdef12",
+                "short_commit": "abcdef1",
+                "title": "cargo test failed"
+            }),
+        ))
+        .unwrap();
+        assert_eq!(check.canonical_kind(), "github.check-failed");
+        assert_eq!(check.metadata.branch.as_deref(), Some("main"));
+        match check.body {
+            EventBody::GithubCheck(body) => {
+                assert_eq!(body.workflow, "ci");
+                assert_eq!(body.status, "failure");
+                assert_eq!(body.title.as_deref(), Some("cargo test failed"));
+                assert_eq!(body.short_sha.as_deref(), Some("abcdef1"));
+            }
+            other => panic!("expected GithubCheck, got {other:?}"),
+        }
+
+        let release = from_incoming_event(&IncomingEvent::new(
+            "github.release-published",
+            json!({
+                "owner": "posp",
+                "repo": "hermeship",
+                "repo_name": "hermeship",
+                "tag": "v0.1.0",
+                "title": "Hermeship v0.1.0",
+                "author": "synthetic-user"
+            }),
+        ))
+        .unwrap();
+        assert_eq!(release.canonical_kind(), "github.release-published");
+        match release.body {
+            EventBody::GithubRelease(body) => {
+                assert_eq!(body.tag, "v0.1.0");
+                assert_eq!(body.title.as_deref(), Some("Hermeship v0.1.0"));
+                assert_eq!(body.author.as_deref(), Some("synthetic-user"));
+            }
+            other => panic!("expected GithubRelease, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn github_events_reject_invalid_numbers_statuses_and_multiline_titles() {
+        let invalid_number = from_incoming_event(&IncomingEvent::new(
+            "github.issue-opened",
+            json!({
+                "owner": "posp",
+                "repo": "hermeship",
+                "number": 0,
+                "title": "Add deterministic GitHub source"
+            }),
+        ))
+        .unwrap_err()
+        .to_string();
+        assert!(invalid_number.contains("number must be greater than 0"));
+
+        let multiline = from_incoming_event(&IncomingEvent::new(
+            "github.pr-opened",
+            json!({
+                "owner": "posp",
+                "repo": "hermeship",
+                "number": 17,
+                "title": "Ship GitHub source\nfull PR body should not render",
+                "branch": "codex/milestone-8-github"
+            }),
+        ))
+        .unwrap_err()
+        .to_string();
+        assert!(multiline.contains("title must be a single line"));
+
+        let invalid_status = from_incoming_event(&IncomingEvent::new(
+            "github.check-failed",
+            json!({
+                "owner": "posp",
+                "repo": "hermeship",
+                "workflow": "ci",
+                "status": "maybe",
+                "branch": "main"
+            }),
+        ))
+        .unwrap_err()
+        .to_string();
+        assert!(invalid_status.contains("status must be one of"));
+    }
+
+    #[test]
     fn unknown_event_becomes_custom_without_losing_payload() {
         let event = IncomingEvent::new(
             "plugin.custom",
@@ -655,6 +942,10 @@ mod tests {
         match body {
             EventBody::GitCommit(_) => "GitCommit",
             EventBody::GitBranchChanged(_) => "GitBranchChanged",
+            EventBody::GithubIssue(_) => "GithubIssue",
+            EventBody::GithubPullRequest(_) => "GithubPullRequest",
+            EventBody::GithubCheck(_) => "GithubCheck",
+            EventBody::GithubRelease(_) => "GithubRelease",
             EventBody::HermesGatewayStarted(_) => "HermesGatewayStarted",
             EventBody::HermesSessionStarted(_) => "HermesSessionStarted",
             EventBody::HermesSessionFinished(_) => "HermesSessionFinished",

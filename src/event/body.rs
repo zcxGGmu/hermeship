@@ -23,6 +23,53 @@ pub struct GitBranchChangedEvent {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GithubIssueEvent {
+    pub owner: String,
+    pub repo: String,
+    pub number: u64,
+    pub title: String,
+    pub author: Option<String>,
+    pub url: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GithubPullRequestEvent {
+    pub owner: String,
+    pub repo: String,
+    pub number: u64,
+    pub title: String,
+    pub branch: String,
+    pub base_branch: Option<String>,
+    pub sha: Option<String>,
+    pub short_sha: Option<String>,
+    pub author: Option<String>,
+    pub url: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GithubCheckEvent {
+    pub owner: String,
+    pub repo: String,
+    pub workflow: String,
+    pub status: String,
+    pub branch: String,
+    pub sha: Option<String>,
+    pub short_sha: Option<String>,
+    pub title: Option<String>,
+    pub url: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GithubReleaseEvent {
+    pub owner: String,
+    pub repo: String,
+    pub tag: String,
+    pub title: Option<String>,
+    pub author: Option<String>,
+    pub url: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HermesGatewayEvent {
     pub provider: Option<String>,
     pub source: Option<String>,

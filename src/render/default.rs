@@ -4,6 +4,7 @@ use serde_json::{Map, Value, json};
 use crate::config::{MessageFormat, PrivacyConfig};
 use crate::event::{
     CustomEvent, EventBody, EventEnvelope, EventMetadata, GitBranchChangedEvent, GitCommitEvent,
+    GithubCheckEvent, GithubIssueEvent, GithubPullRequestEvent, GithubReleaseEvent,
     HermesAgentEvent, HermesGatewayEvent, HermesSessionEvent,
 };
 use crate::privacy::sanitize_payload;
@@ -152,6 +153,10 @@ fn detail_parts(event: &EventEnvelope) -> Vec<String> {
     match &event.body {
         EventBody::GitCommit(body) => git_commit_parts(body),
         EventBody::GitBranchChanged(body) => git_branch_changed_parts(body),
+        EventBody::GithubIssue(body) => github_issue_parts(body),
+        EventBody::GithubPullRequest(body) => github_pull_request_parts(body),
+        EventBody::GithubCheck(body) => github_check_parts(body),
+        EventBody::GithubRelease(body) => github_release_parts(body),
         EventBody::HermesGatewayStarted(body) => gateway_parts(body),
         EventBody::HermesSessionStarted(body)
         | EventBody::HermesSessionFinished(body)
@@ -180,6 +185,55 @@ fn git_branch_changed_parts(body: &GitBranchChangedEvent) -> Vec<String> {
     push_part(&mut parts, "branch", Some(body.new_branch.as_str()));
     push_part(&mut parts, "old_branch", Some(body.old_branch.as_str()));
     push_part(&mut parts, "new_branch", Some(body.new_branch.as_str()));
+    parts
+}
+
+fn github_issue_parts(body: &GithubIssueEvent) -> Vec<String> {
+    let mut parts = Vec::new();
+    push_part(&mut parts, "repo", Some(body.repo.as_str()));
+    push_part(&mut parts, "owner", Some(body.owner.as_str()));
+    push_part(
+        &mut parts,
+        "issue",
+        Some(format!("#{}", body.number).as_str()),
+    );
+    push_part(&mut parts, "title", Some(body.title.as_str()));
+    push_part(&mut parts, "author", body.author.as_deref());
+    parts
+}
+
+fn github_pull_request_parts(body: &GithubPullRequestEvent) -> Vec<String> {
+    let mut parts = Vec::new();
+    push_part(&mut parts, "repo", Some(body.repo.as_str()));
+    push_part(&mut parts, "owner", Some(body.owner.as_str()));
+    push_part(&mut parts, "pr", Some(format!("#{}", body.number).as_str()));
+    push_part(&mut parts, "branch", Some(body.branch.as_str()));
+    push_part(&mut parts, "base", body.base_branch.as_deref());
+    push_part(&mut parts, "commit", body.short_sha.as_deref());
+    push_part(&mut parts, "title", Some(body.title.as_str()));
+    push_part(&mut parts, "author", body.author.as_deref());
+    parts
+}
+
+fn github_check_parts(body: &GithubCheckEvent) -> Vec<String> {
+    let mut parts = Vec::new();
+    push_part(&mut parts, "repo", Some(body.repo.as_str()));
+    push_part(&mut parts, "owner", Some(body.owner.as_str()));
+    push_part(&mut parts, "workflow", Some(body.workflow.as_str()));
+    push_part(&mut parts, "status", Some(body.status.as_str()));
+    push_part(&mut parts, "branch", Some(body.branch.as_str()));
+    push_part(&mut parts, "commit", body.short_sha.as_deref());
+    push_part(&mut parts, "title", body.title.as_deref());
+    parts
+}
+
+fn github_release_parts(body: &GithubReleaseEvent) -> Vec<String> {
+    let mut parts = Vec::new();
+    push_part(&mut parts, "repo", Some(body.repo.as_str()));
+    push_part(&mut parts, "owner", Some(body.owner.as_str()));
+    push_part(&mut parts, "tag", Some(body.tag.as_str()));
+    push_part(&mut parts, "title", body.title.as_deref());
+    push_part(&mut parts, "author", body.author.as_deref());
     parts
 }
 
@@ -300,6 +354,10 @@ fn body_json(body: &EventBody) -> Value {
     match body {
         EventBody::GitCommit(body) => git_commit_json(body),
         EventBody::GitBranchChanged(body) => git_branch_changed_json(body),
+        EventBody::GithubIssue(body) => github_issue_json(body),
+        EventBody::GithubPullRequest(body) => github_pull_request_json(body),
+        EventBody::GithubCheck(body) => github_check_json(body),
+        EventBody::GithubRelease(body) => github_release_json(body),
         EventBody::HermesGatewayStarted(body) => json!({
             "kind": "hermes.gateway.started",
             "provider": body.provider,
@@ -347,6 +405,55 @@ fn git_branch_changed_json(body: &GitBranchChangedEvent) -> Value {
         "repo": body.repo,
         "old_branch": body.old_branch,
         "new_branch": body.new_branch,
+    })
+}
+
+fn github_issue_json(body: &GithubIssueEvent) -> Value {
+    json!({
+        "kind": "github.issue-opened",
+        "owner": body.owner,
+        "repo": body.repo,
+        "number": body.number,
+        "title": body.title,
+        "author": body.author,
+    })
+}
+
+fn github_pull_request_json(body: &GithubPullRequestEvent) -> Value {
+    json!({
+        "kind": "github.pr-opened",
+        "owner": body.owner,
+        "repo": body.repo,
+        "number": body.number,
+        "title": body.title,
+        "branch": body.branch,
+        "base_branch": body.base_branch,
+        "short_commit": body.short_sha,
+        "author": body.author,
+    })
+}
+
+fn github_check_json(body: &GithubCheckEvent) -> Value {
+    json!({
+        "kind": "github.check-failed",
+        "owner": body.owner,
+        "repo": body.repo,
+        "workflow": body.workflow,
+        "status": body.status,
+        "branch": body.branch,
+        "short_commit": body.short_sha,
+        "title": body.title,
+    })
+}
+
+fn github_release_json(body: &GithubReleaseEvent) -> Value {
+    json!({
+        "kind": "github.release-published",
+        "owner": body.owner,
+        "repo": body.repo,
+        "tag": body.tag,
+        "title": body.title,
+        "author": body.author,
     })
 }
 
@@ -813,6 +920,81 @@ mod tests {
         );
         assert!(!raw.content.contains("/tmp/hermeship"));
         assert!(!raw.content.contains("/tmp/hermeship-worktree"));
+    }
+
+    #[test]
+    fn render_github_events_compact_and_raw_without_body_or_secret_leaks() {
+        let issue = sanitized_envelope(
+            "github.issue-opened",
+            json!({
+                "owner": "posp",
+                "repo": "hermeship",
+                "repo_name": "hermeship",
+                "number": 42,
+                "title": "Add deterministic GitHub source",
+                "author": "synthetic-user",
+                "url": "https://github.example.invalid/posp/hermeship/issues/42",
+                "body": "synthetic issue body should not render",
+                "token": "synthetic-token-should-not-render"
+            }),
+        );
+
+        let rendered = DefaultRenderer
+            .render(&issue, &delivery(MessageFormat::Compact))
+            .unwrap();
+
+        assert_eq!(
+            rendered.content,
+            "github issue opened (repo=hermeship, owner=posp, issue=#42, title=Add deterministic GitHub source, author=synthetic-user)"
+        );
+
+        let raw = DefaultRenderer
+            .render(&issue, &delivery(MessageFormat::Raw))
+            .unwrap();
+        let raw_json: Value = serde_json::from_str(&raw.content).unwrap();
+
+        assert_eq!(raw_json["event"], json!("github.issue-opened"));
+        assert_eq!(raw_json["metadata"]["repo_name"], json!("hermeship"));
+        assert_eq!(raw_json["body"]["number"], json!(42));
+        assert_eq!(
+            raw_json["body"]["title"],
+            json!("Add deterministic GitHub source")
+        );
+        for forbidden in [
+            "synthetic issue body should not render",
+            "synthetic-token-should-not-render",
+            "https://github.example.invalid",
+        ] {
+            assert!(
+                !raw.content.contains(forbidden),
+                "github raw render leaked `{forbidden}`"
+            );
+        }
+
+        let check = sanitized_envelope(
+            "github.check-failed",
+            json!({
+                "owner": "posp",
+                "repo": "hermeship",
+                "repo_name": "hermeship",
+                "workflow": "ci",
+                "status": "failure",
+                "branch": "main",
+                "commit": "abcdef1234567890abcdef1234567890abcdef12",
+                "short_commit": "abcdef1",
+                "title": "cargo test failed",
+                "provider_response": "synthetic provider response should not render"
+            }),
+        );
+        let rendered = DefaultRenderer
+            .render(&check, &delivery(MessageFormat::Compact))
+            .unwrap();
+
+        assert_eq!(
+            rendered.content,
+            "github check failed (repo=hermeship, owner=posp, workflow=ci, status=failure, branch=main, commit=abcdef1, title=cargo test failed)"
+        );
+        assert!(!rendered.content.contains("synthetic provider response"));
     }
 
     fn sanitized_envelope(kind: &str, payload: Value) -> crate::event::EventEnvelope {

@@ -4,7 +4,7 @@ use std::fmt;
 use serde::{Serialize, Serializer};
 
 use crate::config::{AppConfig, MessageFormat, RouteRule};
-use crate::event::{EventEnvelope, EventMetadata};
+use crate::event::{EventBody, EventEnvelope, EventMetadata};
 
 #[derive(Debug, Clone)]
 pub struct Router {
@@ -325,6 +325,7 @@ fn metadata_context(event: &EventEnvelope) -> BTreeMap<String, String> {
         metadata.source.as_deref().or(Some(event.source.as_str())),
     );
     insert_metadata_fields(&mut context, metadata);
+    insert_body_fields(&mut context, &event.body);
 
     context
 }
@@ -354,6 +355,40 @@ fn insert_metadata_fields(context: &mut BTreeMap<String, String>, metadata: &Eve
 fn insert_context(context: &mut BTreeMap<String, String>, key: &str, value: Option<&str>) {
     if let Some(value) = normalize_text(value) {
         context.insert(key.to_string(), value);
+    }
+}
+
+fn insert_body_fields(context: &mut BTreeMap<String, String>, body: &EventBody) {
+    match body {
+        EventBody::GithubIssue(body) => {
+            insert_context(context, "owner", Some(body.owner.as_str()));
+            insert_context(context, "repo", Some(body.repo.as_str()));
+            insert_context(context, "repo_name", Some(body.repo.as_str()));
+            insert_context(context, "number", Some(body.number.to_string().as_str()));
+        }
+        EventBody::GithubPullRequest(body) => {
+            insert_context(context, "owner", Some(body.owner.as_str()));
+            insert_context(context, "repo", Some(body.repo.as_str()));
+            insert_context(context, "repo_name", Some(body.repo.as_str()));
+            insert_context(context, "number", Some(body.number.to_string().as_str()));
+            insert_context(context, "branch", Some(body.branch.as_str()));
+            insert_context(context, "base_branch", body.base_branch.as_deref());
+        }
+        EventBody::GithubCheck(body) => {
+            insert_context(context, "owner", Some(body.owner.as_str()));
+            insert_context(context, "repo", Some(body.repo.as_str()));
+            insert_context(context, "repo_name", Some(body.repo.as_str()));
+            insert_context(context, "workflow", Some(body.workflow.as_str()));
+            insert_context(context, "status", Some(body.status.as_str()));
+            insert_context(context, "branch", Some(body.branch.as_str()));
+        }
+        EventBody::GithubRelease(body) => {
+            insert_context(context, "owner", Some(body.owner.as_str()));
+            insert_context(context, "repo", Some(body.repo.as_str()));
+            insert_context(context, "repo_name", Some(body.repo.as_str()));
+            insert_context(context, "tag", Some(body.tag.as_str()));
+        }
+        _ => {}
     }
 }
 
@@ -639,6 +674,114 @@ mod tests {
         assert_eq!(
             explanation.routes[1].skipped_reason.as_deref(),
             Some("filter mismatch")
+        );
+    }
+
+    #[test]
+    fn github_route_filters_match_owner_number_branch_and_status() {
+        let config = AppConfig {
+            routes: vec![
+                RouteRule {
+                    event: "github.*".to_string(),
+                    filter: BTreeMap::from([
+                        ("owner".to_string(), "posp".to_string()),
+                        ("repo_name".to_string(), "hermeship".to_string()),
+                        ("number".to_string(), "17".to_string()),
+                        ("branch".to_string(), "codex/*".to_string()),
+                    ]),
+                    channel: Some("github-alerts".to_string()),
+                    ..RouteRule::default()
+                },
+                RouteRule {
+                    event: "github.*".to_string(),
+                    filter: BTreeMap::from([("status".to_string(), "success".to_string())]),
+                    channel: Some("green-builds".to_string()),
+                    ..RouteRule::default()
+                },
+            ],
+            ..AppConfig::default()
+        };
+        let envelope = envelope(
+            "github.pr-opened",
+            json!({
+                "owner": "posp",
+                "repo": "hermeship",
+                "repo_name": "hermeship",
+                "number": 17,
+                "title": "Ship GitHub source",
+                "branch": "codex/milestone-8-github",
+                "base_branch": "main"
+            }),
+        );
+
+        let explanation = Router::new(config).explain(&envelope);
+
+        assert_eq!(explanation.canonical_kind, "github.pr-opened");
+        assert_eq!(
+            explanation.route_candidates,
+            vec!["github.pr-opened", "github.*"]
+        );
+        assert_eq!(explanation.deliveries.len(), 1);
+        assert_eq!(
+            explanation.deliveries[0].target,
+            SinkTarget::DiscordChannel("github-alerts".to_string())
+        );
+        assert!(explanation.routes[0].matched);
+        assert_eq!(
+            explanation.routes[0].filter_results[0].actual.as_deref(),
+            Some("codex/milestone-8-github")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[1].actual.as_deref(),
+            Some("17")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[2].actual.as_deref(),
+            Some("posp")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[3].actual.as_deref(),
+            Some("hermeship")
+        );
+        assert_eq!(
+            explanation.routes[1].skipped_reason.as_deref(),
+            Some("filter mismatch")
+        );
+    }
+
+    #[test]
+    fn github_route_filters_use_validated_body_repo_over_raw_repo_name_metadata() {
+        let config = AppConfig {
+            routes: vec![RouteRule {
+                event: "github.*".to_string(),
+                filter: BTreeMap::from([("repo_name".to_string(), "hermeship".to_string())]),
+                channel: Some("github-alerts".to_string()),
+                ..RouteRule::default()
+            }],
+            ..AppConfig::default()
+        };
+        let envelope = envelope(
+            "github.pr-opened",
+            json!({
+                "owner": "posp",
+                "repo": "other",
+                "repo_name": "hermeship",
+                "number": 17,
+                "title": "Ship GitHub source",
+                "branch": "codex/milestone-8-github"
+            }),
+        );
+
+        let explanation = Router::new(config).explain(&envelope);
+
+        assert!(explanation.deliveries.is_empty());
+        assert_eq!(
+            explanation.routes[0].skipped_reason.as_deref(),
+            Some("filter mismatch")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[0].actual.as_deref(),
+            Some("other")
         );
     }
 

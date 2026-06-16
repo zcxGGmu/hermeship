@@ -2,7 +2,9 @@ use std::io::{self, Read};
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use hermeship::cli::{Cli, Commands, ConfigCommand, GitCommands, HermesCommands, ReleaseCommands};
+use hermeship::cli::{
+    Cli, Commands, ConfigCommand, GitCommands, GithubCommands, HermesCommands, ReleaseCommands,
+};
 use hermeship::client::DaemonClient;
 use hermeship::config::AppConfig;
 use hermeship::daemon::{EventAcceptedResponse, HealthResponse};
@@ -129,6 +131,12 @@ async fn real_main() -> Result<()> {
             let config = AppConfig::load_or_default(&config_path)?;
             let accepted = submit_event(&config, git_command_into_event(command)?).await?;
             print_event_accepted("git", &accepted);
+            Ok(())
+        }
+        Commands::Github { command } => {
+            let config = AppConfig::load_or_default(&config_path)?;
+            let accepted = submit_event(&config, github_command_into_event(command)?).await?;
+            print_event_accepted("github", &accepted);
             Ok(())
         }
         Commands::Install(args) => {
@@ -317,6 +325,62 @@ fn git_command_into_event(command: GitCommands) -> Result<IncomingEvent> {
     }
 }
 
+fn github_command_into_event(command: GithubCommands) -> Result<IncomingEvent> {
+    match command {
+        GithubCommands::IssueOpened(args) => hermeship::source::github::issue_opened_event(
+            hermeship::source::github::GithubIssueInput {
+                owner: args.owner,
+                repo: args.repo,
+                number: args.number,
+                title: args.title,
+                author: args.author,
+                url: args.url,
+                channel: args.channel,
+            },
+        ),
+        GithubCommands::PrOpened(args) => hermeship::source::github::pull_request_opened_event(
+            hermeship::source::github::GithubPullRequestInput {
+                owner: args.owner,
+                repo: args.repo,
+                number: args.number,
+                title: args.title,
+                branch: args.branch,
+                base_branch: args.base_branch,
+                commit: args.commit,
+                author: args.author,
+                url: args.url,
+                channel: args.channel,
+            },
+        ),
+        GithubCommands::CheckFailed(args) => hermeship::source::github::check_failed_event(
+            hermeship::source::github::GithubCheckInput {
+                owner: args.owner,
+                repo: args.repo,
+                workflow: args.workflow,
+                status: args.status,
+                branch: args.branch,
+                commit: args.commit,
+                title: args.title,
+                url: args.url,
+                channel: args.channel,
+            },
+        ),
+        GithubCommands::ReleasePublished(args) => {
+            hermeship::source::github::release_published_event(
+                hermeship::source::github::GithubReleaseInput {
+                    owner: args.owner,
+                    repo: args.repo,
+                    tag: args.tag,
+                    title: args.title,
+                    author: args.author,
+                    url: args.url,
+                    channel: args.channel,
+                },
+            )
+        }
+    }
+}
+
 fn path_to_string(path: std::path::PathBuf) -> String {
     path.to_string_lossy().into_owned()
 }
@@ -389,8 +453,8 @@ mod tests {
     use hermeship::hermes::HermesHookEnvelope;
 
     use super::{
-        VERSION, explain_event, git_command_into_event, read_payload_arg, read_setup_token,
-        submit_event, submit_hermes_hook,
+        VERSION, explain_event, git_command_into_event, github_command_into_event,
+        read_payload_arg, read_setup_token, submit_event, submit_hermes_hook,
     };
 
     #[tokio::test]
@@ -558,6 +622,59 @@ mod tests {
                 assert_eq!(body.new_branch, "codex/milestone-8-git");
             }
             other => panic!("expected GitBranchChanged, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn daemon_github_issue_command_posts_github_event_to_daemon() {
+        let cli = Cli::parse_from([
+            "hermeship",
+            "github",
+            "issue-opened",
+            "--owner",
+            "posp",
+            "--repo",
+            "hermeship",
+            "--number",
+            "42",
+            "--title",
+            "Add deterministic GitHub source",
+            "--author",
+            "synthetic-user",
+            "--channel",
+            "ops",
+        ]);
+        let Some(Commands::Github { command }) = cli.command else {
+            panic!("expected github command");
+        };
+        let event = github_command_into_event(command).unwrap();
+
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config.clone(), queue_tx).await;
+        let mut config = config;
+        config.daemon.base_url = Some(base_url);
+
+        let accepted = submit_event(&config, event).await.unwrap();
+
+        assert!(accepted.queued);
+        assert_eq!(accepted.canonical_kind, "github.issue-opened");
+        assert_eq!(accepted.queue.pending, 1);
+
+        let envelope = queue_rx.try_recv().unwrap();
+        server.abort();
+
+        assert_eq!(envelope.canonical_kind(), "github.issue-opened");
+        assert_eq!(envelope.metadata.channel_hint.as_deref(), Some("ops"));
+        assert_eq!(envelope.metadata.repo_name.as_deref(), Some("hermeship"));
+        match envelope.body {
+            EventBody::GithubIssue(body) => {
+                assert_eq!(body.owner, "posp");
+                assert_eq!(body.repo, "hermeship");
+                assert_eq!(body.number, 42);
+                assert_eq!(body.title, "Add deterministic GitHub source");
+            }
+            other => panic!("expected GithubIssue, got {other:?}"),
         }
     }
 

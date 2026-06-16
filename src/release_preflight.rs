@@ -230,6 +230,10 @@ fn check_public_commands(repo_root: &Path) -> CheckResult {
         "hermes uninstall-hooks",
         "git commit",
         "git branch-changed",
+        "github issue-opened",
+        "github pr-opened",
+        "github check-failed",
+        "github release-published",
         "install",
         "uninstall",
         "release preflight",
@@ -276,6 +280,10 @@ fn check_docs_commands(repo_root: &Path) -> CheckResult {
         "hermeship uninstall",
         "hermeship git commit",
         "hermeship git branch-changed",
+        "hermeship github issue-opened",
+        "hermeship github pr-opened",
+        "hermeship github check-failed",
+        "hermeship github release-published",
         "hermeship release preflight",
     ];
     let missing = required
@@ -294,7 +302,7 @@ fn check_docs_commands(repo_root: &Path) -> CheckResult {
     if missing.is_empty() && operations_missing.is_empty() {
         CheckResult::pass(
             "docs commands",
-            "README/plan/operations mention lifecycle and git commands",
+            "README/plan/operations mention lifecycle, git, and GitHub commands",
         )
     } else {
         let mut all_missing = missing;
@@ -518,6 +526,57 @@ version = "0.1.0"
     }
 
     #[test]
+    fn preflight_fails_when_public_command_fixture_omits_github_commands() {
+        let root = temp_dir("preflight-github-command-fail");
+        write_project_fixture(
+            &root,
+            Some(ProjectFixtureOverrides {
+                public_commands: Some(
+                    "start\nstatus\nsetup --default-channel ops\nsend --channel ops --message hello\nemit hermes.agent.started --payload '{}'\nexplain hermes.agent.started --payload '{}'\nconfig show\nconfig path\nconfig verify\nhermes hook --payload '{}'\nhermes install-hooks --scope global --force\nhermes uninstall-hooks --dry-run\ngit commit --repo hermeship --branch main --commit 1234567890abcdef1234567890abcdef12345678 --summary ship\ngit branch-changed --repo hermeship --old-branch main --new-branch codex/milestone-8-git\ninstall\nuninstall\nrelease preflight 0.1.0\n",
+                ),
+                ..ProjectFixtureOverrides::default()
+            }),
+        );
+
+        let report = run_preflight(&root, "0.1.0").unwrap();
+
+        assert!(!report.ok());
+        assert!(report.render().contains("github issue-opened"));
+        assert!(report.render().contains("github pr-opened"));
+        assert!(report.render().contains("github check-failed"));
+        assert!(report.render().contains("github release-published"));
+
+        remove_temp_dir(&root);
+    }
+
+    #[test]
+    fn preflight_fails_when_docs_omit_github_pr_check_and_release_commands() {
+        let root = temp_dir("preflight-github-docs-fail");
+        write_project_fixture(
+            &root,
+            Some(ProjectFixtureOverrides {
+                readme: Some(
+                    "hermeship setup\nhermeship install\nhermeship uninstall\nhermeship git commit\nhermeship git branch-changed\nhermeship github issue-opened\nhermeship release preflight <version>\n",
+                ),
+                ..ProjectFixtureOverrides::default()
+            }),
+        );
+
+        let report = run_preflight(&root, "0.1.0").unwrap();
+
+        assert!(!report.ok());
+        assert!(report.render().contains("hermeship github pr-opened"));
+        assert!(report.render().contains("hermeship github check-failed"));
+        assert!(
+            report
+                .render()
+                .contains("hermeship github release-published")
+        );
+
+        remove_temp_dir(&root);
+    }
+
+    #[test]
     fn preflight_fails_when_hook_template_is_missing() {
         let root = temp_dir("preflight-hook-fail");
         write_project_fixture(
@@ -559,6 +618,7 @@ version = "0.1.0"
 
     #[derive(Default)]
     struct ProjectFixtureOverrides {
+        readme: Option<&'static str>,
         public_commands: Option<&'static str>,
         hook_manifest: Option<&'static str>,
         operations: Option<&'static str>,
@@ -570,7 +630,9 @@ version = "0.1.0"
         write(root.join("Cargo.lock"), CARGO_LOCK_SAMPLE);
         write(
             root.join("README.md"),
-            "hermeship setup\nhermeship install\nhermeship uninstall\nhermeship git commit\nhermeship git branch-changed\nhermeship release preflight <version>\n",
+            overrides.readme.unwrap_or(
+                "hermeship setup\nhermeship install\nhermeship uninstall\nhermeship git commit\nhermeship git branch-changed\nhermeship github issue-opened\nhermeship github pr-opened\nhermeship github check-failed\nhermeship github release-published\nhermeship release preflight <version>\n",
+            ),
         );
         write(
             root.join("docs/operations.md"),
@@ -585,7 +647,7 @@ version = "0.1.0"
         write(
             root.join("tests/fixtures/cli/public_commands.txt"),
             overrides.public_commands.unwrap_or(
-                "start\nstatus\nsetup --default-channel ops\nsend --channel ops --message hello\nemit hermes.agent.started --payload '{}'\nexplain hermes.agent.started --payload '{}'\nconfig show\nconfig path\nconfig verify\nhermes hook --payload '{}'\nhermes install-hooks --scope global --force\nhermes uninstall-hooks --dry-run\ngit commit --repo hermeship --branch main --commit 1234567890abcdef1234567890abcdef12345678 --summary ship\ngit branch-changed --repo hermeship --old-branch main --new-branch codex/milestone-8-git\ninstall\nuninstall\nrelease preflight 0.1.0\n",
+                "start\nstatus\nsetup --default-channel ops\nsend --channel ops --message hello\nemit hermes.agent.started --payload '{}'\nexplain hermes.agent.started --payload '{}'\nconfig show\nconfig path\nconfig verify\nhermes hook --payload '{}'\nhermes install-hooks --scope global --force\nhermes uninstall-hooks --dry-run\ngit commit --repo hermeship --branch main --commit 1234567890abcdef1234567890abcdef12345678 --summary ship\ngit branch-changed --repo hermeship --old-branch main --new-branch codex/milestone-8-git\ngithub issue-opened --owner posp --repo hermeship --number 42 --title issue\ngithub pr-opened --owner posp --repo hermeship --number 17 --title pr --branch codex/milestone-8-github\ngithub check-failed --owner posp --repo hermeship --workflow ci --status failure --branch main\ngithub release-published --owner posp --repo hermeship --tag v0.1.0\ninstall\nuninstall\nrelease preflight 0.1.0\n",
             ),
         );
         write(

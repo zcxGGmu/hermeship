@@ -594,15 +594,15 @@
 
 ### 任务 8.2：GitHub Source
 
-- [ ] 新建 GitHub source。
+- [x] 新建 GitHub source。
   - 新建：`src/source/github.rs`
-- [ ] 实现 issue/PR/CI/release 事件。
-- [ ] 实现 `hermeship github ...` CLI。
-- [ ] 编写测试。
+- [x] 实现 issue/PR/CI/release 事件。
+- [x] 实现 `hermeship github ...` CLI。
+- [x] 编写测试。
   - 使用 fixture，不依赖真实 GitHub。
-- [ ] 验证任务 8.2。
+- [x] 验证任务 8.2。
   - 命令：`cargo test github`
-- [ ] 提交任务 8.2。
+- [x] 提交任务 8.2。
   - commit：`feat: 增加 GitHub 事件 source`
 
 ### 任务 8.3：Tmux Source
@@ -729,6 +729,22 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-17 - Milestone 8.2 GitHub Source 本地 deterministic parity
+
+- [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
+- [x] 已确认启动时工作树干净，最近提交为 `9d8b05c docs: 更新 Hermeship Milestone 8.2 交接入口`、`a6bd734 docs: 更新 Hermeship Milestone 8.1 交接状态`、`1536b6a feat: 增加 Git Source 本地事件路径`。
+- [x] 已阅读 `src/cli.rs`、`src/main.rs`、`src/config.rs`、`src/events.rs`、`src/event/`、`src/source/git.rs`、`src/router.rs`、`src/render/`、`src/dispatch.rs`、`src/lifecycle.rs`、`src/release_preflight.rs`、`tests/fixtures/README.md` 与方案文档 parity/source 章节。
+- [x] 已先写失败测试并运行 Red：`cargo test github` 在实现前失败于缺少 `source::github` API、`GithubCommands`、`Commands::Github` 和 GitHub typed body variants。
+- [x] 已新增 `src/source/github.rs`，实现 deterministic `issue_opened_event`、`pull_request_opened_event`、`check_failed_event` 和 `release_published_event`；只构造 `IncomingEvent`，不访问真实 GitHub API、不依赖外网、不读取 token 或 webhook secret。
+- [x] 已新增 typed GitHub body：`GithubIssueEvent`、`GithubPullRequestEvent`、`GithubCheckEvent`、`GithubReleaseEvent`，并将 `github.issue-opened`、`github.pr-opened`、`github.check-failed`、`github.release-published` 接入 `IncomingEvent -> EventEnvelope` conversion。
+- [x] 已接入 CLI：`hermeship github issue-opened`、`hermeship github pr-opened`、`hermeship github check-failed`、`hermeship github release-published`，命令通过现有 `DaemonClient::post_event()` 投递到 `/event`。
+- [x] 已扩展 router 与默认 renderer：GitHub route filter 可用 owner、repo_name、number、branch、base_branch、workflow、status、tag 等结构化字段；compact 输出安全摘要；raw JSON 只输出受控字段，不展开 issue/PR body、URL、token、secret 或 provider response。
+- [x] 已根据代码审查修复 GitHub route metadata poisoning：router filter 中的 `repo_name` 由已校验 typed body 覆盖，避免直接 POST 用原始 `repo_name` 绕过 body repo。
+- [x] 已更新公开命令 fixture、release preflight 和方案 CLI 示例，要求覆盖四个 GitHub 公开命令。
+- [x] 已运行验证：`cargo test github`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test` 均通过。
+- [x] 已确认本阶段没有实现真实 GitHub API source、GitHub webhook receiver、GitHub credential handling、tmux source、cron、memory、真实 live verification、Slack sink 或 Hermes plugin/observer。
+- [x] 提交状态：随本阶段当前提交完成。
 
 ### 2026-06-17 - Milestone 8.1 完成后交接更新
 

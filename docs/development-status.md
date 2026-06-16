@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-17 Milestone 8.1 已完成，Milestone 8.2 待执行
+最后更新：2026-06-17 Milestone 8.2 已完成，Milestone 8.3 待执行
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -12,10 +12,10 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 当前最新功能阶段提交：`1536b6a feat: 增加 Git Source 本地事件路径`。
-- 当前交接工作台：`tasks/todo.md` 已切换到 Milestone 8.2 GitHub Source 本地 deterministic parity。
+- 当前最新功能阶段：Milestone 8.2 GitHub Source 本地 deterministic parity，本阶段随当前提交完成。
+- 当前交接工作台：`tasks/todo.md` 已切换到 Milestone 8.3 Tmux Source 入口。
 - 下次继续开发前必须先运行 `git status --short --branch` 确认工作树，只在预期文档/代码变更上继续。
-- 当前下一步：继续 Milestone 8.2，执行 GitHub Source 本地 deterministic parity 扩展。
+- 当前下一步：继续 Milestone 8.3，执行 Tmux Source 本地 deterministic parity 扩展。
 
 ## 阶段状态总览
 
@@ -30,7 +30,8 @@
 | Milestone 6 | 已完成并提交 | `f6f98a3 feat: 支持 Hermes hook bridge 安装` |
 | Milestone 7 | 已完成并提交 | `162efcd feat: 增加安装生命周期与发布预检` |
 | Milestone 8.1 | 已完成并提交 | `1536b6a feat: 增加 Git Source 本地事件路径` |
-| Milestone 8.2 - 8.4 | 未完成 | GitHub、tmux、cron 与 memory scaffold |
+| Milestone 8.2 | 已完成并提交 | GitHub Source 本地 deterministic parity |
+| Milestone 8.3 - 8.4 | 未完成 | tmux、cron 与 memory scaffold |
 | Milestone 9 | 未完成 | 文档与 live verification |
 | Milestone 10 | 未完成 | Hermes plugin / observer 研究 |
 
@@ -274,18 +275,35 @@
 - 本阶段没有实现真实 git polling source、GitHub source、tmux source、cron、memory、真实 live verification、Slack sink 或 Hermes plugin/observer。
 - 已提交：`1536b6a feat: 增加 Git Source 本地事件路径`。
 
+### Milestone 8.2：GitHub Source 本地 deterministic parity
+
+- 已新增 `src/source/github.rs`，实现 `GithubIssueInput`、`GithubPullRequestInput`、`GithubCheckInput`、`GithubReleaseInput` 以及 `issue_opened_event()`、`pull_request_opened_event()`、`check_failed_event()`、`release_published_event()`。
+- GitHub source 当前只基于显式 CLI 输入构造 `IncomingEvent`；不访问真实 GitHub API、不注册 webhook receiver、不依赖外网、不读取 GitHub token 或 webhook secret。
+- GitHub source 与 compat 均会拒绝无效 number、无效 status、非 7-64 hex commit、多行 title 和过长 display field，避免畸形 payload 绕过 raw renderer 字段级防护。
+- 已新增 typed GitHub body：`GithubIssueEvent`、`GithubPullRequestEvent`、`GithubCheckEvent`、`GithubReleaseEvent`，并将 `github.issue-opened`、`github.pr-opened`、`github.check-failed`、`github.release-published` 接入 `IncomingEvent -> EventEnvelope` conversion。
+- 已接入 CLI：`hermeship github issue-opened`、`hermeship github pr-opened`、`hermeship github check-failed`、`hermeship github release-published`，命令复用现有 `DaemonClient::post_event()` 投递 `/event`。
+- 已扩展 router/renderer：route filter 可用 owner、repo_name、number、branch、base_branch、workflow、status、tag 等结构化字段；默认 compact 渲染输出 repo/owner/编号/branch/status/tag/title/author 摘要。
+- raw JSON 渲染只输出受控 GitHub 字段，不展开完整 issue/PR body、URL、provider response、token、cookie 或 secret。
+- 已根据代码审查修复 GitHub route metadata poisoning：router filter 中的 `repo_name` 由已校验 typed body 覆盖，避免直接 POST 用原始 `repo_name` 绕过 body repo。
+- 已更新公开命令 fixture、release preflight 检查和方案 CLI 示例，要求覆盖四个 GitHub 公开命令。
+- 已覆盖测试：source 构造、typed conversion、route metadata filter、route metadata poisoning 回归、CLI parse、public command fixture、daemon submit、renderer 隐私边界和 release preflight。
+- 已运行 Red：`cargo test github` 在实现前失败于缺少 `source::github` API、`GithubCommands`、`Commands::Github` 和 GitHub typed body variants；review regression 测试在修复前失败于 route metadata poisoning 与 docs preflight 覆盖缺口。
+- 已运行验证：`cargo test github`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`（本地 checks ok，live verification pending）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
+- 本阶段没有实现真实 GitHub API source、GitHub webhook receiver、GitHub credential handling、tmux source、cron、memory、真实 live verification、Slack sink 或 Hermes plugin/observer。
+- 提交状态：随本阶段当前提交完成。
+
 ## 未完成
 
-- Milestone 8.2 到 Milestone 10 均未执行。
+- Milestone 8.3 到 Milestone 10 均未执行。
 - live verification 尚未实现；通用本地 install/uninstall lifecycle 和 release preflight 已在 Milestone 7 完成。
 - 默认 daemon queue 已有 dispatcher consumer；Discord sink 已实现并覆盖本地失败矩阵；daemon 到 fake sink 的本地 smoke 已覆盖，真实 Discord live delivery 尚未执行。
 - live Discord verification 凭据是否可用尚未确认。
-- Slack sink、GitHub/tmux parity 是否进入 `0.1.0` 尚未最终确认；Git Source 本地 deterministic CLI parity 已在 Milestone 8.1 完成。
+- Slack sink、tmux parity 是否进入 `0.1.0` 尚未最终确认；Git Source 本地 deterministic CLI parity 已在 Milestone 8.1 完成，GitHub Source 本地 deterministic CLI parity 已在 Milestone 8.2 完成。
 - macOS launchd 是否与 systemd 同期实现尚未最终确认。
 
 ## 下一步入口
 
-从 `tasks/development-checklist.md` 的 **Milestone 8：clawhip 功能 Parity 扩展** 继续，下一项是 **任务 8.2：GitHub Source**。
+从 `tasks/development-checklist.md` 的 **Milestone 8：clawhip 功能 Parity 扩展** 继续，下一项是 **任务 8.3：Tmux Source**。
 
 建议第一段工作：
 
@@ -293,7 +311,7 @@
 2. 确认当前分支、最新提交和未提交变更：
    - `git status --short --branch`
    - `git log -3 --oneline`
-3. 确认 Milestone 8.1 Git Source 已完成，并从 `tasks/development-checklist.md` 的 Milestone 8.2 继续。
+3. 确认 Milestone 8.2 GitHub Source 已完成，并从 `tasks/development-checklist.md` 的 Milestone 8.3 继续。
 4. 读取当前相关代码：
    - `src/cli.rs`
    - `src/config.rs`
@@ -312,7 +330,7 @@
    - `src/lifecycle.rs`
    - `src/release_preflight.rs`
    - `tests/fixtures/README.md`
-5. 从 Milestone 8.2 GitHub Source 继续，先写失败测试，再实现下一项本地 deterministic 能力。
+5. 从 Milestone 8.3 Tmux Source 继续，先写失败测试，再实现下一项本地 deterministic 能力。
 6. 注意 Milestone 8 默认不进入真实 live verification、Slack sink 或 Hermes plugin/observer，除非清单明确更新。
 7. 运行 Milestone 8 对应验证命令，至少包含：
    - `cargo fmt --all -- --check`
@@ -335,7 +353,7 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新功能阶段提交：1536b6a feat: 增加 Git Source 本地事件路径。
+- 最新功能阶段：Milestone 8.2 GitHub Source 本地 deterministic parity，本阶段随当前提交完成。
 - Milestone 0 已完成并提交：af57c49 docs: 明确 hermeship 完整项目方向。
 - Milestone 1.1 已完成并提交：d03170e chore: 搭建 Hermeship Rust CLI 骨架。
 - Milestone 1.2 已完成并提交：50723af feat: 实现 hermeship 配置模型与 config CLI。
@@ -358,7 +376,8 @@
 - Milestone 7 范围：安装、setup、uninstall、本地 service 模板、运维文档和 release preflight。
 - Milestone 8.1 已完成并提交：1536b6a feat: 增加 Git Source 本地事件路径。
 - Milestone 8.1 范围：Git Source 本地 deterministic parity、`hermeship git commit`、`hermeship git branch-changed`、typed Git event、route metadata 和默认渲染。
-- Milestone 8.2 到 Milestone 10 未完成。
+- Milestone 8.2 已完成：GitHub Source 本地 deterministic parity、`hermeship github issue-opened`、`hermeship github pr-opened`、`hermeship github check-failed`、`hermeship github release-published`、typed GitHub event、route metadata 和默认渲染。
+- Milestone 8.3 到 Milestone 10 未完成。
 - 已实现 src/events.rs：IncomingEvent、RoutingMetadata、字段别名反序列化、空/null payload 归一，以及 MessageFormat 的单一复用/重导出策略。
 - 已实现 src/event/：EventEnvelope、EventBody、EventMetadata、EventPriority、Hermes canonical mapping、IncomingEvent -> EventEnvelope conversion。
 - 已实现 src/privacy.rs：sanitize_payload、redact_value、excerpt_policy、敏感 key 递归脱敏、正文默认禁发、安全摘要和 opt-in 摘录。
@@ -373,23 +392,24 @@
 - 已实现 src/lifecycle.rs：hermeship install/setup/uninstall 的本地 deterministic 路径、dry-run、force、显式删除开关、stdin/env token 输入、token 输出脱敏、私有配置权限、home marker 和 Hermes hook safe uninstall 复用。
 - 已实现 src/release_preflight.rs：Cargo 版本一致性、公开 CLI fixture、文档命令、hook 模板、fixture policy、service 模板和 live verification pending 检查。
 - 已实现 src/source/git.rs：`git.commit` 和 `git.branch-changed` 的本地 deterministic `IncomingEvent` 构造，不执行真实 `git`、不轮询 repo、不访问远端。
+- 已实现 src/source/github.rs：`github.issue-opened`、`github.pr-opened`、`github.check-failed`、`github.release-published` 的本地 deterministic `IncomingEvent` 构造，不访问真实 GitHub API、不依赖外网或凭据。
 - 已新增 deploy/hermeship.service 与 docs/operations.md，记录 systemd user service 模板和 launchd 手动示例；不执行真实 systemctl/launchctl。
 - 已接入 hermeship start/status/emit/send/hermes hook 的真实 daemon health/event/hook 行为，hermes hook 支持 `--payload -` stdin。
 - 已接入 hermeship hermes install-hooks/uninstall-hooks 的本地 hook 文件安装与回滚行为。
 - 已接入 hermeship setup/install/uninstall/release preflight 的本地 lifecycle 与 preflight 行为。
 - 已接入 hermeship explain 的本地 route explain 行为：加载配置、清洗 payload、转 typed EventEnvelope、展示 matched/skipped routes、failed filters 和 delivery target，不调用 daemon、不入队、不投递。
 - Hermes canonical mapping 已覆盖 gateway:startup、session:start、session:end、session:reset、agent:start、agent:step、agent:end；显式失败的 agent:end 映射为 hermes.agent.failed；未知 event 降级为 Custom。
-- 已通过验证：cargo test git、cargo test release_preflight、cargo run -- release preflight 0.1.0、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
+- 已通过验证：cargo test github、cargo test release_preflight、cargo run -- release preflight 0.1.0、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
 - Hermeship 是 Hermes-native daemon-first event router，不是 thin adapter，不调用 clawhip runtime，也不依赖运行中的 clawhip daemon。
 - 方案文档只维护架构和边界，执行进度维护在 tasks/development-checklist.md 和 tasks/todo.md。
 
-请从 tasks/development-checklist.md 的 Milestone 8.2 继续，优先执行 GitHub Source 本地 deterministic parity：
+请从 tasks/development-checklist.md 的 Milestone 8.3 继续，优先执行 Tmux Source 本地 deterministic parity：
 1. 先复习 tasks/lessons.md，并确认当前分支、最新提交和未提交变更：git status --short --branch、git log -3 --oneline。
-2. 确认 tasks/development-checklist.md 的 Milestone 8.2 计划，并将当前任务计划写入 tasks/todo.md。
-3. 阅读 src/cli.rs、src/main.rs、src/config.rs、src/events.rs、src/event/、src/source/git.rs、src/router.rs、src/render/、src/dispatch.rs、src/lifecycle.rs、src/release_preflight.rs、tests/fixtures/README.md，以及方案文档的 parity/source 章节。
-4. 先写失败测试，再实现 Milestone 8.2 的本地 deterministic GitHub Source 路径。
+2. 确认 tasks/development-checklist.md 的 Milestone 8.3 计划，并将当前任务计划写入 tasks/todo.md。
+3. 阅读 src/cli.rs、src/main.rs、src/config.rs、src/events.rs、src/event/、src/source/git.rs、src/source/github.rs、src/router.rs、src/render/、src/dispatch.rs、src/lifecycle.rs、src/release_preflight.rs、tests/fixtures/README.md，以及方案文档的 parity/source 章节。
+4. 先写失败测试，再实现 Milestone 8.3 的本地 deterministic Tmux Source 路径。
 5. 默认不实现真实 live verification、Slack sink 或 Hermes plugin/observer，除非清单明确更新。
-6. 默认测试仍只使用本地 deterministic fixture。
+6. 默认测试仍只使用本地 deterministic fixture，不依赖真实 tmux session。
 7. 运行验证：cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test，并按 Milestone 8 子任务补充更窄测试。
 8. 更新 tasks/development-checklist.md 的运行状态日志和 tasks/todo.md 的 Review。
 9. 阶段完成后必须验证并提交，commit 信息使用详细中文，说明变更、验证和影响。

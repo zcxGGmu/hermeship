@@ -71,6 +71,11 @@ pub enum Commands {
         #[command(subcommand)]
         command: GitCommands,
     },
+    /// Emit local GitHub source events.
+    Github {
+        #[command(subcommand)]
+        command: GithubCommands,
+    },
     /// Install hermeship local files and service scaffolding.
     Install(InstallArgs),
     /// Uninstall hermeship local files and service scaffolding.
@@ -151,6 +156,137 @@ pub struct GitBranchChangedArgs {
     /// Worktree path for route metadata.
     #[arg(long)]
     pub worktree_path: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, Subcommand)]
+pub enum GithubCommands {
+    /// Emit a GitHub issue opened event.
+    #[command(name = "issue-opened")]
+    IssueOpened(GithubIssueArgs),
+    /// Emit a GitHub pull request opened event.
+    #[command(name = "pr-opened")]
+    PrOpened(GithubPullRequestArgs),
+    /// Emit a failed GitHub check or CI event.
+    #[command(name = "check-failed")]
+    CheckFailed(GithubCheckArgs),
+    /// Emit a GitHub release published event.
+    #[command(name = "release-published")]
+    ReleasePublished(GithubReleaseArgs),
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct GithubIssueArgs {
+    /// Repository owner or organization.
+    #[arg(long)]
+    pub owner: String,
+    /// Repository display name.
+    #[arg(long)]
+    pub repo: String,
+    /// Issue number.
+    #[arg(long)]
+    pub number: u64,
+    /// One-line issue title.
+    #[arg(long)]
+    pub title: String,
+    /// Issue author display name.
+    #[arg(long)]
+    pub author: Option<String>,
+    /// Redacted synthetic issue URL.
+    #[arg(long)]
+    pub url: Option<String>,
+    /// Override the delivery channel.
+    #[arg(long)]
+    pub channel: Option<String>,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct GithubPullRequestArgs {
+    /// Repository owner or organization.
+    #[arg(long)]
+    pub owner: String,
+    /// Repository display name.
+    #[arg(long)]
+    pub repo: String,
+    /// Pull request number.
+    #[arg(long)]
+    pub number: u64,
+    /// One-line pull request title.
+    #[arg(long)]
+    pub title: String,
+    /// Head branch name.
+    #[arg(long)]
+    pub branch: String,
+    /// Base branch name.
+    #[arg(long)]
+    pub base_branch: Option<String>,
+    /// Head commit SHA, 7 to 64 hex characters.
+    #[arg(long)]
+    pub commit: Option<String>,
+    /// Pull request author display name.
+    #[arg(long)]
+    pub author: Option<String>,
+    /// Redacted synthetic pull request URL.
+    #[arg(long)]
+    pub url: Option<String>,
+    /// Override the delivery channel.
+    #[arg(long)]
+    pub channel: Option<String>,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct GithubCheckArgs {
+    /// Repository owner or organization.
+    #[arg(long)]
+    pub owner: String,
+    /// Repository display name.
+    #[arg(long)]
+    pub repo: String,
+    /// Workflow or check name.
+    #[arg(long)]
+    pub workflow: String,
+    /// Check status such as failure, success, or cancelled.
+    #[arg(long)]
+    pub status: String,
+    /// Branch name for the check.
+    #[arg(long)]
+    pub branch: String,
+    /// Commit SHA, 7 to 64 hex characters.
+    #[arg(long)]
+    pub commit: Option<String>,
+    /// One-line check title or summary.
+    #[arg(long)]
+    pub title: Option<String>,
+    /// Redacted synthetic check URL.
+    #[arg(long)]
+    pub url: Option<String>,
+    /// Override the delivery channel.
+    #[arg(long)]
+    pub channel: Option<String>,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct GithubReleaseArgs {
+    /// Repository owner or organization.
+    #[arg(long)]
+    pub owner: String,
+    /// Repository display name.
+    #[arg(long)]
+    pub repo: String,
+    /// Release tag.
+    #[arg(long)]
+    pub tag: String,
+    /// One-line release title.
+    #[arg(long)]
+    pub title: Option<String>,
+    /// Release author display name.
+    #[arg(long)]
+    pub author: Option<String>,
+    /// Redacted synthetic release URL.
+    #[arg(long)]
+    pub url: Option<String>,
+    /// Override the delivery channel.
+    #[arg(long)]
+    pub channel: Option<String>,
 }
 
 impl EventArgs {
@@ -359,7 +495,9 @@ mod tests {
 
     use serde_json::json;
 
-    use super::{Cli, Commands, ConfigCommand, GitCommands, HermesCommands, ReleaseCommands};
+    use super::{
+        Cli, Commands, ConfigCommand, GitCommands, GithubCommands, HermesCommands, ReleaseCommands,
+    };
     use crate::events::MessageFormat;
 
     #[test]
@@ -566,6 +704,119 @@ mod tests {
     }
 
     #[test]
+    fn parses_github_issue_pr_check_and_release_commands() {
+        let issue = Cli::parse_from([
+            "hermeship",
+            "github",
+            "issue-opened",
+            "--owner",
+            "posp",
+            "--repo",
+            "hermeship",
+            "--number",
+            "42",
+            "--title",
+            "Add deterministic GitHub source",
+            "--author",
+            "synthetic-user",
+            "--url",
+            "https://github.example.invalid/posp/hermeship/issues/42",
+            "--channel",
+            "ops",
+        ]);
+        match issue.command {
+            Some(Commands::Github {
+                command: GithubCommands::IssueOpened(args),
+            }) => {
+                assert_eq!(args.owner, "posp");
+                assert_eq!(args.repo, "hermeship");
+                assert_eq!(args.number, 42);
+                assert_eq!(args.title, "Add deterministic GitHub source");
+                assert_eq!(args.author.as_deref(), Some("synthetic-user"));
+                assert_eq!(args.channel.as_deref(), Some("ops"));
+            }
+            other => panic!("expected github issue-opened command, got {other:?}"),
+        }
+
+        let pr = Cli::parse_from([
+            "hermeship",
+            "github",
+            "pr-opened",
+            "--owner",
+            "posp",
+            "--repo",
+            "hermeship",
+            "--number",
+            "17",
+            "--title",
+            "Ship GitHub source",
+            "--branch",
+            "codex/milestone-8-github",
+            "--base-branch",
+            "main",
+            "--commit",
+            "1234567890abcdef1234567890abcdef12345678",
+        ]);
+        assert!(matches!(
+            pr.command,
+            Some(Commands::Github {
+                command: GithubCommands::PrOpened(args),
+            }) if args.number == 17
+                && args.branch == "codex/milestone-8-github"
+                && args.base_branch.as_deref() == Some("main")
+                && args.commit.as_deref() == Some("1234567890abcdef1234567890abcdef12345678")
+        ));
+
+        let check = Cli::parse_from([
+            "hermeship",
+            "github",
+            "check-failed",
+            "--owner",
+            "posp",
+            "--repo",
+            "hermeship",
+            "--workflow",
+            "ci",
+            "--status",
+            "failure",
+            "--branch",
+            "main",
+            "--title",
+            "cargo test failed",
+        ]);
+        assert!(matches!(
+            check.command,
+            Some(Commands::Github {
+                command: GithubCommands::CheckFailed(args),
+            }) if args.workflow == "ci"
+                && args.status == "failure"
+                && args.branch == "main"
+                && args.title.as_deref() == Some("cargo test failed")
+        ));
+
+        let release = Cli::parse_from([
+            "hermeship",
+            "github",
+            "release-published",
+            "--owner",
+            "posp",
+            "--repo",
+            "hermeship",
+            "--tag",
+            "v0.1.0",
+            "--title",
+            "Hermeship v0.1.0",
+        ]);
+        assert!(matches!(
+            release.command,
+            Some(Commands::Github {
+                command: GithubCommands::ReleasePublished(args),
+            }) if args.tag == "v0.1.0"
+                && args.title.as_deref() == Some("Hermeship v0.1.0")
+        ));
+    }
+
+    #[test]
     fn emit_args_construct_incoming_event_from_payload_and_flags() {
         let cli = Cli::parse_from([
             "hermeship",
@@ -768,6 +1019,10 @@ mod tests {
             "hermes uninstall-hooks",
             "git commit",
             "git branch-changed",
+            "github issue-opened",
+            "github pr-opened",
+            "github check-failed",
+            "github release-published",
             "install",
             "uninstall",
             "release preflight",

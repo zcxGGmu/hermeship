@@ -13,6 +13,10 @@ hermes install-hooks --scope global --force
 hermes uninstall-hooks --home /tmp/hermeship-test-home --dry-run
 git commit --repo hermeship --branch main --commit 1234567890abcdef1234567890abcdef12345678 --summary "ship git source" --channel ops --repo-path /tmp/hermeship --worktree-path /tmp/hermeship-worktree
 git branch-changed --repo hermeship --old-branch main --new-branch codex/milestone-8-git --channel ops --repo-path /tmp/hermeship --worktree-path /tmp/hermeship-worktree
+github issue-opened --owner posp --repo hermeship --number 42 --title "Add deterministic GitHub source" --author synthetic-user --url https://github.example.invalid/posp/hermeship/issues/42 --channel ops
+github pr-opened --owner posp --repo hermeship --number 17 --title "Ship GitHub source" --branch codex/milestone-8-github --base-branch main --commit 1234567890abcdef1234567890abcdef12345678 --channel ops
+github check-failed --owner posp --repo hermeship --workflow ci --status failure --branch main --commit abcdef1234567890abcdef1234567890abcdef12 --title "cargo test failed" --channel ops
+github release-published --owner posp --repo hermeship --tag v0.1.0 --title "Hermeship v0.1.0" --author synthetic-user --channel ops
 install --dry-run
 uninstall --remove-config --remove-state --remove-hooks --hermes-home /tmp/hermeship-test-home --dry-run
 release preflight 0.1.0

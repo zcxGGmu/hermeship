@@ -2,7 +2,8 @@ pub mod body;
 pub mod compat;
 
 pub use body::{
-    CustomEvent, GitBranchChangedEvent, GitCommitEvent, HermesAgentEvent, HermesGatewayEvent,
+    CustomEvent, GitBranchChangedEvent, GitCommitEvent, GithubCheckEvent, GithubIssueEvent,
+    GithubPullRequestEvent, GithubReleaseEvent, HermesAgentEvent, HermesGatewayEvent,
     HermesSessionEvent,
 };
 
@@ -30,6 +31,10 @@ impl EventEnvelope {
 pub enum EventBody {
     GitCommit(GitCommitEvent),
     GitBranchChanged(GitBranchChangedEvent),
+    GithubIssue(GithubIssueEvent),
+    GithubPullRequest(GithubPullRequestEvent),
+    GithubCheck(GithubCheckEvent),
+    GithubRelease(GithubReleaseEvent),
     HermesGatewayStarted(HermesGatewayEvent),
     HermesSessionStarted(HermesSessionEvent),
     HermesSessionFinished(HermesSessionEvent),
@@ -46,6 +51,10 @@ impl EventBody {
         match self {
             Self::GitCommit(_) => "git.commit",
             Self::GitBranchChanged(_) => "git.branch-changed",
+            Self::GithubIssue(_) => "github.issue-opened",
+            Self::GithubPullRequest(_) => "github.pr-opened",
+            Self::GithubCheck(_) => "github.check-failed",
+            Self::GithubRelease(_) => "github.release-published",
             Self::HermesGatewayStarted(_) => "hermes.gateway.started",
             Self::HermesSessionStarted(_) => "hermes.session.started",
             Self::HermesSessionFinished(_) => "hermes.session.finished",
