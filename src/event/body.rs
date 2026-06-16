@@ -1,6 +1,28 @@
 use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GitCommitEvent {
+    pub repo: String,
+    pub branch: String,
+    pub sha: String,
+    pub short_sha: String,
+    pub summary: String,
+    pub repo_path: Option<String>,
+    pub worktree_path: Option<String>,
+    pub author_name: Option<String>,
+    pub author_email: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GitBranchChangedEvent {
+    pub repo: String,
+    pub old_branch: String,
+    pub new_branch: String,
+    pub repo_path: Option<String>,
+    pub worktree_path: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HermesGatewayEvent {
     pub provider: Option<String>,
     pub source: Option<String>,

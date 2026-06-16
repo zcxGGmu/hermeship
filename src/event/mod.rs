@@ -1,7 +1,10 @@
 pub mod body;
 pub mod compat;
 
-pub use body::{CustomEvent, HermesAgentEvent, HermesGatewayEvent, HermesSessionEvent};
+pub use body::{
+    CustomEvent, GitBranchChangedEvent, GitCommitEvent, HermesAgentEvent, HermesGatewayEvent,
+    HermesSessionEvent,
+};
 
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -25,6 +28,8 @@ impl EventEnvelope {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum EventBody {
+    GitCommit(GitCommitEvent),
+    GitBranchChanged(GitBranchChangedEvent),
     HermesGatewayStarted(HermesGatewayEvent),
     HermesSessionStarted(HermesSessionEvent),
     HermesSessionFinished(HermesSessionEvent),
@@ -39,6 +44,8 @@ pub enum EventBody {
 impl EventBody {
     pub fn canonical_kind(&self) -> &str {
         match self {
+            Self::GitCommit(_) => "git.commit",
+            Self::GitBranchChanged(_) => "git.branch-changed",
             Self::HermesGatewayStarted(_) => "hermes.gateway.started",
             Self::HermesSessionStarted(_) => "hermes.session.started",
             Self::HermesSessionFinished(_) => "hermes.session.finished",

@@ -580,16 +580,17 @@
 
 ### 任务 8.1：Git Source
 
-- [ ] 新建 git source。
+- [x] 新建 git source。
   - 新建：`src/source/git.rs`
-- [ ] 实现 commit/branch 事件。
-- [ ] 实现 `hermeship git commit` 和 `hermeship git branch-changed`。
-- [ ] 编写测试。
+- [x] 实现 commit/branch 事件。
+- [x] 实现 `hermeship git commit` 和 `hermeship git branch-changed`。
+- [x] 编写测试。
   - 覆盖：repo/branch/commit summary、路由 metadata。
-- [ ] 验证任务 8.1。
+- [x] 验证任务 8.1。
   - 命令：`cargo test git`
-- [ ] 提交任务 8.1。
+- [x] 提交任务 8.1。
   - commit：`feat: 增加 git 事件 source`
+  - 记录：提交 hash 待本次提交生成后回填。
 
 ### 任务 8.2：GitHub Source
 
@@ -728,6 +729,23 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-17 - Milestone 8.1 Git Source 本地 deterministic parity
+
+- [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
+- [x] 已确认启动时工作树干净，最近提交为 `475f2a3 docs: 更新 Hermeship Milestone 8 开发入口`、`162efcd feat: 增加安装生命周期与发布预检`、`64e8641 docs: 更新 Hermeship 最新开发状态`。
+- [x] 已阅读 `src/cli.rs`、`src/main.rs`、`src/config.rs`、`src/events.rs`、`src/event/`、`src/router.rs`、`src/render/`、`src/dispatch.rs`、`src/lifecycle.rs`、`src/release_preflight.rs`、`tests/fixtures/README.md` 与方案文档 parity/source 章节。
+- [x] 已先写失败测试并运行 Red：`cargo test git` 在实现前失败于缺少 `source::git` API、`GitCommands`、`Commands::Git` 和 `EventBody::GitCommit` / `GitBranchChanged` variants。
+- [x] 已新增 `src/source/mod.rs` 与 `src/source/git.rs`，实现 deterministic `commit_event` 和 `branch_changed_event`，只构造 `IncomingEvent`，不执行真实 `git` 命令、不轮询 repo、不访问远端。
+- [x] 已根据代码审查补强 Git 输入校验：source 与 compat 均拒绝非 7-64 hex commit、空 summary、多行 summary 和过长 display field，避免畸形 Git payload 绕过 raw renderer 字段级防护。
+- [x] 已新增 typed Git body：`GitCommitEvent`、`GitBranchChangedEvent`，并将 `git.commit` 与 `git.branch-changed` 接入 `IncomingEvent -> EventEnvelope` conversion。
+- [x] 已接入 CLI：`hermeship git commit` 与 `hermeship git branch-changed`，命令通过现有 `DaemonClient::post_event()` 投递到 `/event`。
+- [x] 已扩展默认 renderer 和 raw JSON：Git compact 输出 repo/branch/short commit/summary/author 摘要；raw 只输出受控字段，不展开完整 diff、commit body、repo path、worktree path 或 author email。
+- [x] 已覆盖 source 构造、typed conversion、route metadata filter、CLI parse、public command fixture、daemon submit 和 renderer 隐私边界。
+- [x] 已更新 release preflight 的公开命令检查，要求 fixture 覆盖 `git commit` 与 `git branch-changed`。
+- [x] 已运行验证：`cargo test git`（11 lib-filtered tests + 2 bin-filtered tests passed）、`cargo test release_preflight`（6 passed）、`cargo run -- release preflight 0.1.0`（本地 checks ok，live verification pending）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（150 lib tests + 10 bin tests passed）均通过。
+- [x] 已确认本阶段没有实现真实 git polling source、GitHub source、tmux source、cron、memory、真实 live verification、Slack sink 或 Hermes plugin/observer。
+- [x] 提交状态：待本次提交生成 hash 后回填。
 
 ### 2026-06-16 - Milestone 7 完成后交接更新
 

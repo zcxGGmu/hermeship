@@ -581,6 +581,68 @@ mod tests {
     }
 
     #[test]
+    fn git_route_filters_match_repo_and_branch_metadata() {
+        let config = AppConfig {
+            routes: vec![
+                RouteRule {
+                    event: "git.*".to_string(),
+                    filter: BTreeMap::from([
+                        ("repo_name".to_string(), "hermeship".to_string()),
+                        ("branch".to_string(), "codex/*".to_string()),
+                    ]),
+                    channel: Some("git-alerts".to_string()),
+                    ..RouteRule::default()
+                },
+                RouteRule {
+                    event: "git.*".to_string(),
+                    filter: BTreeMap::from([("repo_name".to_string(), "other".to_string())]),
+                    channel: Some("wrong-repo".to_string()),
+                    ..RouteRule::default()
+                },
+            ],
+            ..AppConfig::default()
+        };
+        let envelope = envelope(
+            "git.branch-changed",
+            json!({
+                "repo": "hermeship",
+                "repo_name": "hermeship",
+                "repo_path": "/tmp/hermeship",
+                "worktree_path": "/tmp/hermeship-worktree",
+                "old_branch": "main",
+                "new_branch": "codex/milestone-8-git",
+                "branch": "codex/milestone-8-git"
+            }),
+        );
+
+        let explanation = Router::new(config).explain(&envelope);
+
+        assert_eq!(explanation.canonical_kind, "git.branch-changed");
+        assert_eq!(
+            explanation.route_candidates,
+            vec!["git.branch-changed", "git.*"]
+        );
+        assert_eq!(explanation.deliveries.len(), 1);
+        assert_eq!(
+            explanation.deliveries[0].target,
+            SinkTarget::DiscordChannel("git-alerts".to_string())
+        );
+        assert!(explanation.routes[0].matched);
+        assert_eq!(
+            explanation.routes[0].filter_results[0].actual.as_deref(),
+            Some("codex/milestone-8-git")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[1].actual.as_deref(),
+            Some("hermeship")
+        );
+        assert_eq!(
+            explanation.routes[1].skipped_reason.as_deref(),
+            Some("filter mismatch")
+        );
+    }
+
+    #[test]
     fn explain_redacts_webhook_targets_in_diagnostics() {
         let raw_webhook = "https://discord.com/api/webhooks/synthetic-id/synthetic-secret-token";
         let config = AppConfig {

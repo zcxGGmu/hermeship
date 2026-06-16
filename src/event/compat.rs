@@ -4,10 +4,14 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::event::{
-    CustomEvent, EventBody, EventEnvelope, EventMetadata, EventPriority, HermesAgentEvent,
-    HermesGatewayEvent, HermesSessionEvent,
+    CustomEvent, EventBody, EventEnvelope, EventMetadata, EventPriority, GitBranchChangedEvent,
+    GitCommitEvent, HermesAgentEvent, HermesGatewayEvent, HermesSessionEvent,
 };
 use crate::events::IncomingEvent;
+use crate::source::git::{
+    MAX_DISPLAY_FIELD_CHARS, MAX_SUMMARY_CHARS, validate_commit_sha, validate_optional_single_line,
+    validate_single_line,
+};
 
 pub fn from_incoming_event(event: &IncomingEvent) -> Result<EventEnvelope> {
     EventEnvelope::try_from(event)
@@ -24,7 +28,7 @@ impl TryFrom<&IncomingEvent> for EventEnvelope {
             id: event_id_for(&event.payload).unwrap_or_else(Uuid::new_v4),
             timestamp: OffsetDateTime::now_utc(),
             source: source_for_kind(&canonical_kind),
-            body: body_for(&canonical_kind, &event.payload, &metadata),
+            body: body_for(&canonical_kind, &event.payload, &metadata)?,
             metadata,
         })
     }
@@ -78,8 +82,12 @@ fn metadata_for(event: &IncomingEvent, canonical_kind: &str) -> EventMetadata {
     }
 }
 
-fn body_for(kind: &str, payload: &Value, metadata: &EventMetadata) -> EventBody {
-    match kind {
+fn body_for(kind: &str, payload: &Value, metadata: &EventMetadata) -> Result<EventBody> {
+    Ok(match kind {
+        "git.commit" => EventBody::GitCommit(git_commit_event(payload, metadata)?),
+        "git.branch-changed" => {
+            EventBody::GitBranchChanged(git_branch_changed_event(payload, metadata))
+        }
         "hermes.gateway.started" => EventBody::HermesGatewayStarted(HermesGatewayEvent {
             provider: metadata.provider.clone(),
             source: metadata.source.clone(),
@@ -116,6 +124,64 @@ fn body_for(kind: &str, payload: &Value, metadata: &EventMetadata) -> EventBody 
                 Some(payload.clone())
             },
         }),
+    })
+}
+
+fn git_commit_event(payload: &Value, metadata: &EventMetadata) -> Result<GitCommitEvent> {
+    let sha = string_field(payload, "commit")
+        .or_else(|| string_field(payload, "sha"))
+        .unwrap_or_default();
+    let sha = validate_commit_sha(&sha)?;
+    let short_sha = string_field(payload, "short_commit")
+        .or_else(|| string_field(payload, "short_sha"))
+        .map(|value| validate_commit_sha(&value))
+        .transpose()?
+        .map(|value| short_sha(&value))
+        .unwrap_or_else(|| short_sha(&sha));
+    let summary = validate_single_line(
+        "summary",
+        string_field(payload, "summary")
+            .as_deref()
+            .unwrap_or_default(),
+        MAX_SUMMARY_CHARS,
+    )?;
+    let author_name = validate_optional_single_line(
+        "author_name",
+        string_field(payload, "author_name").as_deref(),
+        MAX_DISPLAY_FIELD_CHARS,
+    )?;
+    let author_email = validate_optional_single_line(
+        "author_email",
+        string_field(payload, "author_email").as_deref(),
+        MAX_DISPLAY_FIELD_CHARS,
+    )?;
+
+    Ok(GitCommitEvent {
+        repo: string_field(payload, "repo")
+            .or_else(|| metadata.repo_name.clone())
+            .unwrap_or_default(),
+        branch: metadata.branch.clone().unwrap_or_default(),
+        sha,
+        short_sha,
+        summary,
+        repo_path: metadata.repo_path.clone(),
+        worktree_path: metadata.worktree_path.clone(),
+        author_name,
+        author_email,
+    })
+}
+
+fn git_branch_changed_event(payload: &Value, metadata: &EventMetadata) -> GitBranchChangedEvent {
+    GitBranchChangedEvent {
+        repo: string_field(payload, "repo")
+            .or_else(|| metadata.repo_name.clone())
+            .unwrap_or_default(),
+        old_branch: string_field(payload, "old_branch").unwrap_or_default(),
+        new_branch: string_field(payload, "new_branch")
+            .or_else(|| metadata.branch.clone())
+            .unwrap_or_default(),
+        repo_path: metadata.repo_path.clone(),
+        worktree_path: metadata.worktree_path.clone(),
     }
 }
 
@@ -215,6 +281,10 @@ fn value_field<'a>(payload: &'a Value, key: &str) -> Option<&'a Value> {
 
 fn event_id_for(payload: &Value) -> Option<Uuid> {
     string_field(payload, "event_id").and_then(|value| Uuid::parse_str(&value).ok())
+}
+
+fn short_sha(commit: &str) -> String {
+    commit.chars().take(7).collect()
 }
 
 #[cfg(test)]
@@ -405,6 +475,132 @@ mod tests {
     }
 
     #[test]
+    fn git_commit_event_converts_to_typed_body_with_route_metadata() {
+        let event = IncomingEvent::new(
+            "git.commit",
+            json!({
+                "repo": "hermeship",
+                "repo_name": "hermeship",
+                "repo_path": "/tmp/hermeship",
+                "worktree_path": "/tmp/hermeship-worktree",
+                "branch": "main",
+                "commit": "1234567890abcdef1234567890abcdef12345678",
+                "short_commit": "1234567",
+                "summary": "ship git source",
+                "author_name": "Synthetic Author",
+                "author_email": "synthetic@example.invalid"
+            }),
+        );
+
+        let envelope = from_incoming_event(&event).unwrap();
+
+        assert_eq!(envelope.source, "git");
+        assert_eq!(envelope.canonical_kind(), "git.commit");
+        assert_eq!(envelope.metadata.priority, EventPriority::Low);
+        assert_eq!(envelope.metadata.repo_name.as_deref(), Some("hermeship"));
+        assert_eq!(
+            envelope.metadata.repo_path.as_deref(),
+            Some("/tmp/hermeship")
+        );
+        assert_eq!(
+            envelope.metadata.worktree_path.as_deref(),
+            Some("/tmp/hermeship-worktree")
+        );
+        assert_eq!(envelope.metadata.branch.as_deref(), Some("main"));
+
+        match envelope.body {
+            EventBody::GitCommit(body) => {
+                assert_eq!(body.repo, "hermeship");
+                assert_eq!(body.branch, "main");
+                assert_eq!(body.sha, "1234567890abcdef1234567890abcdef12345678");
+                assert_eq!(body.short_sha, "1234567");
+                assert_eq!(body.summary, "ship git source");
+                assert_eq!(body.repo_path.as_deref(), Some("/tmp/hermeship"));
+                assert_eq!(
+                    body.worktree_path.as_deref(),
+                    Some("/tmp/hermeship-worktree")
+                );
+                assert_eq!(body.author_name.as_deref(), Some("Synthetic Author"));
+                assert_eq!(
+                    body.author_email.as_deref(),
+                    Some("synthetic@example.invalid")
+                );
+            }
+            other => panic!("expected GitCommit, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn git_branch_changed_event_converts_to_typed_body_with_new_branch_metadata() {
+        let event = IncomingEvent::new(
+            "git.branch-changed",
+            json!({
+                "repo": "hermeship",
+                "repo_name": "hermeship",
+                "repo_path": "/tmp/hermeship",
+                "worktree_path": "/tmp/hermeship-worktree",
+                "old_branch": "main",
+                "new_branch": "codex/milestone-8-git",
+                "branch": "codex/milestone-8-git"
+            }),
+        );
+
+        let envelope = from_incoming_event(&event).unwrap();
+
+        assert_eq!(envelope.source, "git");
+        assert_eq!(envelope.canonical_kind(), "git.branch-changed");
+        assert_eq!(envelope.metadata.priority, EventPriority::Low);
+        assert_eq!(envelope.metadata.repo_name.as_deref(), Some("hermeship"));
+        assert_eq!(
+            envelope.metadata.branch.as_deref(),
+            Some("codex/milestone-8-git")
+        );
+
+        match envelope.body {
+            EventBody::GitBranchChanged(body) => {
+                assert_eq!(body.repo, "hermeship");
+                assert_eq!(body.old_branch, "main");
+                assert_eq!(body.new_branch, "codex/milestone-8-git");
+                assert_eq!(body.repo_path.as_deref(), Some("/tmp/hermeship"));
+                assert_eq!(
+                    body.worktree_path.as_deref(),
+                    Some("/tmp/hermeship-worktree")
+                );
+            }
+            other => panic!("expected GitBranchChanged, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn git_commit_event_rejects_invalid_sha_and_multiline_summary() {
+        let invalid_sha = from_incoming_event(&IncomingEvent::new(
+            "git.commit",
+            json!({
+                "repo": "hermeship",
+                "branch": "main",
+                "commit": "not-a-sha",
+                "summary": "ship git source"
+            }),
+        ))
+        .unwrap_err()
+        .to_string();
+        assert!(invalid_sha.contains("commit must be 7-64 hex characters"));
+
+        let multiline = from_incoming_event(&IncomingEvent::new(
+            "git.commit",
+            json!({
+                "repo": "hermeship",
+                "branch": "main",
+                "commit": "1234567890abcdef1234567890abcdef12345678",
+                "summary": "ship git source\nsynthetic diff should not render"
+            }),
+        ))
+        .unwrap_err()
+        .to_string();
+        assert!(multiline.contains("summary must be a single line"));
+    }
+
+    #[test]
     fn unknown_event_becomes_custom_without_losing_payload() {
         let event = IncomingEvent::new(
             "plugin.custom",
@@ -457,6 +653,8 @@ mod tests {
 
     fn body_variant_name(body: &EventBody) -> &'static str {
         match body {
+            EventBody::GitCommit(_) => "GitCommit",
+            EventBody::GitBranchChanged(_) => "GitBranchChanged",
             EventBody::HermesGatewayStarted(_) => "HermesGatewayStarted",
             EventBody::HermesSessionStarted(_) => "HermesSessionStarted",
             EventBody::HermesSessionFinished(_) => "HermesSessionFinished",

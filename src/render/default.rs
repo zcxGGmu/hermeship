@@ -3,8 +3,8 @@ use serde_json::{Map, Value, json};
 
 use crate::config::{MessageFormat, PrivacyConfig};
 use crate::event::{
-    CustomEvent, EventBody, EventEnvelope, EventMetadata, HermesAgentEvent, HermesGatewayEvent,
-    HermesSessionEvent,
+    CustomEvent, EventBody, EventEnvelope, EventMetadata, GitBranchChangedEvent, GitCommitEvent,
+    HermesAgentEvent, HermesGatewayEvent, HermesSessionEvent,
 };
 use crate::privacy::sanitize_payload;
 use crate::router::{ResolvedDelivery, SinkTarget};
@@ -145,11 +145,13 @@ fn token_value(token: &str, event: &EventEnvelope, delivery: &ResolvedDelivery) 
 }
 
 fn event_label(event: &EventEnvelope) -> String {
-    event.canonical_kind().replace('.', " ")
+    event.canonical_kind().replace(['.', '-'], " ")
 }
 
 fn detail_parts(event: &EventEnvelope) -> Vec<String> {
     match &event.body {
+        EventBody::GitCommit(body) => git_commit_parts(body),
+        EventBody::GitBranchChanged(body) => git_branch_changed_parts(body),
         EventBody::HermesGatewayStarted(body) => gateway_parts(body),
         EventBody::HermesSessionStarted(body)
         | EventBody::HermesSessionFinished(body)
@@ -160,6 +162,25 @@ fn detail_parts(event: &EventEnvelope) -> Vec<String> {
         | EventBody::HermesAgentFailed(body) => agent_parts(body),
         EventBody::Custom(body) => custom_parts(body),
     }
+}
+
+fn git_commit_parts(body: &GitCommitEvent) -> Vec<String> {
+    let mut parts = Vec::new();
+    push_part(&mut parts, "repo", Some(body.repo.as_str()));
+    push_part(&mut parts, "branch", Some(body.branch.as_str()));
+    push_part(&mut parts, "commit", Some(body.short_sha.as_str()));
+    push_part(&mut parts, "summary", Some(body.summary.as_str()));
+    push_part(&mut parts, "author", body.author_name.as_deref());
+    parts
+}
+
+fn git_branch_changed_parts(body: &GitBranchChangedEvent) -> Vec<String> {
+    let mut parts = Vec::new();
+    push_part(&mut parts, "repo", Some(body.repo.as_str()));
+    push_part(&mut parts, "branch", Some(body.new_branch.as_str()));
+    push_part(&mut parts, "old_branch", Some(body.old_branch.as_str()));
+    push_part(&mut parts, "new_branch", Some(body.new_branch.as_str()));
+    parts
 }
 
 fn gateway_parts(body: &HermesGatewayEvent) -> Vec<String> {
@@ -253,6 +274,8 @@ fn metadata_json(event: &EventEnvelope) -> Value {
     insert_json_string(&mut output, "session_id", metadata.session_id.as_deref());
     insert_json_string(&mut output, "agent_name", metadata.agent_name.as_deref());
     insert_json_string(&mut output, "project", metadata.project.as_deref());
+    insert_json_string(&mut output, "repo_name", metadata.repo_name.as_deref());
+    insert_json_string(&mut output, "branch", metadata.branch.as_deref());
     Value::Object(output)
 }
 
@@ -275,6 +298,8 @@ fn delivery_json(delivery: &ResolvedDelivery) -> Value {
 
 fn body_json(body: &EventBody) -> Value {
     match body {
+        EventBody::GitCommit(body) => git_commit_json(body),
+        EventBody::GitBranchChanged(body) => git_branch_changed_json(body),
         EventBody::HermesGatewayStarted(body) => json!({
             "kind": "hermes.gateway.started",
             "provider": body.provider,
@@ -302,6 +327,27 @@ fn body_json(body: &EventBody) -> Value {
             })
         }
     }
+}
+
+fn git_commit_json(body: &GitCommitEvent) -> Value {
+    json!({
+        "kind": "git.commit",
+        "repo": body.repo,
+        "branch": body.branch,
+        "commit": body.sha,
+        "short_commit": body.short_sha,
+        "summary": body.summary,
+        "author_name": body.author_name,
+    })
+}
+
+fn git_branch_changed_json(body: &GitBranchChangedEvent) -> Value {
+    json!({
+        "kind": "git.branch-changed",
+        "repo": body.repo,
+        "old_branch": body.old_branch,
+        "new_branch": body.new_branch,
+    })
 }
 
 fn session_json(kind: &str, body: &HermesSessionEvent) -> Value {
@@ -674,6 +720,99 @@ mod tests {
             "@route route hermes.agent.started synthetic-session-005 route-channel"
         );
         assert_eq!(rendered.format, MessageFormat::Alert);
+    }
+
+    #[test]
+    fn render_git_commit_compact_and_raw_without_commit_body_leaks() {
+        let event = sanitized_envelope(
+            "git.commit",
+            json!({
+                "repo": "hermeship",
+                "repo_name": "hermeship",
+                "repo_path": "/tmp/hermeship",
+                "worktree_path": "/tmp/hermeship-worktree",
+                "branch": "main",
+                "commit": "1234567890abcdef1234567890abcdef12345678",
+                "short_commit": "1234567",
+                "summary": "ship git source",
+                "author_name": "Synthetic Author",
+                "author_email": "synthetic@example.invalid",
+                "commit_body": "synthetic full commit body should not render",
+                "diff": "synthetic diff should not render",
+                "token": "synthetic-token-should-not-render"
+            }),
+        );
+
+        let rendered = DefaultRenderer
+            .render(&event, &delivery(MessageFormat::Compact))
+            .unwrap();
+
+        assert_eq!(
+            rendered.content,
+            "git commit (repo=hermeship, branch=main, commit=1234567, summary=ship git source, author=Synthetic Author)"
+        );
+
+        let raw = DefaultRenderer
+            .render(&event, &delivery(MessageFormat::Raw))
+            .unwrap();
+        let raw_json: Value = serde_json::from_str(&raw.content).unwrap();
+
+        assert_eq!(raw_json["event"], json!("git.commit"));
+        assert_eq!(raw_json["metadata"]["repo_name"], json!("hermeship"));
+        assert_eq!(raw_json["metadata"]["branch"], json!("main"));
+        assert_eq!(raw_json["body"]["short_commit"], json!("1234567"));
+        assert_eq!(raw_json["body"]["summary"], json!("ship git source"));
+        for forbidden in [
+            "synthetic full commit body should not render",
+            "synthetic diff should not render",
+            "synthetic-token-should-not-render",
+            "/tmp/hermeship",
+            "/tmp/hermeship-worktree",
+            "synthetic@example.invalid",
+        ] {
+            assert!(
+                !raw.content.contains(forbidden),
+                "git raw render leaked `{forbidden}`"
+            );
+        }
+    }
+
+    #[test]
+    fn render_git_branch_changed_compact_summary() {
+        let event = sanitized_envelope(
+            "git.branch-changed",
+            json!({
+                "repo": "hermeship",
+                "repo_name": "hermeship",
+                "repo_path": "/tmp/hermeship",
+                "worktree_path": "/tmp/hermeship-worktree",
+                "old_branch": "main",
+                "new_branch": "codex/milestone-8-git",
+                "branch": "codex/milestone-8-git"
+            }),
+        );
+
+        let rendered = DefaultRenderer
+            .render(&event, &delivery(MessageFormat::Compact))
+            .unwrap();
+
+        assert_eq!(
+            rendered.content,
+            "git branch changed (repo=hermeship, branch=codex/milestone-8-git, old_branch=main, new_branch=codex/milestone-8-git)"
+        );
+
+        let raw = DefaultRenderer
+            .render(&event, &delivery(MessageFormat::Raw))
+            .unwrap();
+        let raw_json: Value = serde_json::from_str(&raw.content).unwrap();
+
+        assert_eq!(raw_json["event"], json!("git.branch-changed"));
+        assert_eq!(
+            raw_json["body"]["new_branch"],
+            json!("codex/milestone-8-git")
+        );
+        assert!(!raw.content.contains("/tmp/hermeship"));
+        assert!(!raw.content.contains("/tmp/hermeship-worktree"));
     }
 
     fn sanitized_envelope(kind: &str, payload: Value) -> crate::event::EventEnvelope {

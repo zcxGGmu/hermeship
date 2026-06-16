@@ -11,6 +11,8 @@ config verify
 hermes hook --provider gateway --payload '{"event":"agent:start"}'
 hermes install-hooks --scope global --force
 hermes uninstall-hooks --home /tmp/hermeship-test-home --dry-run
+git commit --repo hermeship --branch main --commit 1234567890abcdef1234567890abcdef12345678 --summary "ship git source" --channel ops --repo-path /tmp/hermeship --worktree-path /tmp/hermeship-worktree
+git branch-changed --repo hermeship --old-branch main --new-branch codex/milestone-8-git --channel ops --repo-path /tmp/hermeship --worktree-path /tmp/hermeship-worktree
 install --dry-run
 uninstall --remove-config --remove-state --remove-hooks --hermes-home /tmp/hermeship-test-home --dry-run
 release preflight 0.1.0

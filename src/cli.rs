@@ -66,6 +66,11 @@ pub enum Commands {
         #[command(subcommand)]
         command: HermesCommands,
     },
+    /// Emit local git source events.
+    Git {
+        #[command(subcommand)]
+        command: GitCommands,
+    },
     /// Install hermeship local files and service scaffolding.
     Install(InstallArgs),
     /// Uninstall hermeship local files and service scaffolding.
@@ -84,6 +89,68 @@ pub struct EventArgs {
     /// Event fields as `--key value` pairs. Includes --payload, --channel, --mention, --format, and --template.
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     pub fields: Vec<String>,
+}
+
+#[derive(Debug, Clone, Subcommand)]
+pub enum GitCommands {
+    /// Emit a git commit event.
+    Commit(GitCommitArgs),
+    /// Emit a git branch change event.
+    #[command(name = "branch-changed")]
+    BranchChanged(GitBranchChangedArgs),
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct GitCommitArgs {
+    /// Repository display name.
+    #[arg(long)]
+    pub repo: String,
+    /// Branch name for the commit.
+    #[arg(long)]
+    pub branch: String,
+    /// Commit SHA, 7 to 64 hex characters.
+    #[arg(long)]
+    pub commit: String,
+    /// One-line commit summary.
+    #[arg(long)]
+    pub summary: String,
+    /// Override the delivery channel.
+    #[arg(long)]
+    pub channel: Option<String>,
+    /// Repository root path for route metadata.
+    #[arg(long)]
+    pub repo_path: Option<PathBuf>,
+    /// Worktree path for route metadata.
+    #[arg(long)]
+    pub worktree_path: Option<PathBuf>,
+    /// Commit author display name.
+    #[arg(long)]
+    pub author_name: Option<String>,
+    /// Commit author email for structured metadata.
+    #[arg(long)]
+    pub author_email: Option<String>,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct GitBranchChangedArgs {
+    /// Repository display name.
+    #[arg(long)]
+    pub repo: String,
+    /// Previous branch name.
+    #[arg(long)]
+    pub old_branch: String,
+    /// New branch name.
+    #[arg(long)]
+    pub new_branch: String,
+    /// Override the delivery channel.
+    #[arg(long)]
+    pub channel: Option<String>,
+    /// Repository root path for route metadata.
+    #[arg(long)]
+    pub repo_path: Option<PathBuf>,
+    /// Worktree path for route metadata.
+    #[arg(long)]
+    pub worktree_path: Option<PathBuf>,
 }
 
 impl EventArgs {
@@ -292,7 +359,7 @@ mod tests {
 
     use serde_json::json;
 
-    use super::{Cli, Commands, ConfigCommand, HermesCommands, ReleaseCommands};
+    use super::{Cli, Commands, ConfigCommand, GitCommands, HermesCommands, ReleaseCommands};
     use crate::events::MessageFormat;
 
     #[test]
@@ -407,6 +474,94 @@ mod tests {
                 assert_eq!(event.payload["session_id"], json!("demo"));
             }
             other => panic!("expected emit command, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_git_commit_command() {
+        let cli = Cli::parse_from([
+            "hermeship",
+            "git",
+            "commit",
+            "--repo",
+            "hermeship",
+            "--branch",
+            "main",
+            "--commit",
+            "1234567890abcdef1234567890abcdef12345678",
+            "--summary",
+            "ship git source",
+            "--channel",
+            "ops",
+            "--repo-path",
+            "/tmp/hermeship",
+            "--worktree-path",
+            "/tmp/hermeship-worktree",
+            "--author-name",
+            "Synthetic Author",
+            "--author-email",
+            "synthetic@example.invalid",
+        ]);
+
+        match cli.command {
+            Some(Commands::Git {
+                command: GitCommands::Commit(args),
+            }) => {
+                assert_eq!(args.repo, "hermeship");
+                assert_eq!(args.branch, "main");
+                assert_eq!(args.commit, "1234567890abcdef1234567890abcdef12345678");
+                assert_eq!(args.summary, "ship git source");
+                assert_eq!(args.channel.as_deref(), Some("ops"));
+                assert_eq!(args.repo_path, Some(PathBuf::from("/tmp/hermeship")));
+                assert_eq!(
+                    args.worktree_path,
+                    Some(PathBuf::from("/tmp/hermeship-worktree"))
+                );
+                assert_eq!(args.author_name.as_deref(), Some("Synthetic Author"));
+                assert_eq!(
+                    args.author_email.as_deref(),
+                    Some("synthetic@example.invalid")
+                );
+            }
+            other => panic!("expected git commit command, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_git_branch_changed_command() {
+        let cli = Cli::parse_from([
+            "hermeship",
+            "git",
+            "branch-changed",
+            "--repo",
+            "hermeship",
+            "--old-branch",
+            "main",
+            "--new-branch",
+            "codex/milestone-8-git",
+            "--channel",
+            "ops",
+            "--repo-path",
+            "/tmp/hermeship",
+            "--worktree-path",
+            "/tmp/hermeship-worktree",
+        ]);
+
+        match cli.command {
+            Some(Commands::Git {
+                command: GitCommands::BranchChanged(args),
+            }) => {
+                assert_eq!(args.repo, "hermeship");
+                assert_eq!(args.old_branch, "main");
+                assert_eq!(args.new_branch, "codex/milestone-8-git");
+                assert_eq!(args.channel.as_deref(), Some("ops"));
+                assert_eq!(args.repo_path, Some(PathBuf::from("/tmp/hermeship")));
+                assert_eq!(
+                    args.worktree_path,
+                    Some(PathBuf::from("/tmp/hermeship-worktree"))
+                );
+            }
+            other => panic!("expected git branch-changed command, got {other:?}"),
         }
     }
 
@@ -611,6 +766,8 @@ mod tests {
             "hermes hook",
             "hermes install-hooks",
             "hermes uninstall-hooks",
+            "git commit",
+            "git branch-changed",
             "install",
             "uninstall",
             "release preflight",

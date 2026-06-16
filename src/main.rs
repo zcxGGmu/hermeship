@@ -2,7 +2,7 @@ use std::io::{self, Read};
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use hermeship::cli::{Cli, Commands, ConfigCommand, HermesCommands, ReleaseCommands};
+use hermeship::cli::{Cli, Commands, ConfigCommand, GitCommands, HermesCommands, ReleaseCommands};
 use hermeship::client::DaemonClient;
 use hermeship::config::AppConfig;
 use hermeship::daemon::{EventAcceptedResponse, HealthResponse};
@@ -125,6 +125,12 @@ async fn real_main() -> Result<()> {
                 Ok(())
             }
         },
+        Commands::Git { command } => {
+            let config = AppConfig::load_or_default(&config_path)?;
+            let accepted = submit_event(&config, git_command_into_event(command)?).await?;
+            print_event_accepted("git", &accepted);
+            Ok(())
+        }
         Commands::Install(args) => {
             let home = args.home.unwrap_or_else(hermeship::lifecycle::default_home);
             let config_path = lifecycle_config_path(config_path, config_was_overridden, &home);
@@ -283,6 +289,38 @@ async fn submit_hermes_hook(
     client.post_hermes_hook(hook).await
 }
 
+fn git_command_into_event(command: GitCommands) -> Result<IncomingEvent> {
+    match command {
+        GitCommands::Commit(args) => {
+            hermeship::source::git::commit_event(hermeship::source::git::GitCommitInput {
+                repo: args.repo,
+                branch: args.branch,
+                commit: args.commit,
+                summary: args.summary,
+                channel: args.channel,
+                repo_path: args.repo_path.map(path_to_string),
+                worktree_path: args.worktree_path.map(path_to_string),
+                author_name: args.author_name,
+                author_email: args.author_email,
+            })
+        }
+        GitCommands::BranchChanged(args) => Ok(hermeship::source::git::branch_changed_event(
+            hermeship::source::git::GitBranchChangedInput {
+                repo: args.repo,
+                old_branch: args.old_branch,
+                new_branch: args.new_branch,
+                channel: args.channel,
+                repo_path: args.repo_path.map(path_to_string),
+                worktree_path: args.worktree_path.map(path_to_string),
+            },
+        )),
+    }
+}
+
+fn path_to_string(path: std::path::PathBuf) -> String {
+    path.to_string_lossy().into_owned()
+}
+
 fn explain_event(config: &AppConfig, event: IncomingEvent) -> Result<String> {
     let sanitized = hermeship::privacy::sanitize_payload(&event.payload, &config.privacy);
     let event = IncomingEvent {
@@ -342,6 +380,8 @@ mod tests {
     use serde_json::json;
     use tokio::sync::mpsc;
 
+    use clap::Parser;
+    use hermeship::cli::{Cli, Commands};
     use hermeship::config::AppConfig;
     use hermeship::daemon::daemon_router_with_queue;
     use hermeship::event::{EventBody, EventEnvelope};
@@ -349,8 +389,8 @@ mod tests {
     use hermeship::hermes::HermesHookEnvelope;
 
     use super::{
-        VERSION, explain_event, read_payload_arg, read_setup_token, submit_event,
-        submit_hermes_hook,
+        VERSION, explain_event, git_command_into_event, read_payload_arg, read_setup_token,
+        submit_event, submit_hermes_hook,
     };
 
     #[tokio::test]
@@ -407,6 +447,117 @@ mod tests {
                 assert_eq!(body.payload.unwrap()["summary"], "hello");
             }
             other => panic!("expected custom event, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn daemon_git_commit_command_posts_git_event_to_daemon() {
+        let cli = Cli::parse_from([
+            "hermeship",
+            "git",
+            "commit",
+            "--repo",
+            "hermeship",
+            "--branch",
+            "main",
+            "--commit",
+            "1234567890abcdef1234567890abcdef12345678",
+            "--summary",
+            "ship git source",
+            "--channel",
+            "ops",
+            "--repo-path",
+            "/tmp/hermeship",
+            "--worktree-path",
+            "/tmp/hermeship-worktree",
+        ]);
+        let Some(Commands::Git { command }) = cli.command else {
+            panic!("expected git command");
+        };
+        let event = git_command_into_event(command).unwrap();
+
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config.clone(), queue_tx).await;
+        let mut config = config;
+        config.daemon.base_url = Some(base_url);
+
+        let accepted = submit_event(&config, event).await.unwrap();
+
+        assert!(accepted.queued);
+        assert_eq!(accepted.canonical_kind, "git.commit");
+        assert_eq!(accepted.queue.pending, 1);
+
+        let envelope = queue_rx.try_recv().unwrap();
+        server.abort();
+
+        assert_eq!(envelope.canonical_kind(), "git.commit");
+        assert_eq!(envelope.metadata.channel_hint.as_deref(), Some("ops"));
+        assert_eq!(envelope.metadata.repo_name.as_deref(), Some("hermeship"));
+        assert_eq!(
+            envelope.metadata.repo_path.as_deref(),
+            Some("/tmp/hermeship")
+        );
+        assert_eq!(envelope.metadata.branch.as_deref(), Some("main"));
+        match envelope.body {
+            EventBody::GitCommit(body) => {
+                assert_eq!(body.repo, "hermeship");
+                assert_eq!(body.short_sha, "1234567");
+                assert_eq!(body.summary, "ship git source");
+            }
+            other => panic!("expected GitCommit, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn daemon_git_branch_changed_command_posts_git_event_to_daemon() {
+        let cli = Cli::parse_from([
+            "hermeship",
+            "git",
+            "branch-changed",
+            "--repo",
+            "hermeship",
+            "--old-branch",
+            "main",
+            "--new-branch",
+            "codex/milestone-8-git",
+            "--repo-path",
+            "/tmp/hermeship",
+            "--worktree-path",
+            "/tmp/hermeship-worktree",
+        ]);
+        let Some(Commands::Git { command }) = cli.command else {
+            panic!("expected git command");
+        };
+        let event = git_command_into_event(command).unwrap();
+
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config.clone(), queue_tx).await;
+        let mut config = config;
+        config.daemon.base_url = Some(base_url);
+
+        let accepted = submit_event(&config, event).await.unwrap();
+
+        assert!(accepted.queued);
+        assert_eq!(accepted.canonical_kind, "git.branch-changed");
+
+        let envelope = queue_rx.try_recv().unwrap();
+        server.abort();
+
+        assert_eq!(envelope.canonical_kind(), "git.branch-changed");
+        assert_eq!(envelope.metadata.repo_name.as_deref(), Some("hermeship"));
+        assert_eq!(
+            envelope.metadata.branch.as_deref(),
+            Some("codex/milestone-8-git")
+        );
+        match envelope.body {
+            EventBody::GitBranchChanged(body) => {
+                assert_eq!(body.repo, "hermeship");
+                assert_eq!(body.old_branch, "main");
+                assert_eq!(body.new_branch, "codex/milestone-8-git");
+            }
+            other => panic!("expected GitBranchChanged, got {other:?}"),
         }
     }
 

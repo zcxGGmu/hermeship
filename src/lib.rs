@@ -13,3 +13,4 @@ pub mod release_preflight;
 pub mod render;
 pub mod router;
 pub mod sink;
+pub mod source;
