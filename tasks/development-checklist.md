@@ -407,7 +407,7 @@
   - 命令：`cargo clippy --all-targets -- -D warnings`
   - 命令：`cargo test`
 - [x] 提交任务 5.1。
-  - commit：`feat: 增加 Discord sink`
+  - commit：`0cd6e4e feat: 增加 Discord sink`
 
 ### 任务 5.2：Sink 失败语义
 
@@ -716,6 +716,15 @@
 
 最新记录放在最上方。
 
+### 2026-06-16 - Milestone 5.2 入口交接更新
+
+- [x] 已确认最新功能阶段提交为 `0cd6e4e feat: 增加 Discord sink`。
+- [x] 已确认 Milestone 5.1 完成：Discord sink payload/request builder、bot channel、webhook、allowed mentions、长度截断、daemon sink registry 均已实现并验证。
+- [x] 已将 `docs/development-status.md` 更新为 Milestone 5.1 已完成、Milestone 5.2 待执行的状态入口。
+- [x] 已将 `tasks/todo.md` 切换为下一阶段任务：Milestone 5.2 `Sink 失败语义`。
+- [x] 当前下一步为 Milestone 5.2：完善 Discord 非 2xx、429 rate limit、token/channel 缺失和多 delivery 失败语义。
+- [x] 已确认任务 5.2 边界：不实现 Hermes hook bridge install、install/uninstall lifecycle、release preflight、真实 live verification 或 Slack sink。
+
 ### 2026-06-16 - Milestone 5.1 Discord Sink 与基础 Live Path
 
 - [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
@@ -730,15 +739,15 @@
 - [x] 已覆盖测试：webhook JSON payload、bot channel request payload、allowed mentions、消息长度截断、token/channel/webhook 缺失诊断、fake HTTP webhook 投递、dispatcher mention 传递和 daemon sink registry。
 - [x] 已运行验证：`cargo test discord`（9 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（97 lib tests + 6 bin tests passed）均通过。
 - [x] 已确认本阶段没有实现 Hermes hook bridge install、install/uninstall lifecycle、release preflight、真实 live verification 或 Slack sink；Discord 4xx/5xx/rate limit 失败矩阵留在 Milestone 5.2。
-- [x] 提交状态：随本阶段提交 `feat: 增加 Discord sink` 一并完成。
+- [x] 提交状态：已提交 `0cd6e4e feat: 增加 Discord sink`。
 
 ### 2026-06-16 - Milestone 5.1 开发入口交接
 
 - [x] 已确认最新功能阶段为 `a336e01 feat: 实现事件 dispatcher 与 fake sink`，Milestone 0 到 Milestone 4.3 均已完成并提交。
-- [x] 已将 `docs/development-status.md` 更新为 Milestone 4.3 已完成、Milestone 5.1 待执行的状态入口。
-- [x] 已将 `tasks/todo.md` 更新为 Milestone 5.1 执行计划，当前待执行任务为 Discord sink payload 与配置接入。
-- [x] 已明确未完成范围：Discord sink、Hermes hook bridge install、install/uninstall lifecycle、release preflight、live verification、Slack sink 和 Hermes plugin/observer。
-- [x] 下次开发应从 Milestone 5 的任务 5.1 继续，先写失败测试，再实现 Discord sink，并使用本地 deterministic fixture 或 fake HTTP/request builder 验证。
+- [x] 历史记录：当时已将 `docs/development-status.md` 更新为 Milestone 4.3 已完成、Milestone 5.1 入口状态；当前入口已由上方 Milestone 5.2 记录取代。
+- [x] 历史记录：当时已将 `tasks/todo.md` 更新为 Milestone 5.1 执行计划；当前计划已切换为 Milestone 5.2。
+- [x] 历史记录：当时未完成范围包括 Discord sink、Hermes hook bridge install、install/uninstall lifecycle、release preflight、live verification、Slack sink 和 Hermes plugin/observer；其中 Discord sink 已在 Milestone 5.1 完成。
+- [x] 历史记录：当时下次开发入口是 Milestone 5 的任务 5.1；当前下次开发入口是任务 5.2。
 
 ### 2026-06-16 - Milestone 4.3 Dispatcher 与 fake sink
 
