@@ -429,7 +429,7 @@
   - 命令：`cargo clippy --all-targets -- -D warnings`
   - 命令：`cargo test`
 - [x] 提交任务 5.2。
-  - commit：`feat: 完善 sink 失败处理`
+  - commit：`ea9b789 feat: 完善 sink 失败处理`
 
 ### 任务 5.3：本地端到端 smoke
 
@@ -732,16 +732,16 @@
 - [x] 已处理代码审查建议：fake HTTP server await 增加超时保护，并新增 429 缺失 `retry_after` 时 `retry_after=unknown` 的 fallback 测试。
 - [x] 已运行验证：`cargo test sink`（23 passed）、`cargo test dispatch`（11 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（102 lib tests + 6 bin tests passed）均通过。
 - [x] 已确认本阶段没有实现 Hermes hook bridge install、install/uninstall lifecycle、release preflight、真实 live verification 或 Slack sink。
-- [x] 提交状态：本阶段提交使用 `feat: 完善 sink 失败处理`。
+- [x] 提交状态：已提交 `ea9b789 feat: 完善 sink 失败处理`。
 
 ### 2026-06-16 - Milestone 5.2 入口交接更新
 
 - [x] 已确认最新功能阶段提交为 `0cd6e4e feat: 增加 Discord sink`。
 - [x] 已确认 Milestone 5.1 完成：Discord sink payload/request builder、bot channel、webhook、allowed mentions、长度截断、daemon sink registry 均已实现并验证。
-- [x] 已将 `docs/development-status.md` 更新为 Milestone 5.1 已完成、Milestone 5.2 待执行的状态入口。
-- [x] 已将 `tasks/todo.md` 切换为下一阶段任务：Milestone 5.2 `Sink 失败语义`。
-- [x] 当前下一步为 Milestone 5.2：完善 Discord 非 2xx、429 rate limit、token/channel 缺失和多 delivery 失败语义。
-- [x] 已确认任务 5.2 边界：不实现 Hermes hook bridge install、install/uninstall lifecycle、release preflight、真实 live verification 或 Slack sink。
+- [x] 历史记录：当时已将 `docs/development-status.md` 更新为 Milestone 5.1 完成后的 Milestone 5.2 入口；当前入口已由上方 Milestone 5.2 完成记录取代。
+- [x] 历史记录：当时已将 `tasks/todo.md` 切换为下一阶段任务：Milestone 5.2 `Sink 失败语义`；当前计划已切换为 Milestone 5.3。
+- [x] 历史记录：当时入口为 Milestone 5.2；当前入口为 Milestone 5.3 本地端到端 smoke。
+- [x] 历史记录：当时已确认任务 5.2 边界：不实现 Hermes hook bridge install、install/uninstall lifecycle、release preflight、真实 live verification 或 Slack sink。
 
 ### 2026-06-16 - Milestone 5.1 Discord Sink 与基础 Live Path
 
