@@ -721,7 +721,7 @@
 - [x] 已运行验证：`cargo test render`（10 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（74 lib tests + 6 bin tests passed）均通过。
 - [x] 已确认本阶段没有实现 dispatcher、sink、hook bridge install、install/uninstall lifecycle 或 release preflight。
 - [x] 剩余风险：daemon 队列仍只入队不消费；dispatcher 与 fake sink 在 Milestone 4.3 实现，Discord sink 和 live verification 仍在后续 milestone。
-- [x] 提交状态：随本阶段提交 `feat: 增加 Hermes 默认渲染器` 一并完成。
+- [x] 提交状态：随本阶段提交 `d4303ae feat: 增加 Hermes 默认渲染器` 一并完成。
 
 ### 2026-06-16 - Milestone 4.1 Router
 

@@ -12,7 +12,7 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 当前最新功能阶段提交：本阶段提交 `feat: 增加 Hermes 默认渲染器`（具体 hash 见 `git log -1 --oneline`）。
+- 当前最新功能阶段提交：`d4303ae feat: 增加 Hermes 默认渲染器`。
 - 当前工作树在本次状态更新前为干净状态；如后续继续开发，仍需先运行 `git status --short --branch` 确认。
 - 当前下一步：继续 Milestone 4，执行任务 4.3：Dispatcher 与 fake sink。
 
@@ -162,7 +162,7 @@
 - 已覆盖测试：所有格式、缺字段降级、template token、route-level format/template/mention、raw+template、direct typed free-text raw 泄漏回归和未批准 token。
 - 已运行验证：`cargo test render`（10 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（74 lib tests + 6 bin tests passed）。
 - 已确认本阶段没有实现 dispatcher、sink、hook bridge install、install/uninstall lifecycle 或 release preflight。
-- 已提交：本阶段提交 `feat: 增加 Hermes 默认渲染器`。
+- 已提交：`d4303ae feat: 增加 Hermes 默认渲染器`。
 
 ## 未完成
 
@@ -199,7 +199,7 @@
 5. 从任务 4.3 继续，先写失败测试，再实现 dispatcher 与 fake sink。
 6. 注意任务 4.3 只实现 dispatcher/fake sink，不进入 Discord sink、hook bridge install 或 release preflight。
 7. 运行任务 4.3 验证命令：
-   - `cargo test dispatch`
+   - `cargo test dispatch sink`
    - `cargo fmt --all -- --check`
    - `cargo clippy --all-targets -- -D warnings`
    - `cargo test`
@@ -220,7 +220,7 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新功能阶段提交：本阶段提交 feat: 增加 Hermes 默认渲染器（具体 hash 见 git log -1 --oneline）。
+- 最新功能阶段提交：d4303ae feat: 增加 Hermes 默认渲染器。
 - Milestone 0 已完成并提交：af57c49 docs: 明确 hermeship 完整项目方向。
 - Milestone 1.1 已完成并提交：d03170e chore: 搭建 Hermeship Rust CLI 骨架。
 - Milestone 1.2 已完成并提交：50723af feat: 实现 hermeship 配置模型与 config CLI。
@@ -232,7 +232,7 @@
 - Milestone 3.2 已完成并提交：0b63e49 feat: 增加 daemon event ingress。
 - Milestone 3.3 已完成并提交：7b10816 feat: 增加 Hermes hook ingress。
 - Milestone 4.1 已完成并提交：864e7f4 feat: 实现多投递路由。
-- Milestone 4.2 已完成并提交：feat: 增加 Hermes 默认渲染器。
+- Milestone 4.2 已完成并提交：d4303ae feat: 增加 Hermes 默认渲染器。
 - 已实现 src/events.rs：IncomingEvent、RoutingMetadata、字段别名反序列化、空/null payload 归一，以及 MessageFormat 的单一复用/重导出策略。
 - 已实现 src/event/：EventEnvelope、EventBody、EventMetadata、EventPriority、Hermes canonical mapping、IncomingEvent -> EventEnvelope conversion。
 - 已实现 src/privacy.rs：sanitize_payload、redact_value、excerpt_policy、敏感 key 递归脱敏、正文默认禁发、安全摘要和 opt-in 摘录。
@@ -255,7 +255,7 @@
 4. 先写失败测试，再实现 dispatcher 与 fake sink。
 5. 本阶段只实现 dispatcher/fake sink，不实现 Discord sink、hook bridge install 或 release preflight。
 6. 默认测试仍只使用本地 deterministic fixture。
-7. 运行验证：cargo test dispatch、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
+7. 运行验证：cargo test dispatch sink、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
 8. 更新 tasks/development-checklist.md 的运行状态日志和 tasks/todo.md 的 Review。
 9. 阶段完成后必须验证并提交，commit 信息使用详细中文，说明变更、验证和影响。
 ```
