@@ -1,3 +1,4 @@
+pub mod discord;
 pub mod fake;
 
 use std::future::Future;
@@ -15,6 +16,7 @@ pub struct SinkMessage {
     pub event_kind: String,
     pub format: MessageFormat,
     pub content: String,
+    pub mention: Option<String>,
     pub matched_route_index: Option<usize>,
 }
 
@@ -38,6 +40,7 @@ mod tests {
             event_kind: "hermes.agent.started".to_string(),
             format: MessageFormat::Compact,
             content: "hermes agent started".to_string(),
+            mention: None,
             matched_route_index: Some(3),
         };
 

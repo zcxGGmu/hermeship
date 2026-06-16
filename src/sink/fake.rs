@@ -103,6 +103,7 @@ mod tests {
             event_kind: "hermes.agent.started".to_string(),
             format: MessageFormat::Compact,
             content: "hermes agent started".to_string(),
+            mention: None,
             matched_route_index: Some(7),
         };
 

@@ -21,7 +21,7 @@ use crate::hermes::HermesHookEnvelope;
 use crate::privacy::sanitize_payload;
 use crate::render::DefaultRenderer;
 use crate::router::Router as EventRouter;
-use crate::sink::Sink;
+use crate::sink::{Sink, discord::DiscordSink};
 
 pub const DEFAULT_QUEUE_CAPACITY: usize = 1024;
 
@@ -203,13 +203,26 @@ pub fn daemon_router(config: AppConfig, version: impl Into<String>) -> Router {
 
 fn spawn_dispatcher(config: AppConfig, queue_rx: mpsc::Receiver<EventEnvelope>) {
     let dispatcher = Dispatcher::new(
-        EventRouter::new(config),
+        EventRouter::new(config.clone()),
         Arc::new(DefaultRenderer),
-        HashMap::<String, Arc<dyn Sink>>::new(),
+        sink_registry_from_config(&config),
     );
     tokio::spawn(async move {
         dispatcher.run(queue_rx).await;
     });
+}
+
+fn sink_registry_from_config(config: &AppConfig) -> HashMap<String, Arc<dyn Sink>> {
+    let mut sinks: HashMap<String, Arc<dyn Sink>> = HashMap::new();
+    match DiscordSink::from_config(config) {
+        Ok(sink) => {
+            sinks.insert("discord".to_string(), Arc::new(sink));
+        }
+        Err(error) => {
+            eprintln!("hermeship daemon failed to initialize Discord sink: {error}");
+        }
+    }
+    sinks
 }
 
 pub fn daemon_router_with_queue(
@@ -346,6 +359,13 @@ mod tests {
         assert_eq!(health.queue.pending, 0);
         assert_eq!(health.queue.capacity, 0);
         assert_eq!(health.configured_sinks, vec!["discord"]);
+    }
+
+    #[test]
+    fn daemon_sink_registry_registers_discord_sink() {
+        let sinks = sink_registry_from_config(&AppConfig::default());
+
+        assert!(sinks.contains_key("discord"));
     }
 
     #[tokio::test]

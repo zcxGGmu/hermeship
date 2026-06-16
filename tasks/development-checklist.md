@@ -390,20 +390,23 @@
 
 ### 任务 5.1：Discord 配置与 payload
 
-- [ ] 新建 Discord sink。
+- [x] 新建 Discord sink。
   - 新建：`src/sink/discord.rs`
-- [ ] 支持 bot token + channel。
-- [ ] 支持 webhook URL。
-- [ ] 实现 Discord message payload。
+- [x] 支持 bot token + channel。
+- [x] 支持 webhook URL。
+- [x] 实现 Discord message payload。
   - 内容长度限制。
   - mention 前缀。
   - allowed mentions 策略。
-- [ ] 编写 Discord sink 单元测试。
+- [x] 编写 Discord sink 单元测试。
   - 使用 fake HTTP 或 request builder 测试。
   - 覆盖：webhook payload、bot channel payload、allowed mentions、消息长度截断。
-- [ ] 验证任务 5.1。
+- [x] 验证任务 5.1。
   - 命令：`cargo test discord`
-- [ ] 提交任务 5.1。
+  - 命令：`cargo fmt --all -- --check`
+  - 命令：`cargo clippy --all-targets -- -D warnings`
+  - 命令：`cargo test`
+- [x] 提交任务 5.1。
   - commit：`feat: 增加 Discord sink`
 
 ### 任务 5.2：Sink 失败语义
@@ -712,6 +715,22 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-16 - Milestone 5.1 Discord Sink 与基础 Live Path
+
+- [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
+- [x] 已确认启动时工作树干净：`git status --short --branch` 只有分支行；最近提交为 `88fa7a3`、`a336e01`、`049fe75`。
+- [x] 已阅读 `src/config.rs`、`src/router.rs`、`src/render/mod.rs`、`src/render/default.rs`、`src/dispatch.rs`、`src/sink/mod.rs`、`src/sink/fake.rs`、`src/daemon.rs` 与 `tests/fixtures/README.md`。
+- [x] 已参考 `template/clawhip/src/sink/discord.rs` 与 `template/clawhip/src/discord.rs`，只借鉴 Discord bot/webhook HTTP 路径和 webhook `wait=true` 行为，不依赖 clawhip runtime。
+- [x] 已先写失败测试并运行 Red：`cargo test discord` 在实现前失败于缺少 `DiscordSink`、`DiscordMessagePayload`、Discord 长度常量和 `SinkMessage.mention`。
+- [x] 已新增 `src/sink/discord.rs` 并在 `src/sink/mod.rs` 导出 `discord` 模块，实现 Discord payload/request builder、allowed mentions、内容长度截断、bot channel 和 webhook 发送路径。
+- [x] 已将 `SinkMessage` 增加 `mention` 字段，并在 dispatcher 中从 `ResolvedDelivery` 传递给 sink；Discord payload 只允许显式 route/event mention 产生真实 Discord mention，正文中的其他 mention 默认不 ping。
+- [x] 已将 daemon dispatcher registry 接入真实 Discord sink，默认生产 daemon 不再因缺失 `"discord"` sink 而无法投递；token/channel/webhook 缺失时以 sink failure 诊断，不 panic。
+- [x] 已处理代码审查反馈：webhook URL 会精确移除已有 `wait` query 参数并追加 `wait=true`，避免 `wait=false` 或 `await=true` 误判。
+- [x] 已覆盖测试：webhook JSON payload、bot channel request payload、allowed mentions、消息长度截断、token/channel/webhook 缺失诊断、fake HTTP webhook 投递、dispatcher mention 传递和 daemon sink registry。
+- [x] 已运行验证：`cargo test discord`（9 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（97 lib tests + 6 bin tests passed）均通过。
+- [x] 已确认本阶段没有实现 Hermes hook bridge install、install/uninstall lifecycle、release preflight、真实 live verification 或 Slack sink；Discord 4xx/5xx/rate limit 失败矩阵留在 Milestone 5.2。
+- [x] 提交状态：随本阶段提交 `feat: 增加 Discord sink` 一并完成。
 
 ### 2026-06-16 - Milestone 5.1 开发入口交接
 

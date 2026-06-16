@@ -91,6 +91,7 @@ impl Dispatcher {
             event_kind: event.canonical_kind().to_string(),
             format: rendered.format,
             content: rendered.content,
+            mention: delivery.mention.clone(),
             matched_route_index: delivery.matched_route_index,
         };
 
@@ -282,6 +283,28 @@ mod tests {
             deliveries[0].target,
             SinkTarget::DiscordChannel("audit".to_string())
         );
+    }
+
+    #[tokio::test]
+    async fn dispatch_event_passes_delivery_mention_to_sink_message() {
+        let config = config_with_routes(vec![RouteRule {
+            event: "hermes.agent.*".to_string(),
+            channel: Some("ops".to_string()),
+            mention: Some("<@123>".to_string()),
+            format: Some(MessageFormat::Compact),
+            ..RouteRule::default()
+        }]);
+        let event = envelope("hermes.agent.started", agent_payload());
+        let fake = FakeSink::default();
+        let dispatcher = dispatcher(config, Arc::new(DefaultRenderer), sinks(&fake));
+
+        let report = dispatcher.dispatch_event(&event).await;
+
+        assert_eq!(report.delivered, 1);
+        let deliveries = fake.deliveries();
+        assert_eq!(deliveries.len(), 1);
+        assert_eq!(deliveries[0].message.mention.as_deref(), Some("<@123>"));
+        assert!(deliveries[0].message.content.starts_with("<@123> "));
     }
 
     #[tokio::test]
