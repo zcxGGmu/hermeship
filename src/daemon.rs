@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
@@ -11,13 +11,17 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
-use tokio::sync::{Mutex, mpsc};
+use tokio::sync::mpsc;
 
 use crate::config::AppConfig;
+use crate::dispatch::Dispatcher;
 use crate::event::{EventEnvelope, compat::from_incoming_event};
 use crate::events::IncomingEvent;
 use crate::hermes::HermesHookEnvelope;
 use crate::privacy::sanitize_payload;
+use crate::render::DefaultRenderer;
+use crate::router::Router as EventRouter;
+use crate::sink::Sink;
 
 pub const DEFAULT_QUEUE_CAPACITY: usize = 1024;
 
@@ -107,23 +111,11 @@ pub struct EventAcceptedResponse {
 #[derive(Clone)]
 struct QueueHandle {
     sender: mpsc::Sender<EventEnvelope>,
-    _receiver_guard: Option<Arc<Mutex<mpsc::Receiver<EventEnvelope>>>>,
 }
 
 impl QueueHandle {
-    fn new(capacity: usize) -> Self {
-        let (sender, receiver) = mpsc::channel(capacity);
-        Self {
-            sender,
-            _receiver_guard: Some(Arc::new(Mutex::new(receiver))),
-        }
-    }
-
     fn from_sender(sender: mpsc::Sender<EventEnvelope>) -> Self {
-        Self {
-            sender,
-            _receiver_guard: None,
-        }
+        Self { sender }
     }
 }
 
@@ -193,10 +185,13 @@ pub fn health_router(config: AppConfig, version: impl Into<String>) -> Router {
 }
 
 pub fn daemon_router(config: AppConfig, version: impl Into<String>) -> Router {
+    let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_QUEUE_CAPACITY);
+    spawn_dispatcher(config.clone(), queue_rx);
+
     let state = DaemonState {
         config,
         version: version.into(),
-        queue: QueueHandle::new(DEFAULT_QUEUE_CAPACITY),
+        queue: QueueHandle::from_sender(queue_tx),
     };
 
     Router::new()
@@ -204,6 +199,17 @@ pub fn daemon_router(config: AppConfig, version: impl Into<String>) -> Router {
         .route("/event", post(event))
         .route("/api/hermes/hook", post(hermes_hook))
         .with_state(state)
+}
+
+fn spawn_dispatcher(config: AppConfig, queue_rx: mpsc::Receiver<EventEnvelope>) {
+    let dispatcher = Dispatcher::new(
+        EventRouter::new(config),
+        Arc::new(DefaultRenderer),
+        HashMap::<String, Arc<dyn Sink>>::new(),
+    );
+    tokio::spawn(async move {
+        dispatcher.run(queue_rx).await;
+    });
 }
 
 pub fn daemon_router_with_queue(
@@ -368,6 +374,43 @@ mod tests {
         assert_eq!(health.queue.pending, 0);
         assert!(health.queue.capacity > 0);
         assert_eq!(health.configured_sinks, vec!["discord"]);
+    }
+
+    #[tokio::test]
+    async fn daemon_router_consumes_internal_queue_with_dispatcher() {
+        let mut config = AppConfig::default();
+        config.routes.push(RouteRule {
+            event: "hermes.agent.*".to_string(),
+            sink: "discord".to_string(),
+            channel: Some("ops".to_string()),
+            enabled: true,
+            ..RouteRule::default()
+        });
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let router = daemon_router(config, "test-version");
+        let server = tokio::spawn(async move { axum::serve(listener, router).await });
+        let client = crate::client::DaemonClient::from_base_url(format!("http://{address}"));
+
+        client
+            .post_event(&IncomingEvent::new(
+                "hermes.agent.started",
+                json!({ "session_id": "demo" }),
+            ))
+            .await
+            .unwrap();
+
+        tokio::time::timeout(std::time::Duration::from_secs(2), async {
+            loop {
+                if client.health().await.unwrap().queue.pending == 0 {
+                    break;
+                }
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        server.abort();
     }
 
     #[tokio::test]

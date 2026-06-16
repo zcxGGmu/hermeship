@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-16 Milestone 4.2 完成
+最后更新：2026-06-16 Milestone 4.3 完成
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -12,9 +12,9 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 当前最新功能阶段提交：`d4303ae feat: 增加 Hermes 默认渲染器`。
+- 当前最新功能阶段：Milestone 4.3 `feat: 实现事件 dispatcher 与 fake sink`。
 - 当前工作树在本次状态更新前为干净状态；如后续继续开发，仍需先运行 `git status --short --branch` 确认。
-- 当前下一步：继续 Milestone 4，执行任务 4.3：Dispatcher 与 fake sink。
+- 当前下一步：继续 Milestone 5，执行 Discord Sink 与基础 Live Path。
 
 ## 已完成
 
@@ -164,18 +164,30 @@
 - 已确认本阶段没有实现 dispatcher、sink、hook bridge install、install/uninstall lifecycle 或 release preflight。
 - 已提交：`d4303ae feat: 增加 Hermes 默认渲染器`。
 
+### Milestone 4.3：Dispatcher 与 fake sink
+
+- 已新增 `src/dispatch.rs`、`src/sink/mod.rs`、`src/sink/fake.rs`，并在 `src/lib.rs` 导出 `dispatch` 与 `sink`。
+- 已实现 object-safe `Sink` trait、`SinkMessage`、`FakeSink` 和 `FakeDelivery`，用于本地测试记录 target、format、rendered content、event kind 和 route index。
+- 已实现 `Dispatcher`、`DispatchReport`、`DeliveryOutcome` 和 `DeliveryStatus`，支持单事件与队列消费，执行 `Router::resolve -> Renderer::render -> Sink::send`。
+- 已实现单个 delivery 失败不阻断其他 delivery；render failure、missing sink 和 sink failure 都能在 report 中观察。
+- 已将默认 daemon queue 接入 dispatcher consumer，生产 daemon 不再只入队不消费；本阶段未注册真实 sink，Discord sink 仍在 Milestone 5。
+- 已覆盖多投递、单 sink failure、无 route、render failure、missing sink、队列消费、daemon ingress -> dispatcher -> fake sink E2E 和隐私不泄漏。
+- 原计划命令 `cargo test dispatch sink` 是无效 Cargo 语法，执行时返回 `unexpected argument 'sink'`；实际验证拆分为 `cargo test dispatch` 与 `cargo test sink`。
+- 已运行验证：`cargo test dispatch`（8 passed）、`cargo test sink`（8 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（87 lib tests + 6 bin tests passed）。
+- 已确认本阶段没有实现 Discord sink、Hermes hook bridge install、install/uninstall lifecycle 或 release preflight。
+
 ## 未完成
 
-- Milestone 4.3 到 Milestone 10 均未执行。
-- Dispatcher、fake sink、Discord sink、Hermes hook bridge、安装/回滚、release preflight、live verification 均未实现。
-- 当前 daemon 队列只入队不消费，达到容量后 `/event` 和 `/api/hermes/hook` 会返回 503；dispatcher/consumer 在 Milestone 4.3 实现。
+- Milestone 5 到 Milestone 10 均未执行。
+- Discord sink、Hermes hook bridge、安装/回滚、release preflight、live verification 均未实现。
+- 默认 daemon queue 已有 dispatcher consumer；真实 Discord 投递仍在 Milestone 5 实现。
 - live Discord verification 凭据是否可用尚未确认。
 - Slack sink、git/GitHub/tmux parity 是否进入 `0.1.0` 尚未最终确认。
 - macOS launchd 是否与 systemd 同期实现尚未最终确认。
 
 ## 下一步入口
 
-从 `tasks/development-checklist.md` 的 **Milestone 4：Router、Renderer、Dispatcher** 继续，优先执行 **任务 4.3：Dispatcher 与 fake sink**。
+从 `tasks/development-checklist.md` 的 **Milestone 5：Discord Sink 与基础 Live Path** 继续，优先执行 **任务 5.1：Discord 配置与 payload**。
 
 建议第一段工作：
 
@@ -183,7 +195,7 @@
 2. 确认当前分支、最新提交和未提交变更：
    - `git status --short --branch`
    - `git log -3 --oneline`
-3. 确认 Milestone 4.2 Renderer 已完成，并从 `tasks/development-checklist.md` 的任务 4.3 继续。
+3. 确认 Milestone 4.3 Dispatcher 与 fake sink 已完成，并从 `tasks/development-checklist.md` 的任务 5.1 继续。
 4. 读取当前相关代码：
    - `src/cli.rs`
    - `src/config.rs`
@@ -195,11 +207,14 @@
    - `src/router.rs`
    - `src/render/mod.rs`
    - `src/render/default.rs`
+   - `src/dispatch.rs`
+   - `src/sink/mod.rs`
+   - `src/sink/fake.rs`
    - `tests/fixtures/README.md`
-5. 从任务 4.3 继续，先写失败测试，再实现 dispatcher 与 fake sink。
-6. 注意任务 4.3 只实现 dispatcher/fake sink，不进入 Discord sink、hook bridge install 或 release preflight。
-7. 运行任务 4.3 验证命令：
-   - `cargo test dispatch sink`
+5. 从任务 5.1 继续，先写失败测试，再实现 Discord sink payload 与配置接入。
+6. 注意任务 5.1 只实现 Discord sink 与 payload，不进入 hook bridge install 或 release preflight。
+7. 运行任务 5.1 验证命令：
+   - `cargo test discord`
    - `cargo fmt --all -- --check`
    - `cargo clippy --all-targets -- -D warnings`
    - `cargo test`
@@ -220,7 +235,7 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新功能阶段提交：d4303ae feat: 增加 Hermes 默认渲染器。
+- 最新功能阶段：Milestone 4.3 feat: 实现事件 dispatcher 与 fake sink。
 - Milestone 0 已完成并提交：af57c49 docs: 明确 hermeship 完整项目方向。
 - Milestone 1.1 已完成并提交：d03170e chore: 搭建 Hermeship Rust CLI 骨架。
 - Milestone 1.2 已完成并提交：50723af feat: 实现 hermeship 配置模型与 config CLI。
@@ -233,6 +248,7 @@
 - Milestone 3.3 已完成并提交：7b10816 feat: 增加 Hermes hook ingress。
 - Milestone 4.1 已完成并提交：864e7f4 feat: 实现多投递路由。
 - Milestone 4.2 已完成并提交：d4303ae feat: 增加 Hermes 默认渲染器。
+- Milestone 4.3 已完成：feat: 实现事件 dispatcher 与 fake sink。
 - 已实现 src/events.rs：IncomingEvent、RoutingMetadata、字段别名反序列化、空/null payload 归一，以及 MessageFormat 的单一复用/重导出策略。
 - 已实现 src/event/：EventEnvelope、EventBody、EventMetadata、EventPriority、Hermes canonical mapping、IncomingEvent -> EventEnvelope conversion。
 - 已实现 src/privacy.rs：sanitize_payload、redact_value、excerpt_policy、敏感 key 递归脱敏、正文默认禁发、安全摘要和 opt-in 摘录。
@@ -241,21 +257,23 @@
 - 已实现 src/hermes.rs：HermesHookEnvelope、event/event_type alias、provider/source 默认值和 Hermes hook envelope -> IncomingEvent normalization。
 - 已实现 src/router.rs：Router、ResolvedDelivery、SinkTarget、DeliveryExplanation、event glob、route candidates、metadata filter、disabled/missing target 诊断和 0..N delivery。
 - 已实现 src/render/：Renderer trait、DefaultRenderer、RenderedMessage、compact/inline/alert/raw 四种格式、Hermes gateway/session/agent/custom 渲染、安全 template token、raw 安全 JSON 摘要。
+- 已实现 src/dispatch.rs：Dispatcher、DispatchReport、DeliveryOutcome、DeliveryStatus、单事件和队列消费、route -> render -> sink 管道、单 delivery 失败不阻断其他 delivery。
+- 已实现 src/sink/：object-safe Sink trait、SinkMessage、FakeSink、FakeDelivery、本地 fake sink 记录和确定性失败注入。
 - 已接入 hermeship start/status/emit/send/hermes hook 的真实 daemon health/event/hook 行为，hermes hook 支持 `--payload -` stdin。
 - 已接入 hermeship explain 的本地 route explain 行为：加载配置、清洗 payload、转 typed EventEnvelope、展示 matched/skipped routes、failed filters 和 delivery target，不调用 daemon、不入队、不投递。
 - Hermes canonical mapping 已覆盖 gateway:startup、session:start、session:end、session:reset、agent:start、agent:step、agent:end；显式失败的 agent:end 映射为 hermes.agent.failed；未知 event 降级为 Custom。
-- 已通过验证：cargo test render、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
+- 已通过验证：cargo test dispatch、cargo test sink、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
 - Hermeship 是 Hermes-native daemon-first event router，不是 thin adapter，不调用 clawhip runtime，也不依赖运行中的 clawhip daemon。
 - 方案文档只维护架构和边界，执行进度维护在 tasks/development-checklist.md 和 tasks/todo.md。
 
-请从 tasks/development-checklist.md 的 Milestone 4 继续，优先执行任务 4.3：Dispatcher 与 fake sink：
+请从 tasks/development-checklist.md 的 Milestone 5 继续，优先执行任务 5.1：Discord Sink 与基础 Live Path：
 1. 先复习 tasks/lessons.md，并确认当前分支、最新提交和未提交变更：git status --short --branch、git log -3 --oneline。
-2. 确认 tasks/development-checklist.md 的 Milestone 4.3 计划，并将当前任务计划写入 tasks/todo.md。
-3. 阅读 src/cli.rs、src/main.rs、src/config.rs、src/events.rs、src/event/mod.rs、src/event/body.rs、src/event/compat.rs、src/privacy.rs、src/router.rs、src/render/mod.rs、src/render/default.rs、tests/fixtures/README.md。
-4. 先写失败测试，再实现 dispatcher 与 fake sink。
-5. 本阶段只实现 dispatcher/fake sink，不实现 Discord sink、hook bridge install 或 release preflight。
+2. 确认 tasks/development-checklist.md 的 Milestone 5.1 计划，并将当前任务计划写入 tasks/todo.md。
+3. 阅读 src/config.rs、src/router.rs、src/render/mod.rs、src/render/default.rs、src/dispatch.rs、src/sink/mod.rs、src/sink/fake.rs、tests/fixtures/README.md。
+4. 先写失败测试，再实现 Discord sink payload 与配置接入。
+5. 本阶段只实现 Discord sink 与 payload，不实现 hook bridge install 或 release preflight。
 6. 默认测试仍只使用本地 deterministic fixture。
-7. 运行验证：cargo test dispatch sink、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
+7. 运行验证：cargo test discord、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
 8. 更新 tasks/development-checklist.md 的运行状态日志和 tasks/todo.md 的 Review。
 9. 阶段完成后必须验证并提交，commit 信息使用详细中文，说明变更、验证和影响。
 ```

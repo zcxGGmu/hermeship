@@ -358,25 +358,30 @@
 
 ### 任务 4.3：Dispatcher 与 fake sink
 
-- [ ] 新建 dispatch/sink 模块。
+- [x] 新建 dispatch/sink 模块。
   - 新建：`src/dispatch.rs`
   - 新建：`src/sink/mod.rs`
   - 新建：`src/sink/fake.rs`
-- [ ] 实现 `Sink` trait。
-- [ ] 实现 fake sink。
+- [x] 实现 `Sink` trait。
+- [x] 实现 fake sink。
   - 用于测试保存 delivery。
-- [ ] 实现 dispatcher。
+- [x] 实现 dispatcher。
   - 从队列读取 event。
   - route -> render -> sink。
   - 单个 delivery 失败不影响其他 delivery。
-- [ ] 编写 dispatcher 测试。
+- [x] 编写 dispatcher 测试。
   - 覆盖：多投递、单 sink failure、无 route、render failure。
-- [ ] 编写 dispatcher E2E 测试。
+- [x] 编写 dispatcher E2E 测试。
   - 使用：`tests/fixtures/hermes/agent_start.json` + fake sink。
   - 断言：daemon 入队事件经过 route -> render -> fake sink 后保存 delivery，且 message 不泄漏敏感字段。
-- [ ] 验证任务 4.3。
+- [x] 验证任务 4.3。
   - 命令：`cargo test dispatch sink`
-- [ ] 提交任务 4.3。
+  - 命令：`cargo test dispatch`
+  - 命令：`cargo test sink`
+  - 命令：`cargo fmt --all -- --check`
+  - 命令：`cargo clippy --all-targets -- -D warnings`
+  - 命令：`cargo test`
+- [x] 提交任务 4.3。
   - commit：`feat: 实现事件 dispatcher 与 fake sink`
 
 ## Milestone 5：Discord Sink 与基础 Live Path
@@ -705,6 +710,21 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-16 - Milestone 4.3 Dispatcher 与 fake sink
+
+- [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
+- [x] 已确认启动时工作树干净：`git status --short --branch` 只有分支行；最近提交为 `049fe75`、`d4303ae`、`b07d880`。
+- [x] 已阅读 `src/cli.rs`、`src/main.rs`、`src/config.rs`、`src/daemon.rs`、`src/events.rs`、`src/event/mod.rs`、`src/event/body.rs`、`src/event/compat.rs`、`src/privacy.rs`、`src/router.rs`、`src/render/mod.rs`、`src/render/default.rs` 与 `tests/fixtures/README.md`，确认本阶段只实现 dispatcher 与 fake sink。
+- [x] 已先写失败测试并运行 Red：`cargo test dispatch sink` 被 Cargo 语法拒绝；`cargo test dispatch` / `cargo test sink` 在实现前失败于缺少 `Dispatcher`、`Sink`、`SinkMessage` 和 `FakeSink`。
+- [x] 已新增 `src/dispatch.rs`、`src/sink/mod.rs`、`src/sink/fake.rs`，并在 `src/lib.rs` 导出 `dispatch` 与 `sink`。
+- [x] 已实现 `Dispatcher`、`DispatchReport`、`DeliveryOutcome` 和 `DeliveryStatus`，支持单事件与队列消费，执行 `Router::resolve -> Renderer::render -> Sink::send`。
+- [x] 已实现 object-safe `Sink` trait、`SinkMessage`、`FakeSink` 和 `FakeDelivery`；fake sink 记录 target、format、rendered content、event kind 和 route index，并支持按 route index 注入确定性失败。
+- [x] 已将默认 daemon queue 接入 dispatcher consumer，避免生产路径只入队不消费；真实 Discord 投递仍在 Milestone 5。
+- [x] 已覆盖测试：多投递、单 sink failure 不阻断后续 delivery、无 route、render failure、missing sink、队列消费、daemon ingress -> dispatcher -> fake sink E2E 和隐私不泄漏。
+- [x] 已运行验证：`cargo test dispatch`（8 passed）、`cargo test sink`（8 passed）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（87 lib tests + 6 bin tests passed）均通过。
+- [x] 已确认本阶段没有实现 Discord sink、Hermes hook bridge install、install/uninstall lifecycle 或 release preflight。
+- [x] 提交状态：随本阶段提交一并完成。
 
 ### 2026-06-16 - Milestone 4.2 Renderer
 
