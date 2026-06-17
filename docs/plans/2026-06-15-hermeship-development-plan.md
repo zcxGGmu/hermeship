@@ -148,6 +148,8 @@ hermeship tmux stale ...
 hermeship tmux watch ...
 hermeship tmux list ...
 hermeship cron run <id>
+hermeship memory init --root <path> --project <name> --date <YYYY-MM-DD>
+hermeship memory status --root <path> --project <name> --date <YYYY-MM-DD>
 hermeship explain <event> --payload '{"...": "..."}'
 hermeship release preflight <version>
 hermeship install
@@ -647,7 +649,7 @@ cargo run -- explain hermes.agent.started --payload '{"session_id":"demo"}'
 版本策略：
 
 - `0.1.0`：Rust daemon、CLI、config、router、renderer、Discord sink、Hermes gateway hook ingress、install/status/send/emit/explain。
-- `0.2.0`：git/GitHub/tmux sources、cron、Slack sink、release preflight。
+- `0.2.0`：git/GitHub/tmux sources、cron、memory scaffold、Slack sink、release preflight。
 - `0.3.0`：Hermes plugin/observer、更细粒度 tool/LLM telemetry。
 - `1.0.0`：配置 schema、事件契约、安装、回滚、live verification 稳定。
 

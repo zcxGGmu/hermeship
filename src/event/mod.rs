@@ -2,9 +2,9 @@ pub mod body;
 pub mod compat;
 
 pub use body::{
-    CustomEvent, GitBranchChangedEvent, GitCommitEvent, GithubCheckEvent, GithubIssueEvent,
-    GithubPullRequestEvent, GithubReleaseEvent, HermesAgentEvent, HermesGatewayEvent,
-    HermesSessionEvent, TmuxKeywordEvent, TmuxStaleEvent,
+    CronRunEvent, CustomEvent, GitBranchChangedEvent, GitCommitEvent, GithubCheckEvent,
+    GithubIssueEvent, GithubPullRequestEvent, GithubReleaseEvent, HermesAgentEvent,
+    HermesGatewayEvent, HermesSessionEvent, TmuxKeywordEvent, TmuxStaleEvent,
 };
 
 use time::OffsetDateTime;
@@ -37,6 +37,7 @@ pub enum EventBody {
     GithubRelease(GithubReleaseEvent),
     TmuxKeyword(TmuxKeywordEvent),
     TmuxStale(TmuxStaleEvent),
+    CronRun(CronRunEvent),
     HermesGatewayStarted(HermesGatewayEvent),
     HermesSessionStarted(HermesSessionEvent),
     HermesSessionFinished(HermesSessionEvent),
@@ -59,6 +60,7 @@ impl EventBody {
             Self::GithubRelease(_) => "github.release-published",
             Self::TmuxKeyword(_) => "tmux.keyword",
             Self::TmuxStale(_) => "tmux.stale",
+            Self::CronRun(_) => "cron.run",
             Self::HermesGatewayStarted(_) => "hermes.gateway.started",
             Self::HermesSessionStarted(_) => "hermes.session.started",
             Self::HermesSessionFinished(_) => "hermes.session.finished",

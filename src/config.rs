@@ -20,6 +20,7 @@ pub struct AppConfig {
     pub defaults: DefaultsConfig,
     pub privacy: PrivacyConfig,
     pub hermes: HermesConfig,
+    pub cron: CronConfig,
     pub routes: Vec<RouteRule>,
 }
 
@@ -128,6 +129,35 @@ impl Default for HermesConfig {
             hook_timeout_secs: 2.0,
             enable_agent_step: false,
             enable_command_events: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct CronConfig {
+    pub jobs: Vec<CronJob>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CronJob {
+    pub id: String,
+    pub schedule: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub channel: Option<String>,
+    pub enabled: bool,
+}
+
+impl Default for CronJob {
+    fn default() -> Self {
+        Self {
+            id: String::new(),
+            schedule: String::new(),
+            message: String::new(),
+            channel: None,
+            enabled: true,
         }
     }
 }
@@ -270,6 +300,9 @@ impl AppConfig {
         if self.hermes.hook_timeout_secs <= 0.0 {
             anyhow::bail!("hermes.hook_timeout_secs must be greater than 0");
         }
+        for job in &self.cron.jobs {
+            crate::cron::validate_job(job)?;
+        }
 
         for (index, route) in self.routes.iter().enumerate() {
             let number = index + 1;
@@ -328,6 +361,12 @@ impl AppConfig {
         self.privacy.redact_keys = normalize_list(self.privacy.redact_keys.clone());
         if self.privacy.redact_keys.is_empty() {
             self.privacy.redact_keys = default_redact_keys();
+        }
+        for job in &mut self.cron.jobs {
+            job.id = normalize_text(Some(job.id.clone())).unwrap_or_default();
+            job.schedule = normalize_text(Some(job.schedule.clone())).unwrap_or_default();
+            job.message = normalize_text(Some(job.message.clone())).unwrap_or_default();
+            job.channel = normalize_text(job.channel.clone());
         }
 
         for route in &mut self.routes {
@@ -466,7 +505,50 @@ mod tests {
         assert_eq!(config.hermes.hook_timeout_secs, 2.0);
         assert!(!config.hermes.enable_agent_step);
         assert!(!config.hermes.enable_command_events);
+        assert!(config.cron.jobs.is_empty());
         assert!(config.routes.is_empty());
+    }
+
+    #[test]
+    fn config_loads_cron_jobs_and_validates_run_inputs() {
+        let path = temp_config_path("cron-jobs");
+        fs::write(
+            &path,
+            r#"
+[[cron.jobs]]
+id = "dev-followup"
+schedule = "*/30 * * * *"
+message = "check open PRs and blockers"
+channel = "ops"
+enabled = true
+"#,
+        )
+        .unwrap();
+
+        let config = AppConfig::load_or_default_with_env(&path, |_| None).unwrap();
+
+        assert_eq!(config.cron.jobs.len(), 1);
+        let job = &config.cron.jobs[0];
+        assert_eq!(job.id, "dev-followup");
+        assert_eq!(job.schedule, "*/30 * * * *");
+        assert_eq!(job.message, "check open PRs and blockers");
+        assert_eq!(job.channel.as_deref(), Some("ops"));
+        assert!(job.enabled);
+        config.validate().unwrap();
+
+        let invalid = AppConfig {
+            cron: CronConfig {
+                jobs: vec![CronJob {
+                    id: " ".to_string(),
+                    schedule: "* * * * *".to_string(),
+                    message: "run".to_string(),
+                    ..CronJob::default()
+                }],
+            },
+            ..AppConfig::default()
+        };
+        let error = invalid.validate().unwrap_err().to_string();
+        assert!(error.contains("cron jobs must set id"), "{error}");
     }
 
     #[test]

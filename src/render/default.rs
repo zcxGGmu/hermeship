@@ -3,8 +3,8 @@ use serde_json::{Map, Value, json};
 
 use crate::config::{MessageFormat, PrivacyConfig};
 use crate::event::{
-    CustomEvent, EventBody, EventEnvelope, EventMetadata, GitBranchChangedEvent, GitCommitEvent,
-    GithubCheckEvent, GithubIssueEvent, GithubPullRequestEvent, GithubReleaseEvent,
+    CronRunEvent, CustomEvent, EventBody, EventEnvelope, EventMetadata, GitBranchChangedEvent,
+    GitCommitEvent, GithubCheckEvent, GithubIssueEvent, GithubPullRequestEvent, GithubReleaseEvent,
     HermesAgentEvent, HermesGatewayEvent, HermesSessionEvent, TmuxKeywordEvent, TmuxStaleEvent,
 };
 use crate::privacy::sanitize_payload;
@@ -159,6 +159,7 @@ fn detail_parts(event: &EventEnvelope) -> Vec<String> {
         EventBody::GithubRelease(body) => github_release_parts(body),
         EventBody::TmuxKeyword(body) => tmux_keyword_parts(body),
         EventBody::TmuxStale(body) => tmux_stale_parts(body),
+        EventBody::CronRun(body) => cron_run_parts(body),
         EventBody::HermesGatewayStarted(body) => gateway_parts(body),
         EventBody::HermesSessionStarted(body)
         | EventBody::HermesSessionFinished(body)
@@ -256,6 +257,14 @@ fn tmux_stale_parts(body: &TmuxStaleEvent) -> Vec<String> {
     push_part(&mut parts, "pane", Some(body.pane.as_str()));
     push_u64_part(&mut parts, "minutes", Some(body.minutes));
     push_part(&mut parts, "last_line", Some(body.last_line.as_str()));
+    parts
+}
+
+fn cron_run_parts(body: &CronRunEvent) -> Vec<String> {
+    let mut parts = Vec::new();
+    push_part(&mut parts, "job", Some(body.job_id.as_str()));
+    push_part(&mut parts, "schedule", Some(body.schedule.as_str()));
+    push_part(&mut parts, "summary", Some(body.summary.as_str()));
     parts
 }
 
@@ -382,6 +391,7 @@ fn body_json(body: &EventBody) -> Value {
         EventBody::GithubRelease(body) => github_release_json(body),
         EventBody::TmuxKeyword(body) => tmux_keyword_json(body),
         EventBody::TmuxStale(body) => tmux_stale_json(body),
+        EventBody::CronRun(body) => cron_run_json(body),
         EventBody::HermesGatewayStarted(body) => json!({
             "kind": "hermes.gateway.started",
             "provider": body.provider,
@@ -502,6 +512,16 @@ fn tmux_stale_json(body: &TmuxStaleEvent) -> Value {
         "minutes": body.minutes,
         "last_line": body.last_line,
         "last_line_chars": body.last_line_chars,
+    })
+}
+
+fn cron_run_json(body: &CronRunEvent) -> Value {
+    json!({
+        "kind": "cron.run",
+        "cron_job_id": body.job_id,
+        "cron_schedule": body.schedule,
+        "summary": body.summary,
+        "summary_chars": body.summary_chars,
     })
 }
 
@@ -1141,6 +1161,48 @@ mod tests {
             assert!(
                 !raw.content.contains(forbidden),
                 "tmux raw render leaked `{forbidden}`"
+            );
+        }
+    }
+
+    #[test]
+    fn render_cron_run_compact_and_raw_without_secret_payload_leaks() {
+        let event = sanitized_envelope(
+            "cron.run",
+            json!({
+                "cron_job_id": "dev-followup",
+                "cron_schedule": "*/30 * * * *",
+                "summary": "check open PRs and blockers",
+                "summary_chars": 27,
+                "message": "full cron message should not render",
+                "token": "synthetic-token-should-not-render"
+            }),
+        );
+
+        let rendered = DefaultRenderer
+            .render(&event, &delivery(MessageFormat::Compact))
+            .unwrap();
+
+        assert_eq!(
+            rendered.content,
+            "cron run (job=dev-followup, schedule=*/30 * * * *, summary=check open PRs and blockers)"
+        );
+
+        let raw = DefaultRenderer
+            .render(&event, &delivery(MessageFormat::Raw))
+            .unwrap();
+        let raw_json: Value = serde_json::from_str(&raw.content).unwrap();
+
+        assert_eq!(raw_json["event"], json!("cron.run"));
+        assert_eq!(raw_json["body"]["cron_job_id"], json!("dev-followup"));
+        assert_eq!(raw_json["body"]["summary_chars"], json!(27));
+        for forbidden in [
+            "full cron message should not render",
+            "synthetic-token-should-not-render",
+        ] {
+            assert!(
+                !raw.content.contains(forbidden),
+                "cron raw render leaked `{forbidden}`"
             );
         }
     }

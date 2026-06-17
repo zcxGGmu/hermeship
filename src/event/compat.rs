@@ -4,9 +4,10 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::event::{
-    CustomEvent, EventBody, EventEnvelope, EventMetadata, EventPriority, GitBranchChangedEvent,
-    GitCommitEvent, GithubCheckEvent, GithubIssueEvent, GithubPullRequestEvent, GithubReleaseEvent,
-    HermesAgentEvent, HermesGatewayEvent, HermesSessionEvent, TmuxKeywordEvent, TmuxStaleEvent,
+    CronRunEvent, CustomEvent, EventBody, EventEnvelope, EventMetadata, EventPriority,
+    GitBranchChangedEvent, GitCommitEvent, GithubCheckEvent, GithubIssueEvent,
+    GithubPullRequestEvent, GithubReleaseEvent, HermesAgentEvent, HermesGatewayEvent,
+    HermesSessionEvent, TmuxKeywordEvent, TmuxStaleEvent,
 };
 use crate::events::IncomingEvent;
 use crate::source::git::{
@@ -104,6 +105,7 @@ fn body_for(kind: &str, payload: &Value, metadata: &EventMetadata) -> Result<Eve
         }
         "tmux.keyword" => EventBody::TmuxKeyword(tmux_keyword_event(payload)?),
         "tmux.stale" => EventBody::TmuxStale(tmux_stale_event(payload)?),
+        "cron.run" => EventBody::CronRun(cron_run_event(payload)?),
         "hermes.gateway.started" => EventBody::HermesGatewayStarted(HermesGatewayEvent {
             provider: metadata.provider.clone(),
             source: metadata.source.clone(),
@@ -312,6 +314,20 @@ fn tmux_stale_event(payload: &Value) -> Result<TmuxStaleEvent> {
         minutes: validate_positive_minutes(u64_field(payload, "minutes").unwrap_or_default())?,
         last_line,
         last_line_chars,
+    })
+}
+
+fn cron_run_event(payload: &Value) -> Result<CronRunEvent> {
+    let summary = required_summary_field(payload, "summary")?;
+    let summary_chars = u64_field(payload, "summary_chars")
+        .map(|value| value as usize)
+        .unwrap_or_else(|| summary.chars().count());
+
+    Ok(CronRunEvent {
+        job_id: required_display_field(payload, "cron_job_id")?,
+        schedule: required_display_field(payload, "cron_schedule")?,
+        summary,
+        summary_chars,
     })
 }
 
@@ -995,6 +1011,60 @@ mod tests {
     }
 
     #[test]
+    fn cron_run_event_converts_to_typed_body_with_route_metadata() {
+        let event = IncomingEvent::new(
+            "cron.run",
+            json!({
+                "cron_job_id": "dev-followup",
+                "cron_schedule": "*/30 * * * *",
+                "summary": "check open PRs and blockers",
+                "summary_chars": 27
+            }),
+        );
+
+        let envelope = from_incoming_event(&event).unwrap();
+
+        assert_eq!(envelope.source, "cron");
+        assert_eq!(envelope.canonical_kind(), "cron.run");
+        assert_eq!(envelope.metadata.priority, EventPriority::Low);
+        match envelope.body {
+            EventBody::CronRun(body) => {
+                assert_eq!(body.job_id, "dev-followup");
+                assert_eq!(body.schedule, "*/30 * * * *");
+                assert_eq!(body.summary, "check open PRs and blockers");
+                assert_eq!(body.summary_chars, 27);
+            }
+            other => panic!("expected CronRun, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn cron_run_event_rejects_empty_or_multiline_fields() {
+        let missing_job = from_incoming_event(&IncomingEvent::new(
+            "cron.run",
+            json!({
+                "cron_schedule": "*/30 * * * *",
+                "summary": "check open PRs"
+            }),
+        ))
+        .unwrap_err()
+        .to_string();
+        assert!(missing_job.contains("cron_job_id must not be empty"));
+
+        let multiline_summary = from_incoming_event(&IncomingEvent::new(
+            "cron.run",
+            json!({
+                "cron_job_id": "dev-followup",
+                "cron_schedule": "*/30 * * * *",
+                "summary": "check open PRs\nfull cron body should not render"
+            }),
+        ))
+        .unwrap_err()
+        .to_string();
+        assert!(multiline_summary.contains("summary must be a single line"));
+    }
+
+    #[test]
     fn tmux_events_reject_empty_multiline_and_zero_minute_fields() {
         let empty_session = from_incoming_event(&IncomingEvent::new(
             "tmux.keyword",
@@ -1095,6 +1165,7 @@ mod tests {
             EventBody::GithubRelease(_) => "GithubRelease",
             EventBody::TmuxKeyword(_) => "TmuxKeyword",
             EventBody::TmuxStale(_) => "TmuxStale",
+            EventBody::CronRun(_) => "CronRun",
             EventBody::HermesGatewayStarted(_) => "HermesGatewayStarted",
             EventBody::HermesSessionStarted(_) => "HermesSessionStarted",
             EventBody::HermesSessionFinished(_) => "HermesSessionFinished",

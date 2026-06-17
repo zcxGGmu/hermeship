@@ -90,6 +90,14 @@ pub struct TmuxStaleEvent {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CronRunEvent {
+    pub job_id: String,
+    pub schedule: String,
+    pub summary: String,
+    pub summary_chars: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HermesGatewayEvent {
     pub provider: Option<String>,
     pub source: Option<String>,

@@ -3,8 +3,8 @@ use std::io::{self, Read};
 use anyhow::{Context, Result};
 use clap::Parser;
 use hermeship::cli::{
-    Cli, Commands, ConfigCommand, GitCommands, GithubCommands, HermesCommands, ReleaseCommands,
-    TmuxCommands,
+    Cli, Commands, ConfigCommand, CronCommands, GitCommands, GithubCommands, HermesCommands,
+    MemoryCommands, ReleaseCommands, TmuxCommands,
 };
 use hermeship::client::DaemonClient;
 use hermeship::config::AppConfig;
@@ -149,6 +149,25 @@ async fn real_main() -> Result<()> {
             }
             TmuxCommandResult::Report(report) => {
                 print!("{report}");
+                Ok(())
+            }
+        },
+        Commands::Cron { command } => {
+            let config = AppConfig::load_or_default(&config_path)?;
+            let event = cron_command_into_event(&config, command)?;
+            let accepted = submit_event(&config, event).await?;
+            print_event_accepted("cron", &accepted);
+            Ok(())
+        }
+        Commands::Memory { command } => match command {
+            MemoryCommands::Init(args) => {
+                let report = hermeship::memory::init(&memory_init_options(args)?)?;
+                print!("{}", report.render());
+                Ok(())
+            }
+            MemoryCommands::Status(args) => {
+                let report = hermeship::memory::status(&memory_status_options(args)?)?;
+                print!("{}", report.render());
                 Ok(())
             }
         },
@@ -466,6 +485,51 @@ fn tmux_command_into_event(command: TmuxCommands) -> Result<TmuxCommandResult> {
     }
 }
 
+fn cron_command_into_event(config: &AppConfig, command: CronCommands) -> Result<IncomingEvent> {
+    match command {
+        CronCommands::Run { id } => hermeship::cron::configured_run_event(config, &id),
+    }
+}
+
+fn memory_init_options(
+    args: hermeship::cli::MemoryInitArgs,
+) -> Result<hermeship::memory::MemoryInitOptions> {
+    let root = args.root.unwrap_or(std::env::current_dir()?);
+    let project = memory_project(args.project, &root)?;
+    Ok(hermeship::memory::MemoryInitOptions {
+        root,
+        project,
+        channel: args.channel,
+        agent: args.agent,
+        date: args.date,
+        force: args.force,
+    })
+}
+
+fn memory_status_options(
+    args: hermeship::cli::MemoryStatusArgs,
+) -> Result<hermeship::memory::MemoryStatusOptions> {
+    let root = args.root.unwrap_or(std::env::current_dir()?);
+    let project = memory_project(args.project, &root)?;
+    Ok(hermeship::memory::MemoryStatusOptions {
+        root,
+        project,
+        channel: args.channel,
+        agent: args.agent,
+        date: args.date,
+    })
+}
+
+fn memory_project(project: Option<String>, root: &std::path::Path) -> Result<String> {
+    if let Some(project) = project {
+        return Ok(project);
+    }
+    root.file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .filter(|value| !value.trim().is_empty())
+        .ok_or_else(|| anyhow::anyhow!("unable to infer memory project from root path"))
+}
+
 fn path_to_string(path: std::path::PathBuf) -> String {
     path.to_string_lossy().into_owned()
 }
@@ -538,9 +602,9 @@ mod tests {
     use hermeship::hermes::HermesHookEnvelope;
 
     use super::{
-        VERSION, explain_event, git_command_into_event, github_command_into_event,
-        read_payload_arg, read_setup_token, submit_event, submit_hermes_hook,
-        tmux_command_into_event,
+        VERSION, cron_command_into_event, explain_event, git_command_into_event,
+        github_command_into_event, read_payload_arg, read_setup_token, submit_event,
+        submit_hermes_hook, tmux_command_into_event,
     };
 
     #[tokio::test]
@@ -866,6 +930,52 @@ mod tests {
                 assert_eq!(body.last_line, "waiting for agent output");
             }
             other => panic!("expected TmuxStale, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn daemon_cron_run_command_posts_configured_event_to_daemon() {
+        let cli = Cli::parse_from(["hermeship", "cron", "run", "dev-followup"]);
+        let Some(Commands::Cron { command }) = cli.command else {
+            panic!("expected cron command");
+        };
+        let config = AppConfig {
+            cron: hermeship::config::CronConfig {
+                jobs: vec![hermeship::config::CronJob {
+                    id: "dev-followup".to_string(),
+                    schedule: "*/30 * * * *".to_string(),
+                    message: "check open PRs and blockers".to_string(),
+                    channel: Some("ops".to_string()),
+                    enabled: true,
+                }],
+            },
+            ..AppConfig::default()
+        };
+        let event = cron_command_into_event(&config, command).unwrap();
+
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config.clone(), queue_tx).await;
+        let mut config = config;
+        config.daemon.base_url = Some(base_url);
+
+        let accepted = submit_event(&config, event).await.unwrap();
+
+        assert!(accepted.queued);
+        assert_eq!(accepted.canonical_kind, "cron.run");
+        assert_eq!(accepted.queue.pending, 1);
+
+        let envelope = queue_rx.try_recv().unwrap();
+        server.abort();
+
+        assert_eq!(envelope.canonical_kind(), "cron.run");
+        assert_eq!(envelope.metadata.channel_hint.as_deref(), Some("ops"));
+        match envelope.body {
+            EventBody::CronRun(body) => {
+                assert_eq!(body.job_id, "dev-followup");
+                assert_eq!(body.schedule, "*/30 * * * *");
+                assert_eq!(body.summary, "check open PRs and blockers");
+            }
+            other => panic!("expected CronRun, got {other:?}"),
         }
     }
 

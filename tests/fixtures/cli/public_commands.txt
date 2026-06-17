@@ -21,6 +21,9 @@ tmux keyword --session hermes-agent --window main --pane %1 --keyword FAILED --l
 tmux stale --session hermes-agent --window main --pane %2 --minutes 15 --last-line "waiting for agent output" --channel ops
 tmux watch --session hermes-agent --keywords FAILED,complete --stale-minutes 10 --channel ops --tmux-output "hermes-agent	main	%1	0	bash	ready"
 tmux list --tmux-output "hermes-agent	main	%1	0	bash	ready"
+cron run dev-followup
+memory init --root /tmp/hermeship-memory --project Hermeship --channel ops --agent codex --date 2026-06-17
+memory status --root /tmp/hermeship-memory --project Hermeship --channel ops --agent codex --date 2026-06-17
 install --dry-run
 uninstall --remove-config --remove-state --remove-hooks --hermes-home /tmp/hermeship-test-home --dry-run
 release preflight 0.1.0

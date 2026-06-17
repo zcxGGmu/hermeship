@@ -402,6 +402,10 @@ fn insert_body_fields(context: &mut BTreeMap<String, String>, body: &EventBody) 
             insert_context(context, "pane", Some(body.pane.as_str()));
             insert_context(context, "minutes", Some(body.minutes.to_string().as_str()));
         }
+        EventBody::CronRun(body) => {
+            insert_context(context, "cron_job_id", Some(body.job_id.as_str()));
+            insert_context(context, "cron_schedule", Some(body.schedule.as_str()));
+        }
         _ => {}
     }
 }
@@ -911,6 +915,48 @@ mod tests {
         assert_eq!(
             explanation.routes[0].filter_results[2].actual.as_deref(),
             Some("hermes-agent")
+        );
+    }
+
+    #[test]
+    fn cron_route_filters_match_job_id_and_schedule() {
+        let config = AppConfig {
+            routes: vec![RouteRule {
+                event: "cron.*".to_string(),
+                filter: BTreeMap::from([
+                    ("cron_job_id".to_string(), "dev-*".to_string()),
+                    ("cron_schedule".to_string(), "*/30 * * * *".to_string()),
+                ]),
+                channel: Some("cron-alerts".to_string()),
+                ..RouteRule::default()
+            }],
+            ..AppConfig::default()
+        };
+        let envelope = envelope(
+            "cron.run",
+            json!({
+                "cron_job_id": "dev-followup",
+                "cron_schedule": "*/30 * * * *",
+                "summary": "check open PRs and blockers"
+            }),
+        );
+
+        let explanation = Router::new(config).explain(&envelope);
+
+        assert_eq!(explanation.canonical_kind, "cron.run");
+        assert_eq!(explanation.route_candidates, vec!["cron.run", "cron.*"]);
+        assert_eq!(explanation.deliveries.len(), 1);
+        assert_eq!(
+            explanation.deliveries[0].target,
+            SinkTarget::DiscordChannel("cron-alerts".to_string())
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[0].actual.as_deref(),
+            Some("dev-followup")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[1].actual.as_deref(),
+            Some("*/30 * * * *")
         );
     }
 

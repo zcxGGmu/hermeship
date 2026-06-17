@@ -1,6 +1,7 @@
 pub mod cli;
 pub mod client;
 pub mod config;
+pub mod cron;
 pub mod daemon;
 pub mod dispatch;
 pub mod event;
@@ -8,6 +9,7 @@ pub mod events;
 pub mod hermes;
 pub mod hooks;
 pub mod lifecycle;
+pub mod memory;
 pub mod privacy;
 pub mod release_preflight;
 pub mod render;

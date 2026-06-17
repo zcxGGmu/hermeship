@@ -622,18 +622,19 @@
 
 ### 任务 8.4：Cron 与 Memory Scaffold
 
-- [ ] 新建 cron 模块。
+- [x] 新建 cron 模块。
   - 新建：`src/cron.rs`
-- [ ] 支持 configured cron job run。
-- [ ] 新建 memory scaffold。
+- [x] 支持 configured cron job run。
+- [x] 新建 memory scaffold。
   - 新建：`src/memory.rs`
   - CLI：`hermeship memory init/status`
-- [ ] 编写测试。
-- [ ] 验证任务 8.4。
+- [x] 编写测试。
+- [x] 验证任务 8.4。
   - 命令：`cargo test cron`
   - 命令：`cargo test memory`
-- [ ] 提交任务 8.4。
+- [x] 提交任务 8.4。
   - commit：`feat: 增加 cron 与 memory scaffold`
+  - 记录：随本阶段提交完成
 
 ## Milestone 9：文档与 Live Verification
 
@@ -731,6 +732,23 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-17 - Milestone 8.4 Cron 与 Memory Scaffold 本地 deterministic parity
+
+- [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
+- [x] 已确认启动时工作树干净，最近提交为 `6c9af3e docs: 更新 Hermeship Milestone 8.4 交接状态`、`3745bb8 feat: 增加 tmux 事件 source`、`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`。
+- [x] 已阅读 `src/cli.rs`、`src/main.rs`、`src/config.rs`、`src/events.rs`、`src/event/`、`src/source/git.rs`、`src/source/github.rs`、`src/source/tmux.rs`、`src/router.rs`、`src/render/`、`src/dispatch.rs`、`src/lifecycle.rs`、`src/release_preflight.rs`、`tests/fixtures/README.md` 与方案文档 parity/source 章节。
+- [x] 已先写失败测试并运行 Red：`cargo test cron` 在实现前失败于缺少 `CronCommands`、`CronConfig`、`CronJob`、`EventBody::CronRun` 和 `configured_run_event()`；`cargo test memory` 在实现前失败于缺少 `MemoryCommands`、memory CLI enum 和 memory API。
+- [x] 已新增 `src/cron.rs`，实现 configured cron job run 的本地 deterministic `cron.run` 事件构造；只读取本地配置，不实现真实 scheduler、系统 cron 或外部 cron daemon。
+- [x] 已新增 `CronConfig` / `CronJob` 配置模型，并接入配置归一化与验证；默认没有 cron jobs，保持向后兼容。
+- [x] 已新增 typed cron body：`CronRunEvent`，并将 `cron.run` 接入 `IncomingEvent -> EventEnvelope` conversion、route metadata、默认 compact/raw 渲染和 daemon submit 路径。
+- [x] 已新增 `src/memory.rs`，实现 `hermeship memory init/status` 的本地 filesystem scaffold：`MEMORY.md`、`memory/README.md`、daily/project/topic shards、可选 channel/agent shards，以及 handoffs/archive `.gitkeep`。
+- [x] 已确认 memory scaffold 要求显式 `--date <YYYY-MM-DD>`，默认不覆盖现有文件，只有 `--force` 覆盖生成文件；slug/date validation 防止路径穿越和非 deterministic 名称。
+- [x] 已根据代码审查补充 symlink 防护：memory root、目录、文件写入和 markdown 扫描均拒绝 symlink，避免 `--force` 写到 root 外或 `status` 扫描 root 外目标；并补充真实日历日期校验。
+- [x] 已更新公开命令 fixture、release preflight、README、方案文档 CLI 示例和开发状态文档，覆盖 `cron run`、`memory init`、`memory status`。
+- [x] 已运行验证：`cargo test cron`、`cargo test memory`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
+- [x] 已确认本阶段没有实现真实 scheduler、系统 cron 安装、数据库 memory store、真实 live verification、Slack sink 或 Hermes plugin/observer。
+- [x] 提交状态：随本阶段提交完成。
 
 ### 2026-06-17 - Milestone 8.3 完成后交接更新
 

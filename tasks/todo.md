@@ -1,22 +1,22 @@
-# Task: Milestone 8.4 - Cron 与 Memory Scaffold
+# Task: Milestone 8.4 完成 - 下一入口 Milestone 9
 
-更新时间：2026-06-17 Milestone 8.3 已完成，下一入口为 Milestone 8.4
+更新时间：2026-06-17 Milestone 8.4 已完成，下一入口 Milestone 9
 
-本文件是当前开发工作台。下次启动应从 Milestone 8.4 Cron 与 Memory Scaffold 继续。Hermeship 仍然是 Hermes-native daemon-first event router，不调用 clawhip runtime，不依赖运行中的 clawhip daemon。
+本文件是当前开发工作台。本轮已完成 Milestone 8.4 Cron 与 Memory Scaffold 本地 deterministic 路径。Hermeship 仍然是 Hermes-native daemon-first event router，不调用 clawhip runtime，不依赖运行中的 clawhip daemon。
 
-本次边界：下一阶段只实现 cron 与 memory scaffold 的本地 deterministic 路径；默认不执行真实 live verification，不实现 Slack sink，不启动 Hermes plugin/observer。
+本轮边界：已仅实现 cron 与 memory scaffold 的本地 deterministic 路径；未执行真实 live verification，未实现 Slack sink，未启动 Hermes plugin/observer。
 
 ## 当前基线
 
 - 当前分支：`codex/milestone-1-cli`。
 - 当前工作树：本轮启动时 `git status --short --branch` 只显示分支行，工作树干净。
-- 文档交接提交：`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`。
-- 最新功能阶段提交：`3745bb8 feat: 增加 tmux 事件 source`。
-- 最新功能阶段：Milestone 8.3 Tmux Source 本地 deterministic parity 已完成。
-- 最近提交基线：`3745bb8 feat: 增加 tmux 事件 source`、`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`、`91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归`。
-- Milestone 0 到 Milestone 8.3 已完成。
-- Milestone 8.4 到 Milestone 10 未完成。
-- 下一入口：Milestone 8.4 Cron 与 Memory Scaffold。
+- 文档交接提交：`6c9af3e docs: 更新 Hermeship Milestone 8.4 交接状态`。
+- 最新功能阶段提交：本次 Milestone 8.4 阶段提交。
+- 最新功能阶段：Milestone 8.4 Cron 与 Memory Scaffold 本地 deterministic parity 已完成。
+- 最近提交基线：`6c9af3e docs: 更新 Hermeship Milestone 8.4 交接状态`、`3745bb8 feat: 增加 tmux 事件 source`、`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`。
+- Milestone 0 到 Milestone 8.4 已完成。
+- Milestone 9 到 Milestone 10 未完成。
+- 下一入口：Milestone 9 文档与 live verification。
 
 ## 已完成能力
 
@@ -29,10 +29,10 @@
 - 已实现 Git Source 本地 deterministic parity：`hermeship git commit`、`hermeship git branch-changed`、`git.commit` / `git.branch-changed` typed event、route metadata 和默认安全渲染。
 - 已实现 GitHub Source 本地 deterministic parity：`hermeship github issue-opened`、`hermeship github pr-opened`、`hermeship github check-failed`、`hermeship github release-published`、typed GitHub event、route metadata 和默认安全渲染。
 - 已实现 Tmux Source 本地 deterministic parity：`hermeship tmux keyword`、`hermeship tmux stale`、`hermeship tmux watch`、`hermeship tmux list`、typed tmux event、route metadata、默认渲染和隐私收紧的 watch/list 报表。
+- 已实现 Cron 与 Memory Scaffold 本地 deterministic parity：`hermeship cron run <id>`、`cron.run` typed event、route metadata、默认安全渲染、`hermeship memory init/status` 本地 filesystem scaffold、显式日期、symlink 拒绝和 release preflight 覆盖。
 
 ## 未完成范围
 
-- Milestone 8.4：cron 与 memory scaffold。
 - Milestone 9：README/architecture/event contract/live verification runbook 与首次 live check。
 - Milestone 10：Hermes plugin / observer 研究与可选 MVP。
 - 真实 live verification 尚未执行。
@@ -48,13 +48,13 @@
   - `docs/plans/2026-06-15-hermeship-development-plan.md`
   - `tasks/development-checklist.md`
   - `tasks/todo.md`
-  - 记录：已确认阶段完成后必须验证并提交、方案/清单分离、Hermeship 不是 thin adapter；下一阶段只做本地 deterministic cron/memory scaffold。
+  - 记录：已确认阶段完成后必须验证并提交、方案/清单分离、Hermeship 不是 thin adapter；本阶段只做本地 deterministic cron/memory scaffold。
 
 - [x] 确认当前分支、最新提交和未提交变更。
   - 命令：`git status --short --branch`
   - 命令：`git log -3 --oneline`
   - 完成标准：确认仍在 `codex/milestone-1-cli`，并识别是否存在未提交变更。
-  - 记录：当前分支为 `codex/milestone-1-cli`；工作树启动时干净；最近提交为 `3745bb8 feat: 增加 tmux 事件 source`、`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`、`91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归`。
+  - 记录：当前分支为 `codex/milestone-1-cli`；工作树启动时干净；最近提交为 `6c9af3e docs: 更新 Hermeship Milestone 8.4 交接状态`、`3745bb8 feat: 增加 tmux 事件 source`、`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`。
 
 - [x] 确认 Milestone 8.4 计划。
   - 文件：`tasks/development-checklist.md`
@@ -62,7 +62,25 @@
   - 下一项：任务 8.4 Cron 与 Memory Scaffold。
   - 记录：下一阶段只实现 configured cron job run 与 memory scaffold 的本地 deterministic 路径；默认不执行真实 live verification、Slack sink 或 Hermes plugin/observer。
 
-- [ ] 阅读 Milestone 8.4 相关代码和 fixture 规则。
+- [x] 写入本轮实施计划。
+  - 文件：`tasks/todo.md`
+  - 计划边界：只新增本地 deterministic cron/memory scaffold，不实现真实 scheduler、外部 cron daemon、数据库 memory store、Slack sink、live verification 或 Hermes plugin/observer。
+  - 文件结构：
+    - 新建：`src/cron.rs`，负责从配置中解析 cron job、构造 `cron.run` 本地事件和安全 job 报表。
+    - 新建：`src/memory.rs`，负责 memory 目录 scaffold、init/status 结果和本地状态检测。
+    - 修改：`src/config.rs`，增加可选 cron job 配置与 memory 配置，保持默认配置向后兼容。
+    - 修改：`src/cli.rs`，增加 `cron run <id>`、`memory init`、`memory status` CLI parse 与 public command 合约测试。
+    - 修改：`src/main.rs`，接入 cron/memory 命令；cron run 复用 `DaemonClient::post_event()`，memory 只走本地文件系统 scaffold。
+    - 修改：`src/event/`、`src/router.rs`、`src/render/`，让 `cron.run` 进入 typed event、route metadata 和默认安全渲染。
+    - 修改：`src/release_preflight.rs`、`tests/fixtures/cli/public_commands.txt`、`README.md`、方案文档 CLI 示例，避免公开命令漂移。
+  - TDD 步骤：
+    - 先新增 cron CLI parse、配置解析、事件构造、typed conversion、renderer、daemon submit 和 release preflight 覆盖测试。
+    - 运行 `cargo test cron` 确认 Red，预期失败于缺少 `cron` 模块、CLI enum、typed body 或 preflight 覆盖。
+    - 再新增 memory CLI parse、init/status scaffold、幂等、安全状态输出和 release preflight 覆盖测试。
+    - 运行 `cargo test memory` 确认 Red，预期失败于缺少 `memory` 模块和 CLI enum。
+    - 实现最小代码让 `cargo test cron`、`cargo test memory` 通过，再运行 release preflight 与全量验证。
+
+- [x] 阅读 Milestone 8.4 相关代码和 fixture 规则。
   - `src/cli.rs`
   - `src/main.rs`
   - `src/config.rs`
@@ -79,7 +97,7 @@
   - `tests/fixtures/README.md`
   - 方案文档中 CLI、source/parity、测试矩阵和发布章节。
 
-- [ ] 先写失败测试，再实现 Cron 与 Memory Scaffold 本地 deterministic 路径。
+- [x] 先写失败测试，再实现 Cron 与 Memory Scaffold 本地 deterministic 路径。
   - 可能新建：`src/cron.rs`
   - 可能新建：`src/memory.rs`
   - 修改：`src/cli.rs`
@@ -95,7 +113,7 @@
     - 再新增 release preflight/docs 覆盖，避免公开命令漂移。
     - 运行 `cargo test cron`、`cargo test memory` 确认 Red 后实现最小代码。
 
-- [ ] 运行 Milestone 8.4 验证。
+- [x] 运行 Milestone 8.4 验证。
   - `cargo test cron`
   - `cargo test memory`
   - `cargo test release_preflight`
@@ -104,11 +122,20 @@
   - `cargo clippy --all-targets -- -D warnings`
   - `cargo test`
 
-- [ ] 更新开发状态并提交。
+- [x] 更新开发状态并提交。
   - 更新：`tasks/development-checklist.md`
   - 更新：`tasks/todo.md`
   - 更新：`docs/development-status.md`
   - commit 信息使用中文，说明变更、验证和影响。
+
+## Review
+
+- Milestone 8.4 Cron 与 Memory Scaffold 已实现本地 deterministic 路径：`src/cron.rs`、`src/memory.rs`、`CronConfig` / `CronJob`、`CronRunEvent`、CLI、router、renderer、release preflight、fixture 均已更新。
+- 已完成 TDD red/green：`cargo test cron` 与 `cargo test memory` 在实现前后都验证过；代码审查指出的 memory symlink/date/default 问题也已先补失败测试，再修复为通过。
+- Memory scaffold 现在要求显式 `--date <YYYY-MM-DD>`，校验真实日历日期，并拒绝 root、目录、文件和 markdown 扫描路径上的 symlink。
+- 已完成公开命令和文档对齐：`README.md`、方案文档 CLI 形状、`docs/development-status.md`、`tasks/development-checklist.md` 和 `tests/fixtures/cli/public_commands.txt` 已更新。
+- 已完成验证：`cargo test cron`、`cargo test memory`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test` 均通过。
+- 已确认本阶段没有实现真实 scheduler、系统 cron 安装、数据库 memory store、真实 live verification、Slack sink 或 Hermes plugin/observer；提交随本阶段完成。
 
 ## Milestone 8.2 完成记录
 

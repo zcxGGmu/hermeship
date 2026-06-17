@@ -81,6 +81,16 @@ pub enum Commands {
         #[command(subcommand)]
         command: TmuxCommands,
     },
+    /// Run configured cron source jobs.
+    Cron {
+        #[command(subcommand)]
+        command: CronCommands,
+    },
+    /// Bootstrap and inspect filesystem-offloaded memory scaffolds.
+    Memory {
+        #[command(subcommand)]
+        command: MemoryCommands,
+    },
     /// Install hermeship local files and service scaffolding.
     Install(InstallArgs),
     /// Uninstall hermeship local files and service scaffolding.
@@ -376,6 +386,64 @@ pub struct TmuxListArgs {
     pub tmux_output: Option<String>,
 }
 
+#[derive(Debug, Clone, Subcommand)]
+pub enum CronCommands {
+    /// Run one configured cron job immediately.
+    Run {
+        /// Cron job id from [[cron.jobs]].id.
+        id: String,
+    },
+}
+
+#[derive(Debug, Clone, Subcommand)]
+pub enum MemoryCommands {
+    /// Create a filesystem-offloaded memory scaffold.
+    Init(MemoryInitArgs),
+    /// Inspect whether a filesystem-offloaded memory scaffold is present.
+    Status(MemoryStatusArgs),
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct MemoryInitArgs {
+    /// Root directory where MEMORY.md and memory/ should live.
+    #[arg(long)]
+    pub root: Option<PathBuf>,
+    /// Stable project slug for memory/projects/<project>.md.
+    #[arg(long)]
+    pub project: Option<String>,
+    /// Optional channel slug for memory/channels/<channel>.md.
+    #[arg(long)]
+    pub channel: Option<String>,
+    /// Optional agent slug for memory/agents/<agent>.md.
+    #[arg(long)]
+    pub agent: Option<String>,
+    /// Daily shard name to create under memory/daily/ (YYYY-MM-DD).
+    #[arg(long)]
+    pub date: String,
+    /// Overwrite generated scaffold files when they already exist.
+    #[arg(long, default_value_t = false)]
+    pub force: bool,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct MemoryStatusArgs {
+    /// Root directory where MEMORY.md and memory/ should live.
+    #[arg(long)]
+    pub root: Option<PathBuf>,
+    /// Stable project slug to inspect under memory/projects/<project>.md.
+    #[arg(long)]
+    pub project: Option<String>,
+    /// Optional channel slug to inspect under memory/channels/<channel>.md.
+    #[arg(long)]
+    pub channel: Option<String>,
+    /// Optional agent slug to inspect under memory/agents/<agent>.md.
+    #[arg(long)]
+    pub agent: Option<String>,
+    /// Daily shard name to inspect under memory/daily/ (YYYY-MM-DD).
+    #[arg(long)]
+    pub date: String,
+}
+
 impl EventArgs {
     pub fn into_event(self) -> Result<IncomingEvent> {
         let mut channel = None;
@@ -583,8 +651,8 @@ mod tests {
     use serde_json::json;
 
     use super::{
-        Cli, Commands, ConfigCommand, GitCommands, GithubCommands, HermesCommands, ReleaseCommands,
-        TmuxCommands,
+        Cli, Commands, ConfigCommand, CronCommands, GitCommands, GithubCommands, HermesCommands,
+        MemoryCommands, ReleaseCommands, TmuxCommands,
     };
     use crate::events::MessageFormat;
 
@@ -1008,6 +1076,108 @@ mod tests {
     }
 
     #[test]
+    fn parses_cron_run_command() {
+        let cli = Cli::parse_from(["hermeship", "cron", "run", "dev-followup"]);
+
+        match cli.command {
+            Some(Commands::Cron {
+                command: CronCommands::Run { id },
+            }) => {
+                assert_eq!(id, "dev-followup");
+            }
+            other => panic!("expected cron run command, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_memory_init_and_status_commands() {
+        let init = Cli::parse_from([
+            "hermeship",
+            "memory",
+            "init",
+            "--root",
+            "/tmp/hermeship-memory",
+            "--project",
+            "Hermeship",
+            "--channel",
+            "ops",
+            "--agent",
+            "codex",
+            "--date",
+            "2026-06-17",
+            "--force",
+        ]);
+
+        match init.command {
+            Some(Commands::Memory {
+                command: MemoryCommands::Init(args),
+            }) => {
+                assert_eq!(args.root, Some(PathBuf::from("/tmp/hermeship-memory")));
+                assert_eq!(args.project.as_deref(), Some("Hermeship"));
+                assert_eq!(args.channel.as_deref(), Some("ops"));
+                assert_eq!(args.agent.as_deref(), Some("codex"));
+                assert_eq!(args.date, "2026-06-17");
+                assert!(args.force);
+            }
+            other => panic!("expected memory init command, got {other:?}"),
+        }
+
+        let status = Cli::parse_from([
+            "hermeship",
+            "memory",
+            "status",
+            "--root",
+            "/tmp/hermeship-memory",
+            "--project",
+            "Hermeship",
+            "--channel",
+            "ops",
+            "--agent",
+            "codex",
+            "--date",
+            "2026-06-17",
+        ]);
+
+        match status.command {
+            Some(Commands::Memory {
+                command: MemoryCommands::Status(args),
+            }) => {
+                assert_eq!(args.root, Some(PathBuf::from("/tmp/hermeship-memory")));
+                assert_eq!(args.project.as_deref(), Some("Hermeship"));
+                assert_eq!(args.channel.as_deref(), Some("ops"));
+                assert_eq!(args.agent.as_deref(), Some("codex"));
+                assert_eq!(args.date, "2026-06-17");
+            }
+            other => panic!("expected memory status command, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn memory_commands_require_explicit_date_for_deterministic_scaffolds() {
+        let init = Cli::try_parse_from([
+            "hermeship",
+            "memory",
+            "init",
+            "--root",
+            "/tmp/hermeship-memory",
+            "--project",
+            "Hermeship",
+        ]);
+        assert!(init.is_err());
+
+        let status = Cli::try_parse_from([
+            "hermeship",
+            "memory",
+            "status",
+            "--root",
+            "/tmp/hermeship-memory",
+            "--project",
+            "Hermeship",
+        ]);
+        assert!(status.is_err());
+    }
+
+    #[test]
     fn emit_args_construct_incoming_event_from_payload_and_flags() {
         let cli = Cli::parse_from([
             "hermeship",
@@ -1218,6 +1388,9 @@ mod tests {
             "tmux stale",
             "tmux watch",
             "tmux list",
+            "cron run",
+            "memory init",
+            "memory status",
             "install",
             "uninstall",
             "release preflight",
