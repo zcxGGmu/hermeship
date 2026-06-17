@@ -743,6 +743,16 @@
 
 最新记录放在最上方。
 
+### 2026-06-17 - Milestone 9.3 下一入口交接更新
+
+- [x] 已确认当前分支为 `codex/milestone-1-cli`，启动时工作树干净。
+- [x] 已确认最新文档阶段提交为 `2e60902 docs: 增加 live verification runbook`。
+- [x] 已更新 `docs/development-status.md`，明确 Milestone 0 到 9.2 已完成并提交，Milestone 9.3 和 Milestone 10 未完成，下一入口为 Milestone 9.3 首次 Live Check。
+- [x] 已更新 `tasks/todo.md`，将当前工作台切换为 Milestone 9.3 下一入口，并保留真实 live check 的凭据/用户确认边界。
+- [x] 已确认默认下阶段不执行真实 Discord/Hermes live check，不实现 Slack sink 或 Hermes plugin/observer，除非凭据可用且用户确认范围。
+- [x] 已准备本次交接提交标题：`docs: 更新 Hermeship Milestone 9.3 交接状态`；提交后下次启动以 `git log -3 --oneline` 确认实际 hash。
+- [x] 已通过交接验证：`rg -n "Milestone 9\\.3|2e60902|docs/live-verification\\.md|真实 Discord/Hermes|Hermes plugin / observer|cargo test release_preflight" docs/development-status.md tasks/todo.md tasks/development-checklist.md README.md`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
+
 ### 2026-06-17 - Milestone 9.2 Live Verification Runbook 完成
 
 - [x] 已新增 `docs/live-verification.md`，记录 fake sink、daemon health、Discord live、Hermes gateway hook smoke 和 rollback 的 runbook、结果字段与安全规则。

@@ -12,12 +12,12 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 最新交接提交：`252ad6a docs: 更新 Hermeship Milestone 9.2 交接入口`。
-- 最新文档阶段提交：本阶段提交，提交标题为 `docs: 增加 live verification runbook`；下次启动后用 `git log -3 --oneline` 确认实际 hash。
+- 最新交接提交：本次交接提交，提交标题为 `docs: 更新 Hermeship Milestone 9.3 交接状态`；下次启动后用 `git log -3 --oneline` 确认实际 hash。
+- 最新文档阶段提交：`2e60902 docs: 增加 live verification runbook`。
 - 最新功能阶段提交：`0b12de3 feat: 增加 cron 与 memory scaffold`。
 - 当前最新功能阶段：Milestone 8.4 Cron 与 Memory Scaffold 本地 deterministic parity 已完成。
 - 当前最新文档阶段：Milestone 9.2 Live Verification Runbook 已完成。
-- 当前交接工作台：`tasks/todo.md` 已记录 Milestone 9.2 结果，下一入口为 Milestone 9.3 首次 Live Check。
+- 当前交接工作台：`tasks/todo.md` 已切换为 Milestone 9.3 首次 Live Check 下一入口。
 - 下次继续开发前必须先运行 `git status --short --branch` 确认工作树，只在预期文档/代码变更上继续。
 - 当前下一步：继续 Milestone 9.3 首次 Live Check；真实 Discord/Hermes live verification 是否执行仍取决于凭据可用性和用户确认范围。
 
@@ -351,7 +351,7 @@
 - 已明确真实 Discord/Hermes live check 本阶段未执行，原因是当前未提供 Discord credentials、测试频道、Hermes gateway 测试环境和显式执行确认。
 - 已更新 `README.md`、本文件、`tasks/development-checklist.md` 和 `tasks/todo.md`，下一入口切换为 Milestone 9.3 首次 Live Check。
 - 已运行验证：`rg -n "HERMES_HOME|Discord|hermeship status|agent:start|rollback" docs/live-verification.md`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
-- 已提交：`docs: 增加 live verification runbook`。
+- 已提交：`2e60902 docs: 增加 live verification runbook`。
 
 ## 未完成
 
@@ -402,8 +402,8 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新交接提交：252ad6a docs: 更新 Hermeship Milestone 9.2 交接入口。
-- 最新文档阶段提交：本阶段提交 docs: 增加 live verification runbook；启动后用 git log -3 --oneline 确认实际 hash。
+- 最新交接提交：本次交接提交 docs: 更新 Hermeship Milestone 9.3 交接状态；启动后用 git log -3 --oneline 确认实际 hash。
+- 最新文档阶段提交：2e60902 docs: 增加 live verification runbook。
 - 最新功能阶段提交：0b12de3 feat: 增加 cron 与 memory scaffold。
 - Milestone 0 到 Milestone 8.4 已完成并提交。
 - Milestone 9.1 已完成并提交：README、docs/operations.md、docs/hermes-event-contract.md、ARCHITECTURE.md 已对齐当前能力和边界。
