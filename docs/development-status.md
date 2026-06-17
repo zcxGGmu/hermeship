@@ -12,7 +12,7 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 最新功能阶段提交：本次 Milestone 8.4 阶段提交。
+- 最新功能阶段提交：`0b12de3 feat: 增加 cron 与 memory scaffold`。
 - 当前最新功能阶段：Milestone 8.4 Cron 与 Memory Scaffold 本地 deterministic parity 已完成。
 - 当前交接工作台：`tasks/todo.md` 已记录 Milestone 8.4 完成 Review，下一入口为 Milestone 9 文档与 live verification。
 - 下次继续开发前必须先运行 `git status --short --branch` 确认工作树，只在预期文档/代码变更上继续。
@@ -33,7 +33,7 @@
 | Milestone 8.1 | 已完成并提交 | `1536b6a feat: 增加 Git Source 本地事件路径` |
 | Milestone 8.2 | 已完成并提交 | `91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归` |
 | Milestone 8.3 | 已完成并提交 | `3745bb8 feat: 增加 tmux 事件 source` |
-| Milestone 8.4 | 已完成并提交 | 本次提交：cron 与 memory scaffold |
+| Milestone 8.4 | 已完成并提交 | `0b12de3 feat: 增加 cron 与 memory scaffold` |
 | Milestone 9 | 未完成 | 文档与 live verification |
 | Milestone 10 | 未完成 | Hermes plugin / observer 研究 |
 
@@ -324,7 +324,7 @@
 - 已运行 Red：`cargo test cron` 在实现前失败于缺少 `CronCommands`、`CronConfig`、`CronJob`、`EventBody::CronRun` 和 `configured_run_event()`；`cargo test memory` 在实现前失败于缺少 `MemoryCommands`、memory CLI enum 和 memory API。
 - 已运行验证：`cargo test cron`、`cargo test memory`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
 - 本阶段没有实现真实 scheduler、系统 cron 安装、数据库 memory store、真实 live verification、Slack sink 或 Hermes plugin/observer。
-- 提交状态：随本阶段提交完成。
+- 已提交：`0b12de3 feat: 增加 cron 与 memory scaffold`。
 
 ## 未完成
 
@@ -392,7 +392,7 @@
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
 - 最新文档交接提交：本文件当前文档交接提交；启动后用 git log -3 --oneline 确认实际提交号。
-- 最新功能阶段提交：本次 Milestone 8.4 阶段提交；启动后用 git log -3 --oneline 确认实际提交号。
+- 最新功能阶段提交：0b12de3 feat: 增加 cron 与 memory scaffold。
 - 最新功能阶段：Milestone 8.4 Cron 与 Memory Scaffold 本地 deterministic parity 已完成。
 - Milestone 0 已完成并提交：af57c49 docs: 明确 hermeship 完整项目方向。
 - Milestone 1.1 已完成并提交：d03170e chore: 搭建 Hermeship Rust CLI 骨架。
@@ -420,7 +420,7 @@
 - Milestone 8.2 范围：GitHub Source 本地 deterministic parity、`hermeship github issue-opened`、`hermeship github pr-opened`、`hermeship github check-failed`、`hermeship github release-published`、typed GitHub event、route metadata 和默认渲染。
 - Milestone 8.3 已完成并提交：3745bb8 feat: 增加 tmux 事件 source。
 - Milestone 8.3 范围：Tmux Source 本地 deterministic parity、`hermeship tmux keyword`、`hermeship tmux stale`、`hermeship tmux watch`、`hermeship tmux list`、typed tmux event、route metadata、默认渲染和隐私收紧的 watch/list 报表。
-- Milestone 8.4 已完成并提交：本次提交。
+- Milestone 8.4 已完成并提交：0b12de3 feat: 增加 cron 与 memory scaffold。
 - Milestone 8.4 范围：configured cron job run、`hermeship cron run <id>`、`cron.run` typed event、route metadata、默认渲染、`hermeship memory init/status` 本地 filesystem scaffold、显式日期、symlink 拒绝、公开命令和 release preflight 覆盖。
 - Milestone 9 到 Milestone 10 未完成。
 - 已实现 src/events.rs：IncomingEvent、RoutingMetadata、字段别名反序列化、空/null payload 归一，以及 MessageFormat 的单一复用/重导出策略。

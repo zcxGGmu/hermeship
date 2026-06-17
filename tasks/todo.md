@@ -11,7 +11,7 @@
 - 当前分支：`codex/milestone-1-cli`。
 - 当前工作树：本轮启动时 `git status --short --branch` 只显示分支行，工作树干净。
 - 文档交接提交：`6c9af3e docs: 更新 Hermeship Milestone 8.4 交接状态`。
-- 最新功能阶段提交：本次 Milestone 8.4 阶段提交。
+- 最新功能阶段提交：`0b12de3 feat: 增加 cron 与 memory scaffold`。
 - 最新功能阶段：Milestone 8.4 Cron 与 Memory Scaffold 本地 deterministic parity 已完成。
 - 最近提交基线：`6c9af3e docs: 更新 Hermeship Milestone 8.4 交接状态`、`3745bb8 feat: 增加 tmux 事件 source`、`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`。
 - Milestone 0 到 Milestone 8.4 已完成。
@@ -135,7 +135,8 @@
 - Memory scaffold 现在要求显式 `--date <YYYY-MM-DD>`，校验真实日历日期，并拒绝 root、目录、文件和 markdown 扫描路径上的 symlink。
 - 已完成公开命令和文档对齐：`README.md`、方案文档 CLI 形状、`docs/development-status.md`、`tasks/development-checklist.md` 和 `tests/fixtures/cli/public_commands.txt` 已更新。
 - 已完成验证：`cargo test cron`、`cargo test memory`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test` 均通过。
-- 已确认本阶段没有实现真实 scheduler、系统 cron 安装、数据库 memory store、真实 live verification、Slack sink 或 Hermes plugin/observer；提交随本阶段完成。
+- 已确认本阶段没有实现真实 scheduler、系统 cron 安装、数据库 memory store、真实 live verification、Slack sink 或 Hermes plugin/observer。
+- 已提交：`0b12de3 feat: 增加 cron 与 memory scaffold`。
 
 ## Milestone 8.2 完成记录
 

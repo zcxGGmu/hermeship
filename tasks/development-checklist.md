@@ -634,7 +634,7 @@
   - 命令：`cargo test memory`
 - [x] 提交任务 8.4。
   - commit：`feat: 增加 cron 与 memory scaffold`
-  - 记录：随本阶段提交完成
+  - 记录：`0b12de3 feat: 增加 cron 与 memory scaffold`
 
 ## Milestone 9：文档与 Live Verification
 
@@ -733,6 +733,13 @@
 
 最新记录放在最上方。
 
+### 2026-06-17 - Milestone 8.4 完成后交接更新
+
+- [x] 已确认最新功能阶段提交为 `0b12de3 feat: 增加 cron 与 memory scaffold`，当前分支为 `codex/milestone-1-cli`。
+- [x] 已更新 `docs/development-status.md`，明确 Milestone 0 到 Milestone 8.4 已完成并提交，Milestone 9 到 Milestone 10 未完成，下一入口为 Milestone 9 文档与 Live Verification。
+- [x] 已更新 `tasks/todo.md`，将当前工作台切换为 Milestone 8.4 完成态，并保留下一入口、未完成范围和验证记录。
+- [x] 已确认默认下阶段不实现 Slack sink 或 Hermes plugin/observer，真实 live verification 是否执行以 Milestone 9 清单、凭据和用户确认范围为准。
+
 ### 2026-06-17 - Milestone 8.4 Cron 与 Memory Scaffold 本地 deterministic parity
 
 - [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
@@ -748,7 +755,7 @@
 - [x] 已更新公开命令 fixture、release preflight、README、方案文档 CLI 示例和开发状态文档，覆盖 `cron run`、`memory init`、`memory status`。
 - [x] 已运行验证：`cargo test cron`、`cargo test memory`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
 - [x] 已确认本阶段没有实现真实 scheduler、系统 cron 安装、数据库 memory store、真实 live verification、Slack sink 或 Hermes plugin/observer。
-- [x] 提交状态：随本阶段提交完成。
+- [x] 提交状态：`0b12de3 feat: 增加 cron 与 memory scaffold`。
 
 ### 2026-06-17 - Milestone 8.3 完成后交接更新
 
