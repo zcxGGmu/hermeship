@@ -642,21 +642,22 @@
 
 ### 任务 9.1：README 与运维文档
 
-- [ ] 重写 README。
+- [x] 重写 README。
   - 内容：项目定位、安装、配置、启动 daemon、安装 Hermes hooks、send/emit/explain、live check。
-- [ ] 新增 operations 文档。
+- [x] 新增 operations 文档。
   - 新建：`docs/operations.md`
   - 内容：安装、更新、回滚、常见故障。
-- [ ] 新增 event contract 文档。
+- [x] 新增 event contract 文档。
   - 新建：`docs/hermes-event-contract.md`
   - 内容：Hermes hook input、canonical events、payload 字段、隐私规则。
-- [ ] 新增 architecture 文档。
+- [x] 新增 architecture 文档。
   - 新建：`ARCHITECTURE.md`
   - 参考 clawhip，但使用 Hermeship 实际模块。
-- [ ] 验证任务 9.1。
+- [x] 验证任务 9.1。
   - 命令：`rg -n "hermeship start|hermes install-hooks|hermes.agent|Discord|rollback" README.md docs ARCHITECTURE.md`
-- [ ] 提交任务 9.1。
+- [x] 提交任务 9.1。
   - commit：`docs: 增加 Hermeship 运维与事件契约`
+  - 记录：README、operations、event contract 和 architecture 已对齐实际 CLI 与本地 deterministic 边界；验证命令、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test` 均通过；live verification 仍保持 pending。
 
 ### 任务 9.2：Live Verification Runbook
 
@@ -732,6 +733,16 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-17 - Milestone 9.1 文档与事件契约完成
+
+- [x] 已更新 `README.md`，对齐当前公开命令、安装/配置/daemon/hook/live check 入口和本地 deterministic 边界。
+- [x] 已更新 `docs/operations.md`，补齐安装、更新、回滚和常见故障说明。
+- [x] 已新增 `docs/hermes-event-contract.md`，记录 Hermes hook input、canonical events、payload 字段、路由 metadata 和隐私规则。
+- [x] 已新增 `ARCHITECTURE.md`，总结 daemon-first 数据流、模块边界、sink、hook bridge 和验证策略。
+- [x] 已通过 `rg -n "hermeship start|hermes install-hooks|hermes.agent|Discord|rollback" README.md docs ARCHITECTURE.md`。
+- [x] 已通过 `cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
+- [x] 已确认 live verification 仍未执行，`docs/live-verification.md` 仍待 Milestone 9.2 创建。
 
 ### 2026-06-17 - Milestone 8.4 完成后交接更新
 

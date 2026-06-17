@@ -1,183 +1,325 @@
 # Hermeship
 
-Hermeship is a Hermes-native event-to-channel notification router. It keeps notification delivery outside Hermes gateway sessions so lifecycle events can reach Discord, Slack, webhooks, or other sinks without polluting the agent conversation context.
+Hermeship 是 Hermes-native daemon-first event router。它从 Hermes gateway hooks、CLI、本地 source scaffold 接收事件，规范化为 typed event envelope，经队列、router、renderer 和 sink 投递到 Discord 等通知渠道。
 
-The project has completed Milestone 8.4. The Rust CLI skeleton, configuration model, repository quality gates, event model, privacy sanitization, daemon HTTP ingress, Hermes hook ingress, router, renderer, dispatcher, fake sink, Discord sink, sink failure handling, local daemon-to-fake-sink smoke coverage, Hermes hook bridge installation, local lifecycle CLI, release preflight, deterministic Git/GitHub/tmux source CLI paths, configured cron run events, and local memory scaffolding are implemented. Live verification, Slack sink, and Hermes plugin/observer work are still pending.
+Hermeship 不是 clawhip thin adapter：
 
-## Project Direction
+- 不调用 `clawhip` binary。
+- 不依赖运行中的 `clawhip` daemon。
+- 不修改 Hermes 核心。
+- 不把通知消息写回 Hermes 对话上下文。
 
-Hermeship follows the architecture and product shape of `/Users/zq/Desktop/ai-projs/posp/template/clawhip`, but it is a native Hermes project:
+`/Users/zq/Desktop/ai-projs/posp/template/clawhip` 只作为架构和行为参考。
 
-- Hermeship provides its own daemon, CLI, event model, router, renderer, dispatcher, sink implementations, install flow, and verification tooling.
-- `template/clawhip` is an architecture and behavior reference only.
-- Hermeship does not call an existing clawhip binary as its delivery path.
-- Hermeship does not require a running clawhip daemon.
-- Hermeship does not modify Hermes core or inject notification messages back into Hermes conversations.
+## Current State
 
-The intended architecture is daemon-first:
+Milestone 0 到 Milestone 8.4 已完成。当前已实现：
+
+- Rust CLI、配置模型、质量门禁。
+- daemon `/health`、`/event`、`/api/hermes/hook`。
+- `IncomingEvent -> EventEnvelope` typed event 管道。
+- 默认隐私清洗、路由、渲染、dispatcher。
+- fake sink、Discord sink、Discord 失败语义。
+- Hermes gateway hook bridge 安装和安全卸载。
+- 本地 install/setup/uninstall lifecycle 和 release preflight。
+- deterministic Git/GitHub/tmux/cron source CLI 路径。
+- memory filesystem scaffold。
+
+仍未完成：
+
+- 真实 live verification 记录。
+- Slack sink。
+- Hermes plugin/observer。
+- 真实 GitHub API source、真实 tmux watch、真实 scheduler、真实 service manager 自动安装。
+
+## Architecture
 
 ```text
-Hermes gateway hooks / Hermes plugins / CLI / git / GitHub / tmux / cron
+Hermes gateway hooks / CLI / git / GitHub / tmux / cron
   -> source ingress
   -> IncomingEvent
   -> typed EventEnvelope
-  -> queue
+  -> bounded queue
   -> Dispatcher
   -> Router
   -> Renderer
   -> Sink
-  -> Discord / Slack / webhook
+  -> Discord
 ```
 
-## Implementation Boundary
+关键模块：
 
-The primary implementation language is Rust, matching the daemon-first reference shape:
+- `src/cli.rs`：公开命令树。
+- `src/config.rs`：TOML 配置、默认值、env override、route schema。
+- `src/daemon.rs`：本地 HTTP daemon、队列和 ingress。
+- `src/events.rs`：外部 `IncomingEvent`。
+- `src/event/`：typed event body、metadata 和兼容映射。
+- `src/privacy.rs`：payload 清洗和摘录策略。
+- `src/router.rs`：event glob、metadata filter、0..N delivery。
+- `src/render/`：`compact`、`inline`、`alert`、`raw` 渲染。
+- `src/sink/`：Discord sink 和 fake sink。
+- `src/hooks.rs`：Hermes gateway hook bridge 安装/卸载。
+- `src/lifecycle.rs`：本地 install/setup/uninstall。
+- `src/release_preflight.rs`：发布一致性检查。
 
-- Rust 2024 for the CLI, daemon, config, event model, routing, rendering, dispatch, sinks, lifecycle, and tests.
-- `tokio` for async runtime and queues.
-- `axum` for the local daemon HTTP API.
-- `clap` for CLI parsing.
-- `serde`, `serde_json`, and `toml` for public contracts and configuration.
-- `reqwest` for outbound sink delivery.
+更详细的模块边界见 `ARCHITECTURE.md`。
 
-Python is only planned for the Hermes gateway hook bridge template:
+## Install
 
-- `~/.hermes/hooks/hermeship/HOOK.yaml`
-- `~/.hermes/hooks/hermeship/handler.py`
+开发期本地安装：
 
-The hook handler must use Python standard library APIs, forward a compact event envelope to `hermeship hermes hook` or the local daemon, catch all errors, and fail open so Hermes gateway behavior is not blocked by Hermeship.
+```bash
+cargo install --path .
+hermeship install
+```
 
-## Hermes Integration
+`hermeship install` 默认创建：
 
-Hermes gateway hooks are the MVP integration point. The reference Hermes gateway hook system supports:
+```text
+~/.hermeship/
+  config.toml
+  hooks/
+  logs/
+  state/
+```
 
-- `gateway:startup`
-- `session:start`
-- `session:end`
-- `session:reset`
-- `agent:start`
-- `agent:step`
-- `agent:end`
-- `command:*`
+可先 dry-run：
 
-Hermeship will normalize those events into canonical Hermeship events such as:
+```bash
+hermeship install --dry-run
+```
 
-- `hermes.gateway.started`
-- `hermes.session.started`
-- `hermes.session.finished`
-- `hermes.session.reset`
-- `hermes.agent.started`
-- `hermes.agent.step`
-- `hermes.agent.finished`
-- `hermes.agent.failed`
+## Configure
 
-Hermes plugin/observer integration is a later phase after the gateway hook bridge is implemented and verified.
+推荐从 stdin 写入 Discord token，避免 token 出现在 shell history 或 process argv：
 
-## Privacy Defaults
+```bash
+printf '%s' "$DISCORD_TOKEN" | hermeship setup \
+  --discord-token-stdin \
+  --default-channel <discord-channel-id> \
+  --daemon-url http://127.0.0.1:25295
+```
 
-Hermeship should route event summaries and structured metadata, not full conversations. Defaults must avoid sending:
+也可以从环境变量读取：
 
-- full prompts or conversations
-- provider request or response bodies
-- tool result bodies
-- tokens, cookies, secrets, API keys, or authorization headers
+```bash
+hermeship setup --discord-token-env HERMESHIP_SETUP_DISCORD_TOKEN
+```
 
-Message and response excerpts must be explicit opt-in, sanitized, and bounded.
+常用配置检查：
 
-## Planned CLI Shape
+```bash
+hermeship config path
+hermeship config show
+hermeship config verify
+```
 
-The public command surface will be implemented incrementally:
+环境变量覆盖：
+
+- `HERMESHIP_CONFIG`
+- `HERMESHIP_DAEMON_URL`
+- `HERMESHIP_DISCORD_TOKEN`
+- `HERMESHIP_DEFAULT_CHANNEL`
+- `HERMESHIP_DRY_RUN`
+
+最小 route 示例：
+
+```toml
+[defaults]
+channel = "123456789012345678"
+format = "compact"
+
+[providers.discord]
+token = ""
+default_channel = "123456789012345678"
+
+[[routes]]
+event = "hermes.agent.*"
+sink = "discord"
+channel = "123456789012345678"
+format = "compact"
+```
+
+## Run
+
+启动 daemon：
 
 ```bash
 hermeship start
+```
+
+检查状态：
+
+```bash
 hermeship status
-hermeship setup
-hermeship config show
-hermeship config path
-hermeship config verify
-hermeship send --channel <id> --message "hello"
-hermeship emit hermes.agent.started --payload '{"session_id":"demo"}'
-hermeship explain hermes.agent.started --payload '{"session_id":"demo"}'
-hermeship hermes hook --provider gateway --payload '{"event":"agent:start"}'
-hermeship hermes install-hooks --home ~/.hermes --force
-hermeship git commit --repo hermeship --branch main --commit <sha> --summary "ship git source"
+```
+
+daemon 默认监听 `http://127.0.0.1:25295`，提供：
+
+- `GET /health`
+- `POST /event`
+- `POST /api/hermes/hook`
+
+## Hermes Hooks
+
+安装 Hermes gateway hook bridge：
+
+```bash
+hermeship hermes install-hooks --scope global --force
+```
+
+默认写入：
+
+```text
+~/.hermes/hooks/hermeship/
+  HOOK.yaml
+  handler.py
+  .hermeship-managed.json
+```
+
+hook handler 只使用 Python 标准库，调用：
+
+```bash
+hermeship hermes hook --payload -
+```
+
+handler 默认 fail-open：找不到 binary、daemon 不可用、子进程失败或超时都只输出短诊断，不向 Hermes 抛异常。
+
+卸载 hook：
+
+```bash
+hermeship hermes uninstall-hooks --home ~/.hermes
+```
+
+Hermeship 只通过 `.hermeship-managed.json` marker 删除自己管理且未被用户修改的 hook 文件。
+
+## Send And Emit
+
+发送 custom message：
+
+```bash
+hermeship send --channel <discord-channel-id> --message "hermeship smoke"
+```
+
+发送 Hermes event：
+
+```bash
+hermeship emit hermes.agent.started --payload '{"session_id":"demo","platform":"telegram"}'
+```
+
+解释路由，不入队、不投递：
+
+```bash
+hermeship explain hermes.agent.started --payload '{"session_id":"demo","platform":"telegram"}'
+```
+
+直接模拟 Hermes hook ingress：
+
+```bash
+printf '%s' '{"event":"agent:start","context":{"session_id":"demo","agent_name":"codex"}}' \
+  | hermeship hermes hook --payload -
+```
+
+事件契约见 `docs/hermes-event-contract.md`。
+
+## Local Source Commands
+
+这些命令是本地 deterministic source path。它们构造 Hermeship 事件并 POST 到 daemon，不访问真实 GitHub API、不读取真实 tmux session、不运行真实 scheduler。
+
+```bash
+hermeship git commit --repo hermeship --branch main --commit 1234567890abcdef1234567890abcdef12345678 --summary "ship git source"
 hermeship git branch-changed --repo hermeship --old-branch main --new-branch codex/milestone-8-git
+
 hermeship github issue-opened --owner posp --repo hermeship --number 42 --title "Add deterministic GitHub source"
 hermeship github pr-opened --owner posp --repo hermeship --number 17 --title "Ship GitHub source" --branch codex/milestone-8-github
 hermeship github check-failed --owner posp --repo hermeship --workflow ci --status failure --branch main
 hermeship github release-published --owner posp --repo hermeship --tag v0.1.0
+
 hermeship tmux keyword --session hermes-agent --keyword FAILED --line "build FAILED at deterministic fixture"
 hermeship tmux stale --session hermes-agent --pane %2 --minutes 15 --last-line "waiting for agent output"
 hermeship tmux watch --session hermes-agent --keywords FAILED,complete --stale-minutes 10 --tmux-output $'hermes-agent\tmain\t%1\t0\tbash\tready'
 hermeship tmux list --tmux-output $'hermes-agent\tmain\t%1\t0\tbash\tready'
+
 hermeship cron run dev-followup
-hermeship memory init --root /tmp/hermeship-memory --project Hermeship --channel ops --agent codex --date 2026-06-17
-hermeship memory status --root /tmp/hermeship-memory --project Hermeship --channel ops --agent codex --date 2026-06-17
-hermeship install
-hermeship uninstall
-hermeship release preflight <version>
 ```
 
-## Operations
-
-Local install and rollback commands are deterministic and file-system scoped:
+Memory scaffold is local filesystem-only:
 
 ```bash
-hermeship install
-hermeship setup --default-channel <channel-id> --discord-token-stdin
-hermeship hermes install-hooks --scope global --force
+hermeship memory init --root /tmp/hermeship-memory --project Hermeship --channel ops --agent codex --date 2026-06-17
+hermeship memory status --root /tmp/hermeship-memory --project Hermeship --channel ops --agent codex --date 2026-06-17
+```
+
+## Privacy
+
+Hermeship routes summaries and structured metadata, not full conversations.
+
+Default sanitizer behavior:
+
+- recursively redacts token, cookie, secret, API key, password and authorization-like keys;
+- drops full `message`, `response`, `conversation_history`, provider request/response bodies and tool result bodies;
+- keeps safe summaries such as `message_chars`, `response_chars`, `has_message`, `has_response`;
+- only emits message/response excerpts when explicitly enabled in config, after sanitizer and length bounding.
+
+`raw` rendering is still safe JSON: it serializes typed, controlled fields and sanitized payload summaries rather than arbitrary original payload bodies.
+
+## rollback
+
+Hook rollback:
+
+```bash
+hermeship hermes uninstall-hooks --home ~/.hermes
+```
+
+Local Hermeship files are preserved by default:
+
+```bash
+hermeship uninstall
+```
+
+Destructive local rollback requires explicit flags and a Hermeship-managed home marker:
+
+```bash
 hermeship uninstall --remove-state --remove-config --remove-hooks --hermes-home ~/.hermes
+```
+
+More operational detail is in `docs/operations.md`.
+
+## Live Check
+
+Live verification is separate from default tests. It needs an explicit test Discord channel, Discord credentials and a Hermes gateway environment.
+
+Planned manual flow:
+
+```bash
+hermeship start
+hermeship status
+hermeship send --channel <discord-channel-id> --message "hermeship live check"
+hermeship emit hermes.agent.started --payload '{"session_id":"live-check"}'
+hermeship hermes install-hooks --scope global --force
+hermeship hermes uninstall-hooks --home ~/.hermes
+```
+
+Results must be recorded in `docs/live-verification.md` without tokens, cookies, secrets, full prompts, full conversations or provider request/response bodies. If credentials are unavailable, the record must say which live checks were not run and what risk remains.
+
+## Release Preflight
+
+```bash
 hermeship release preflight 0.1.0
 ```
 
-`hermeship setup --discord-token-stdin` writes the token to local config without putting it in shell history or process argv, and redacts it from command output. Service manager integration is currently template-only: see `deploy/hermeship.service` and `docs/operations.md`.
+Preflight checks local release consistency: Cargo version, `Cargo.lock`, public CLI fixture, docs command coverage, hook templates, fixture policy, service template and live verification status. Missing live verification is `pending`, not a default local failure.
 
-## Verification Policy
+## Development Gates
 
-Default tests must be local and deterministic. They must not depend on:
-
-- real Discord tokens
-- a real Hermes gateway
-- real GitHub state
-- real tmux sessions
-- external network availability
-
-Live verification is separate from default test runs and will be recorded in `docs/live-verification.md` when implemented.
-
-## Development Quality Gates
-
-Before each stage commit, run the baseline Rust quality gate:
+Before a stage commit:
 
 ```bash
+cargo test release_preflight
+cargo run -- release preflight 0.1.0
 cargo fmt --all -- --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 ```
 
-`cargo fmt` is the formatting authority. Code should be committed only after it matches rustfmt output.
-
-`cargo clippy --all-targets -- -D warnings` is the lint gate for application code, tests, examples, and benches. New warnings should be fixed instead of allowed unless a later design document records a narrow exception.
-
-Default tests must stay deterministic and must not require external credentials, a real Hermes gateway, real Discord, real GitHub, real tmux, or non-local network state. Use local fixtures, fake sinks, fake HTTP servers, fake Hermes homes, and fake binaries for regression coverage.
-
-## Development Status
-
-Current state:
-
-- Architecture and test strategy are documented in `docs/plans/2026-06-15-hermeship-development-plan.md`.
-- Execution progress is tracked in `tasks/development-checklist.md`.
-- Session handoff status is tracked in `docs/development-status.md`.
-- Milestone 0 through Milestone 8.4 are complete.
-- Milestone 1 completed the Rust project skeleton, CLI command tree, configuration model, repository quality gates, and fixture baseline.
-- Milestone 2 completed `IncomingEvent`, typed `EventEnvelope`, Hermes canonical mapping, and privacy sanitization.
-- Milestone 3 completed daemon `/health`, `/event`, `/api/hermes/hook`, bounded queue ingress, and daemon client POST paths.
-- Milestone 4 completed router, default renderer, dispatcher, fake sink, and queue consumer wiring.
-- Milestone 5 completed Discord sink payload/request handling, sink failure semantics, and deterministic local daemon-to-fake-sink smoke coverage.
-- Milestone 6 completed Hermes gateway hook bridge templates, install/uninstall, safe marker-based rollback, and fail-open handler smoke coverage.
-- Milestone 7 completed local install/setup/uninstall lifecycle CLI, service template documentation, and local release preflight.
-- Milestone 8.1 completed deterministic Git source CLI events, typed Git event conversion, route metadata, and default rendering.
-- Milestone 8.2 completed deterministic GitHub source CLI events, typed GitHub event conversion, route metadata, and default rendering.
-- Milestone 8.3 completed deterministic tmux source CLI events, typed tmux event conversion, route metadata, default rendering, and privacy-scoped watch/list reports.
-- Milestone 8.4 completed configured cron run events, typed cron event conversion, route metadata, default rendering, local memory init/status scaffold, and public command preflight coverage.
-
-Next implementation phase is Milestone 9: documentation and live verification planning. Keep Slack sink and Hermes plugin/observer out of Milestone 9 unless the checklist is explicitly updated.
+Default tests must stay local and deterministic. They must not require real Discord, real Hermes gateway, real GitHub state, real tmux sessions, external credentials or non-local network state.
