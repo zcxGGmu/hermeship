@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-17 Milestone 8.4 已完成，Milestone 9 待执行
+最后更新：2026-06-17 Milestone 9.1 已完成，下一入口 Milestone 9.2
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -12,11 +12,14 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
+- 最新交接提交：本文件当前提交，提交标题为 `docs: 更新 Hermeship Milestone 9.2 交接入口`；下次启动后用 `git log -3 --oneline` 确认实际提交号。
+- 最新文档阶段提交：`1c52655 docs: 增加 Hermeship 运维与事件契约`。
 - 最新功能阶段提交：`0b12de3 feat: 增加 cron 与 memory scaffold`。
 - 当前最新功能阶段：Milestone 8.4 Cron 与 Memory Scaffold 本地 deterministic parity 已完成。
-- 当前交接工作台：`tasks/todo.md` 已记录 Milestone 8.4 完成 Review，下一入口为 Milestone 9 文档与 live verification。
+- 当前最新文档阶段：Milestone 9.1 README、operations、event contract 和 architecture 已完成。
+- 当前交接工作台：`tasks/todo.md` 已切换为 Milestone 9.2 Live Verification Runbook 下一入口。
 - 下次继续开发前必须先运行 `git status --short --branch` 确认工作树，只在预期文档/代码变更上继续。
-- 当前下一步：继续 Milestone 9，补齐 README/architecture/event contract/live verification runbook，并按清单决定是否执行首次 live check。
+- 当前下一步：继续 Milestone 9.2，创建 `docs/live-verification.md` runbook；真实 live check 是否执行仍取决于凭据可用性和用户确认范围。
 
 ## 阶段状态总览
 
@@ -34,7 +37,9 @@
 | Milestone 8.2 | 已完成并提交 | `91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归` |
 | Milestone 8.3 | 已完成并提交 | `3745bb8 feat: 增加 tmux 事件 source` |
 | Milestone 8.4 | 已完成并提交 | `0b12de3 feat: 增加 cron 与 memory scaffold` |
-| Milestone 9 | 未完成 | 文档与 live verification |
+| Milestone 9.1 | 已完成并提交 | `1c52655 docs: 增加 Hermeship 运维与事件契约` |
+| Milestone 9.2 | 未完成 | Live Verification Runbook |
+| Milestone 9.3 | 未完成 | 首次 Live Check |
 | Milestone 10 | 未完成 | Hermes plugin / observer 研究 |
 
 ## 已完成
@@ -43,6 +48,7 @@
 - 已重写方案文档：`docs/plans/2026-06-15-hermeship-development-plan.md`。
 - 已重写阶段性开发清单：`tasks/development-checklist.md`。
 - 已将测试计划集成到方案文档和开发清单。
+- 已新增 `ARCHITECTURE.md` 和 `docs/hermes-event-contract.md`，并重写 README / operations 作为 Milestone 9.1 文档入口。
 
 ### Milestone 0：契约与仓库基线
 
@@ -326,18 +332,31 @@
 - 本阶段没有实现真实 scheduler、系统 cron 安装、数据库 memory store、真实 live verification、Slack sink 或 Hermes plugin/observer。
 - 已提交：`0b12de3 feat: 增加 cron 与 memory scaffold`。
 
+### Milestone 9.1：README 与运维文档
+
+- 已重写 `README.md`，将项目状态从计划态改为当前可执行入口，覆盖项目定位、安装、配置、daemon、Hermes hooks、send/emit/explain、local source commands、隐私、rollback、live check 和 release preflight。
+- 已扩展 `docs/operations.md`，补齐 install、setup、config、daemon、Hermes hooks、smoke commands、source commands、service template、update、rollback、release preflight 和常见故障。
+- 已新增 `docs/hermes-event-contract.md`，记录 Hermes hook envelope、`IncomingEvent`、canonical Hermes events、payload 字段、route metadata、rendering contract、privacy contract 和 fail-open 边界。
+- 已新增 `ARCHITECTURE.md`，记录 daemon-first 数据流、模块边界、事件模型、router、renderer、sink、hook bridge、privacy、install/rollback 和验证策略。
+- 已更新 `tasks/development-checklist.md` 的 Milestone 9.1 checkbox 和运行状态日志。
+- 已确认本阶段不实现 Slack sink、Hermes plugin/observer 或真实 live verification；`docs/live-verification.md` 仍由 Milestone 9.2 创建。
+- 已运行验证：`rg -n "hermeship start|hermes install-hooks|hermes.agent|Discord|rollback" README.md docs ARCHITECTURE.md`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
+- 已提交：`1c52655 docs: 增加 Hermeship 运维与事件契约`。
+
 ## 未完成
 
-- Milestone 9 到 Milestone 10 均未执行。
-- live verification 尚未实现；通用本地 install/uninstall lifecycle 和 release preflight 已在 Milestone 7 完成。
+- Milestone 9.2 Live Verification Runbook 未执行，`docs/live-verification.md` 尚未创建。
+- Milestone 9.3 首次 Live Check 未执行；真实 Discord/Hermes 投递尚未验证。
+- Milestone 10 Hermes plugin / observer 研究未执行。
+- live verification 尚未实现；通用本地 install/uninstall lifecycle、release preflight、README/operations/event contract/architecture 已完成。
 - 默认 daemon queue 已有 dispatcher consumer；Discord sink 已实现并覆盖本地失败矩阵；daemon 到 fake sink 的本地 smoke 已覆盖，真实 Discord live delivery 尚未执行。
 - live Discord verification 凭据是否可用尚未确认。
-- Slack sink 是否进入 `0.1.0` 尚未最终确认；Git Source 本地 deterministic CLI parity 已在 Milestone 8.1 完成，GitHub Source 本地 deterministic CLI parity 已在 Milestone 8.2 完成，Tmux Source 本地 deterministic CLI parity 已在 Milestone 8.3 完成，Cron 与 Memory Scaffold 本地 deterministic parity 已在 Milestone 8.4 完成。
+- Slack sink 不在当前默认范围内，除非开发清单明确更新。
 - macOS launchd 是否与 systemd 同期实现尚未最终确认。
 
 ## 下一步入口
 
-从 `tasks/development-checklist.md` 的 **Milestone 9：文档与 Live Verification** 继续，下一项是 **任务 9.1：README 与运维文档**。
+从 `tasks/development-checklist.md` 的 **Milestone 9：文档与 Live Verification** 继续，下一项是 **任务 9.2：Live Verification Runbook**。
 
 建议第一段工作：
 
@@ -345,37 +364,29 @@
 2. 确认当前分支、最新提交和未提交变更：
    - `git status --short --branch`
    - `git log -3 --oneline`
-3. 确认 Milestone 8.4 Cron 与 Memory Scaffold 已完成，并从 `tasks/development-checklist.md` 的 Milestone 9 继续。
-4. 读取当前相关代码：
+3. 确认最新提交包含 `1c52655 docs: 增加 Hermeship 运维与事件契约`；Milestone 9.1 已完成，Milestone 9.2/9.3 未完成。
+4. 将当前任务计划写入 `tasks/todo.md`，范围锁定为 Milestone 9.2：创建 `docs/live-verification.md` runbook。
+5. 阅读当前相关文档和代码：
+   - `README.md`
+   - `ARCHITECTURE.md`
+   - `docs/operations.md`
+   - `docs/hermes-event-contract.md`
+   - `docs/plans/2026-06-15-hermeship-development-plan.md`
    - `src/cli.rs`
-   - `src/config.rs`
-   - `src/events.rs`
-   - `src/event/mod.rs`
-   - `src/event/body.rs`
-   - `src/event/compat.rs`
-   - `src/source/git.rs`
-   - `src/source/github.rs`
-   - `src/source/tmux.rs`
-   - `src/privacy.rs`
-   - `src/router.rs`
-   - `src/render/mod.rs`
-   - `src/render/default.rs`
-   - `src/dispatch.rs`
-   - `src/sink/mod.rs`
-   - `src/sink/fake.rs`
-   - `src/lifecycle.rs`
    - `src/release_preflight.rs`
    - `tests/fixtures/README.md`
-5. 从 Milestone 9 文档与 live verification 继续，先补 README、architecture、event contract 和 live verification runbook；真实 live check 是否执行以清单和凭据为准。
-6. 默认不实现 Slack sink 或 Hermes plugin/observer，除非清单明确更新。
-7. 运行 Milestone 9 对应验证命令，至少包含：
+6. Milestone 9.2 默认只创建/补齐 live verification runbook，不默认执行真实 live check。
+7. 真实 Discord/Hermes live verification 是否执行，以凭据可用性和用户确认范围为准；未执行项必须记录原因和剩余风险。
+8. 默认不实现 Slack sink 或 Hermes plugin/observer，除非清单明确更新。
+9. 运行 Milestone 9.2 对应验证命令，至少包含：
+   - `rg -n "HERMES_HOME|Discord|hermeship status|agent:start|rollback" docs/live-verification.md`
    - `cargo test release_preflight`
    - `cargo run -- release preflight 0.1.0`
    - `cargo fmt --all -- --check`
    - `cargo clippy --all-targets -- -D warnings`
    - `cargo test`
-8. 更新 `tasks/development-checklist.md` 的运行状态日志和 `tasks/todo.md` 的 Review。
-9. 阶段完成后必须验证并提交，commit 信息使用详细中文，说明变更、验证和影响。
+10. 更新 `tasks/development-checklist.md` 的运行状态日志和 `tasks/todo.md` 的 Review。
+11. 阶段完成后必须验证并提交，commit 信息使用详细中文，说明变更、验证和影响。
 
 ## 下次启动提示词
 
@@ -391,74 +402,26 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新文档交接提交：本文件当前文档交接提交；启动后用 git log -3 --oneline 确认实际提交号。
+- 最新交接提交：本文件当前提交，提交标题为 docs: 更新 Hermeship Milestone 9.2 交接入口；启动后用 git log -3 --oneline 确认实际提交号。
+- 最新文档阶段提交：1c52655 docs: 增加 Hermeship 运维与事件契约。
 - 最新功能阶段提交：0b12de3 feat: 增加 cron 与 memory scaffold。
-- 最新功能阶段：Milestone 8.4 Cron 与 Memory Scaffold 本地 deterministic parity 已完成。
-- Milestone 0 已完成并提交：af57c49 docs: 明确 hermeship 完整项目方向。
-- Milestone 1.1 已完成并提交：d03170e chore: 搭建 Hermeship Rust CLI 骨架。
-- Milestone 1.2 已完成并提交：50723af feat: 实现 hermeship 配置模型与 config CLI。
-- Milestone 1.3 已完成并提交：70c8f03 chore: 增加 Rust 质量门禁与仓库基础。
-- Milestone 2.1 已完成并提交：5584b13 feat: 完成 Hermes 入口事件模型与 emit 解析。
-- Milestone 2.2 已完成并提交：b799415 feat: 实现 Hermes typed event model。
-- Milestone 2.3 已完成并提交：175009d feat: 增加 Hermes 事件隐私清洗。
-- Milestone 3.1 已完成并提交：ff5c589 feat: 增加 hermeship daemon health。
-- Milestone 3.2 已完成并提交：0b63e49 feat: 增加 daemon event ingress。
-- Milestone 3.3 已完成并提交：7b10816 feat: 增加 Hermes hook ingress。
-- Milestone 4.1 已完成并提交：864e7f4 feat: 实现多投递路由。
-- Milestone 4.2 已完成并提交：d4303ae feat: 增加 Hermes 默认渲染器。
-- Milestone 4.3 已完成并提交：a336e01 feat: 实现事件 dispatcher 与 fake sink。
-- Milestone 5.1 已完成并提交：0cd6e4e feat: 增加 Discord sink。
-- Milestone 5.2 已完成并提交：ea9b789 feat: 完善 sink 失败处理。
-- Milestone 5.3 已完成并提交：026e80c test: 增加 daemon 到 sink 的端到端覆盖。
-- Milestone 6 已完成并提交：f6f98a3 feat: 支持 Hermes hook bridge 安装。
-- Milestone 6 范围：Hermes Hook Bridge 安装、handler fail-open smoke 和 hook 卸载回滚。
-- Milestone 7 已完成并提交：162efcd feat: 增加安装生命周期与发布预检。
-- Milestone 7 范围：安装、setup、uninstall、本地 service 模板、运维文档和 release preflight。
-- Milestone 8.1 已完成并提交：1536b6a feat: 增加 Git Source 本地事件路径。
-- Milestone 8.1 范围：Git Source 本地 deterministic parity、`hermeship git commit`、`hermeship git branch-changed`、typed Git event、route metadata 和默认渲染。
-- Milestone 8.2 已完成并提交：91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归。
-- Milestone 8.2 范围：GitHub Source 本地 deterministic parity、`hermeship github issue-opened`、`hermeship github pr-opened`、`hermeship github check-failed`、`hermeship github release-published`、typed GitHub event、route metadata 和默认渲染。
-- Milestone 8.3 已完成并提交：3745bb8 feat: 增加 tmux 事件 source。
-- Milestone 8.3 范围：Tmux Source 本地 deterministic parity、`hermeship tmux keyword`、`hermeship tmux stale`、`hermeship tmux watch`、`hermeship tmux list`、typed tmux event、route metadata、默认渲染和隐私收紧的 watch/list 报表。
-- Milestone 8.4 已完成并提交：0b12de3 feat: 增加 cron 与 memory scaffold。
-- Milestone 8.4 范围：configured cron job run、`hermeship cron run <id>`、`cron.run` typed event、route metadata、默认渲染、`hermeship memory init/status` 本地 filesystem scaffold、显式日期、symlink 拒绝、公开命令和 release preflight 覆盖。
-- Milestone 9 到 Milestone 10 未完成。
-- 已实现 src/events.rs：IncomingEvent、RoutingMetadata、字段别名反序列化、空/null payload 归一，以及 MessageFormat 的单一复用/重导出策略。
-- 已实现 src/event/：EventEnvelope、EventBody、EventMetadata、EventPriority、Hermes canonical mapping、IncomingEvent -> EventEnvelope conversion。
-- 已实现 src/privacy.rs：sanitize_payload、redact_value、excerpt_policy、敏感 key 递归脱敏、正文默认禁发、安全摘要和 opt-in 摘录。
-- 已实现 src/daemon.rs：/health、/event、/api/hermes/hook、HealthResponse、QueueHealth、EventAcceptedResponse、bounded mpsc queue、daemon listener、serve 入口，以及可注入 fake sink 的本地 daemon smoke 测试路径。
-- 已实现 src/client.rs：DaemonClient health 查询、event POST、Hermes hook POST、base URL 规范化、timeout 和清晰错误。
-- 已实现 src/hermes.rs：HermesHookEnvelope、event/event_type alias、provider/source 默认值和 Hermes hook envelope -> IncomingEvent normalization。
-- 已实现 src/router.rs：Router、ResolvedDelivery、SinkTarget、DeliveryExplanation、event glob、route candidates、metadata filter、disabled/missing target 诊断和 0..N delivery。
-- 已实现 src/render/：Renderer trait、DefaultRenderer、RenderedMessage、compact/inline/alert/raw 四种格式、Hermes gateway/session/agent/custom 渲染、安全 template token、raw 安全 JSON 摘要。
-- 已实现 src/dispatch.rs：Dispatcher、DispatchReport、DeliveryOutcome、DeliveryStatus、单事件和队列消费、route -> render -> sink 管道、单 delivery 失败不阻断其他 delivery。
-- 已实现 src/sink/：object-safe Sink trait、SinkMessage、FakeSink、FakeDelivery、本地 fake sink 记录和确定性失败注入、Discord sink payload/request builder、bot channel/webhook 发送路径、allowed mentions、内容长度截断、非 2xx 诊断、429 retry-after 诊断和本地 fake HTTP 失败矩阵。
-- 已实现 src/hooks.rs 与 templates/hermes-hook/：Hermes gateway HOOK.yaml、Python stdlib handler.py、install-hooks、uninstall-hooks、safe uninstall marker、fake Hermes home、fake hermeship binary smoke、missing binary/timeout/子进程失败 fail-open。
-- 已实现 src/lifecycle.rs：hermeship install/setup/uninstall 的本地 deterministic 路径、dry-run、force、显式删除开关、stdin/env token 输入、token 输出脱敏、私有配置权限、home marker 和 Hermes hook safe uninstall 复用。
-- 已实现 src/release_preflight.rs：Cargo 版本一致性、公开 CLI fixture、文档命令、hook 模板、fixture policy、service 模板和 live verification pending 检查。
-- 已实现 src/source/git.rs：`git.commit` 和 `git.branch-changed` 的本地 deterministic `IncomingEvent` 构造，不执行真实 `git`、不轮询 repo、不访问远端。
-- 已实现 src/source/github.rs：`github.issue-opened`、`github.pr-opened`、`github.check-failed`、`github.release-published` 的本地 deterministic `IncomingEvent` 构造，不访问真实 GitHub API、不依赖外网或凭据。
-- 已实现 src/source/tmux.rs：`tmux.keyword` 和 `tmux.stale` 的本地 deterministic `IncomingEvent` 构造，以及 fake tmux output 的 watch/list deterministic 报表；不调用真实 `tmux`、不读取真实 session、不启动真实 watch loop。
-- 已实现 src/cron.rs：从 `[[cron.jobs]]` 配置构造 `cron.run` 本地 deterministic 事件；不实现真实 scheduler、系统 cron 或外部 daemon。
-- 已实现 src/memory.rs：`memory init/status` 本地 filesystem scaffold 和状态检查；不实现数据库 memory store。
-- 已新增 deploy/hermeship.service 与 docs/operations.md，记录 systemd user service 模板和 launchd 手动示例；不执行真实 systemctl/launchctl。
-- 已接入 hermeship start/status/emit/send/hermes hook 的真实 daemon health/event/hook 行为，hermes hook 支持 `--payload -` stdin。
-- 已接入 hermeship hermes install-hooks/uninstall-hooks 的本地 hook 文件安装与回滚行为。
-- 已接入 hermeship setup/install/uninstall/release preflight 的本地 lifecycle 与 preflight 行为。
-- 已接入 hermeship explain 的本地 route explain 行为：加载配置、清洗 payload、转 typed EventEnvelope、展示 matched/skipped routes、failed filters 和 delivery target，不调用 daemon、不入队、不投递。
-- Hermes canonical mapping 已覆盖 gateway:startup、session:start、session:end、session:reset、agent:start、agent:step、agent:end；显式失败的 agent:end 映射为 hermes.agent.failed；未知 event 降级为 Custom。
-- 已通过验证：cargo test cron、cargo test memory、cargo test release_preflight、cargo run -- release preflight 0.1.0、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
+- Milestone 0 到 Milestone 8.4 已完成并提交。
+- Milestone 9.1 已完成并提交：README、docs/operations.md、docs/hermes-event-contract.md、ARCHITECTURE.md 已对齐当前能力和边界。
+- Milestone 9.2 未完成：需要创建 docs/live-verification.md runbook。
+- Milestone 9.3 未完成：首次真实 live check 尚未执行。
+- Milestone 10 未完成：Hermes plugin / observer 研究尚未启动。
 - Hermeship 是 Hermes-native daemon-first event router，不是 thin adapter，不调用 clawhip runtime，也不依赖运行中的 clawhip daemon。
 - 方案文档只维护架构和边界，执行进度维护在 tasks/development-checklist.md 和 tasks/todo.md。
+- 默认测试只使用本地 deterministic fixture；真实 Discord/Hermes live verification 需要凭据和用户确认。
+- 默认不实现 Slack sink 或 Hermes plugin/observer，除非清单明确更新。
 
-请从 tasks/development-checklist.md 的 Milestone 9 继续，优先执行文档与 live verification 规划路径：
+请从 tasks/development-checklist.md 的 Milestone 9.2 继续：
 1. 先复习 tasks/lessons.md，并确认当前分支、最新提交和未提交变更：git status --short --branch、git log -3 --oneline。
-2. 确认 tasks/development-checklist.md 的 Milestone 9 计划，并将当前任务计划写入 tasks/todo.md。
-3. 阅读 README、ARCHITECTURE/event contract 相关现状、docs/operations.md、docs/plans/2026-06-15-hermeship-development-plan.md、src/cli.rs、src/events.rs、src/event/、src/router.rs、src/render/、src/release_preflight.rs、tests/fixtures/README.md。
-4. 先补文档和本地 deterministic 验证；真实 live check 是否执行以清单、凭据和用户确认范围为准。
-5. 默认不实现 Slack sink 或 Hermes plugin/observer，除非清单明确更新。
-6. 默认测试仍只使用本地 deterministic fixture。
-7. 运行验证：cargo test release_preflight、cargo run -- release preflight 0.1.0、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
-8. 更新 tasks/development-checklist.md 的运行状态日志和 tasks/todo.md 的 Review。
-9. 阶段完成后必须验证并提交，commit 信息使用详细中文，说明变更、验证和影响。
+2. 确认 tasks/development-checklist.md 的 Milestone 9.2 清单，并将当前任务计划写入 tasks/todo.md。
+3. 阅读 README.md、ARCHITECTURE.md、docs/operations.md、docs/hermes-event-contract.md、docs/plans/2026-06-15-hermeship-development-plan.md、src/release_preflight.rs、tests/fixtures/README.md。
+4. 创建 docs/live-verification.md，记录 fake sink、daemon health、Discord live、Hermes gateway hook smoke、rollback 的 runbook/结果字段；未执行的真实 live check 必须记录原因和剩余风险。
+5. 真实 live check 是否执行，以凭据可用性和用户确认范围为准；默认不要执行真实 Discord/Hermes live check。
+6. 运行验证：rg -n "HERMES_HOME|Discord|hermeship status|agent:start|rollback" docs/live-verification.md、cargo test release_preflight、cargo run -- release preflight 0.1.0、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
+7. 更新 tasks/development-checklist.md 的运行状态日志和 tasks/todo.md 的 Review。
+8. 阶段完成后必须验证并提交，commit 信息使用详细中文，说明变更、验证和影响。
 ```

@@ -734,6 +734,15 @@
 
 最新记录放在最上方。
 
+### 2026-06-17 - Milestone 9.1 完成后交接更新
+
+- [x] 已确认最新文档阶段提交为 `1c52655 docs: 增加 Hermeship 运维与事件契约`，当前分支为 `codex/milestone-1-cli`。
+- [x] 已更新 `docs/development-status.md`，明确 Milestone 0 到 Milestone 9.1 已完成并提交，Milestone 9.2、Milestone 9.3 和 Milestone 10 未完成，下一入口为 Milestone 9.2 Live Verification Runbook。
+- [x] 已更新 `tasks/todo.md`，将当前工作台切换为 Milestone 9.2 下一入口，并保留 Milestone 9.1 Review、未完成范围和验证要求。
+- [x] 已确认默认下阶段不实现 Slack sink 或 Hermes plugin/observer，真实 live verification 是否执行以 Milestone 9.2/9.3 清单、凭据和用户确认范围为准。
+- [x] 已准备本次交接提交标题：`docs: 更新 Hermeship Milestone 9.2 交接入口`；提交后下次启动以 `git log -3 --oneline` 确认实际 hash。
+- [x] 已通过交接验证：`rg -n "Milestone 9\\.2|docs/live-verification\\.md|1c52655|最新交接提交|docs: 更新 Hermeship Milestone 9\\.2 交接入口" README.md docs/development-status.md tasks/todo.md tasks/development-checklist.md`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
+
 ### 2026-06-17 - Milestone 9.1 文档与事件契约完成
 
 - [x] 已更新 `README.md`，对齐当前公开命令、安装/配置/daemon/hook/live check 入口和本地 deterministic 边界。

@@ -13,7 +13,7 @@ Hermeship 不是 clawhip thin adapter：
 
 ## Current State
 
-Milestone 0 到 Milestone 8.4 已完成。当前已实现：
+Milestone 0 到 Milestone 9.1 已完成。当前已实现：
 
 - Rust CLI、配置模型、质量门禁。
 - daemon `/health`、`/event`、`/api/hermes/hook`。
@@ -24,9 +24,11 @@ Milestone 0 到 Milestone 8.4 已完成。当前已实现：
 - 本地 install/setup/uninstall lifecycle 和 release preflight。
 - deterministic Git/GitHub/tmux/cron source CLI 路径。
 - memory filesystem scaffold。
+- README、operations、Hermes event contract 和 architecture 文档。
 
 仍未完成：
 
+- `docs/live-verification.md` runbook。
 - 真实 live verification 记录。
 - Slack sink。
 - Hermes plugin/observer。

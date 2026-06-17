@@ -1,67 +1,77 @@
-# Task: Milestone 9.1 文档与事件契约
+# Task: Milestone 9.2 Live Verification Runbook - 下一入口
 
 更新时间：2026-06-17
 
-本文件是当前开发工作台。本轮从 Milestone 9.1 继续，只处理 README、operations、事件契约和架构文档一致性，以及对应的本地 deterministic 验证。Hermeship 仍然是 Hermes-native daemon-first event router，不调用 clawhip runtime，不依赖运行中的 clawhip daemon。
+本文件是当前开发工作台。Milestone 9.1 README 与运维文档已完成并提交，下一入口为 Milestone 9.2 Live Verification Runbook。Hermeship 仍然是 Hermes-native daemon-first event router，不调用 clawhip runtime，不依赖运行中的 clawhip daemon。
 
-本轮边界：默认不实现 Slack sink，不启动 Hermes plugin/observer，不执行真实 live verification，除非清单和凭据条件明确允许。
+下一阶段边界：先创建/补齐 `docs/live-verification.md` runbook；默认不执行真实 Discord/Hermes live verification，不实现 Slack sink，不启动 Hermes plugin/observer，除非清单、凭据可用性和用户确认范围明确允许。
 
 ## 当前基线
 
 - 当前分支：`codex/milestone-1-cli`。
-- 当前工作树：`git status --short --branch` 仅显示分支行，工作树干净。
-- 文档交接提交：`3852e60 docs: 更新 Hermeship Milestone 9 交接状态`。
+- 当前工作树：本次交接提交完成后应为干净；下次启动必须以 `git status --short --branch` 为准。
+- 最新交接提交：本次交接提交，标题为 `docs: 更新 Hermeship Milestone 9.2 交接入口`；下次启动后用 `git log -3 --oneline` 确认实际 hash。
+- 最新文档阶段提交：`1c52655 docs: 增加 Hermeship 运维与事件契约`。
 - 最新功能阶段提交：`0b12de3 feat: 增加 cron 与 memory scaffold`。
-- 最近提交基线：`3852e60 docs: 更新 Hermeship Milestone 9 交接状态`、`0b12de3 feat: 增加 cron 与 memory scaffold`、`6c9af3e docs: 更新 Hermeship Milestone 8.4 交接状态`。
+- 最近提交基线：本次交接提交、`1c52655 docs: 增加 Hermeship 运维与事件契约`、`3852e60 docs: 更新 Hermeship Milestone 9 交接状态`。
 - Milestone 0 到 Milestone 8.4 已完成。
-- Milestone 9 到 Milestone 10 未完成。
-- 下一入口：Milestone 9 文档与 live verification。
+- Milestone 9.1 已完成。
+- Milestone 9.2、Milestone 9.3 和 Milestone 10 未完成。
+- 下一入口：Milestone 9.2 Live Verification Runbook。
 
 ## 当前执行计划
 
-- [x] 复习 lessons 与交接状态。
+- [ ] 复习 lessons 与交接状态。
   - `tasks/lessons.md`
   - `docs/development-status.md`
   - `docs/plans/2026-06-15-hermeship-development-plan.md`
   - `tasks/development-checklist.md`
   - `tasks/todo.md`
-  - 记录：已确认阶段完成后必须验证并提交、方案/清单分离、Hermeship 不是 thin adapter；本阶段先做 Milestone 9.1 文档对齐。
+  - 完成标准：确认阶段完成后必须验证并提交、方案/清单分离、Hermeship 不是 thin adapter；本阶段只做 Milestone 9.2 runbook，真实 live check 默认不执行。
 
-- [x] 确认当前分支、最新提交和未提交变更。
+- [ ] 确认当前分支、最新提交和未提交变更。
   - 命令：`git status --short --branch`
   - 命令：`git log -3 --oneline`
-  - 记录：当前分支为 `codex/milestone-1-cli`；工作树启动时干净；最近提交为 `3852e60 docs: 更新 Hermeship Milestone 9 交接状态`、`0b12de3 feat: 增加 cron 与 memory scaffold`、`6c9af3e docs: 更新 Hermeship Milestone 8.4 交接状态`。
+  - 完成标准：确认仍在 `codex/milestone-1-cli`，最近提交包含 `1c52655 docs: 增加 Hermeship 运维与事件契约`，并识别是否存在未提交变更。
 
-- [x] 确认 Milestone 9.1 计划。
+- [ ] 确认 Milestone 9.2 计划。
   - 文件：`tasks/development-checklist.md`
   - 入口：`## Milestone 9：文档与 Live Verification`
-  - 下一项：任务 9.1 README 与运维文档。
-  - 记录：本阶段只更新 README、operations、event contract 和 architecture；真实 live check 留到 Milestone 9.2/9.3。
+  - 下一项：任务 9.2 Live Verification Runbook。
+  - 完成标准：确认 `docs/live-verification.md` 需要包含 fake sink、daemon health、Discord live、Hermes gateway hook smoke、rollback、未执行项和剩余风险字段。
 
-- [x] 写入本轮实施计划。
+- [ ] 写入本轮实施计划。
   - 文件：`tasks/todo.md`
-  - 计划边界：只做文档一致性和本地 deterministic 验证，不新增 Slack sink、Hermes plugin/observer、真实 live verification 或新的 runtime 行为。
+  - 计划边界：只做 runbook 和本地 deterministic 文档验证；真实 Discord/Hermes live check 是否执行，必须由凭据可用性和用户确认范围决定。
   - 文件结构：
-    - 更新：`README.md`，改成当前可执行入口、安装配置、daemon、hooks、send/emit/explain、运维和 live check 的用户入口。
-    - 更新：`docs/operations.md`，对齐安装、setup、start、install-hooks、uninstall、rollback 和常见故障。
-    - 新建：`docs/hermes-event-contract.md`，描述 Hermes hook input、canonical events、payload 字段、隐私规则和递归脱敏边界。
-    - 新建：`ARCHITECTURE.md`，描述 Hermeship 实际模块、daemon-first 数据流和与 clawhip 的差异。
-    - 复核：`src/cli.rs`、`src/release_preflight.rs`、`tests/fixtures/cli/public_commands.txt`、`tests/fixtures/README.md`，确保文档命令和 preflight 覆盖不漂移。
+    - 新建：`docs/live-verification.md`，作为 live verification runbook 和结果记录模板。
+    - 可能更新：`tasks/development-checklist.md`，勾选 Milestone 9.2 并补运行状态日志。
+    - 更新：`tasks/todo.md` Review，记录 Milestone 9.2 结果。
+    - 复核：`src/release_preflight.rs`，确认 live verification pending/pass 字段要求。
   - 验证计划：
-    - 先更新四份文档，再用 `rg -n "hermeship start|hermes install-hooks|hermes.agent|Discord|rollback" README.md docs ARCHITECTURE.md` 检查公开入口。
-    - 再运行 `cargo test release_preflight` 和 `cargo run -- release preflight 0.1.0`，确认文档命令与 preflight 一致。
-    - 最后运行 `cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test` 作为阶段门禁。
+    - `rg -n "HERMES_HOME|Discord|hermeship status|agent:start|rollback" docs/live-verification.md`
+    - `cargo test release_preflight`
+    - `cargo run -- release preflight 0.1.0`
+    - `cargo fmt --all -- --check`
+    - `cargo clippy --all-targets -- -D warnings`
+    - `cargo test`
 
-- [x] 更新 README、operations、event contract 和 architecture 文档。
-- [x] 复核公开命令、fixture policy 和 release preflight 的文档一致性。
-- [x] 运行 Milestone 9.1 验证命令。
-- [x] 更新开发清单运行日志和本文件 Review。
-- [ ] 提交 Milestone 9.1。
-  - commit 信息使用中文，说明文档变更、验证结果和影响。
+- [ ] 创建 `docs/live-verification.md`。
+- [ ] 记录 fake sink、daemon health、Discord live、Hermes gateway hook smoke 和 rollback 的 runbook 字段。
+- [ ] 明确真实 live check 未执行时的原因和剩余风险。
+- [ ] 运行 Milestone 9.2 验证命令。
+- [ ] 更新开发清单运行日志和本文件 Review。
+- [ ] 提交 Milestone 9.2。
+  - commit 信息使用中文，说明 runbook 变更、验证结果和影响。
 
 ## Review
 
-- 已完成：Milestone 9.1 文档更新与验证。`README.md`、`docs/operations.md`、`docs/hermes-event-contract.md` 和 `ARCHITECTURE.md` 已对齐当前 CLI、hook bridge、事件契约、路由/渲染边界和 rollback 说明；`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test` 均通过，live verification 仍保持 pending。
+- Milestone 9.1 文档更新与验证已完成并提交：`1c52655 docs: 增加 Hermeship 运维与事件契约`。
+- 已完成：`README.md`、`docs/operations.md`、`docs/hermes-event-contract.md` 和 `ARCHITECTURE.md` 对齐当前 CLI、hook bridge、事件契约、路由/渲染边界和 rollback 说明。
+- 已验证：`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test` 均通过。
+- 本次交接更新：已将 `README.md`、`docs/development-status.md`、`tasks/development-checklist.md` 和本文件对齐到 Milestone 9.2 下一入口；提交标题预定为 `docs: 更新 Hermeship Milestone 9.2 交接入口`。
+- 本次交接验证：状态检索、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test` 均通过；release preflight 仍将缺失 `docs/live-verification.md` 标记为 pending。
+- 未完成：`docs/live-verification.md` runbook、真实 Discord/Hermes live verification、Slack sink、Hermes plugin/observer。
 
 ## Milestone 8.2 完成记录
 
