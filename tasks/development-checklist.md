@@ -688,20 +688,28 @@
 
 - [ ] 启动 Hermeship daemon。
   - 命令：`hermeship start`
+  - 记录：本轮未启动手动 live daemon；原因是未提供完整 live verification 凭据、测试频道、Hermes gateway 测试环境和显式执行确认，且启动指令明确默认不要执行真实 Discord/Hermes live check。
 - [ ] 确认 daemon status。
   - 命令：`hermeship status`
+  - 记录：本轮未对手动 live daemon 执行 status；本地 deterministic daemon coverage 仍由默认测试覆盖。
 - [ ] 发送 custom live message。
   - 命令：`hermeship send --channel <id> --message "hermeship live check"`
+  - 记录：本轮未发送真实 Discord custom message；未提供 Discord token 和测试频道。
 - [ ] 发送 Hermes sample event。
   - 命令：`hermeship emit hermes.agent.started --payload '{"session_id":"live-check"}'`
+  - 记录：本轮未发送真实 Discord Hermes event summary；未提供 Discord token、测试频道和 live daemon 窗口确认。
 - [ ] 安装 Hermes hooks。
   - 命令：`hermeship hermes install-hooks --force`
+  - 记录：本轮未安装真实或隔离 Hermes hooks；未确认 Hermes gateway 测试环境和 rollback 窗口。
 - [ ] 触发真实 Hermes gateway event。
   - 记录：平台、频道、时间、消息形态。
+  - 记录：本轮未触发真实 Hermes gateway event；未确认 Hermes gateway 测试环境。
 - [ ] 执行回滚。
   - 命令：`hermeship hermes uninstall-hooks`
-- [ ] 如凭据不可用，记录阻塞原因和剩余风险。
-- [ ] 提交 live verification 记录。
+  - 记录：本轮未执行真实 rollback；原因是没有执行真实 hook install。
+- [x] 如凭据不可用，记录阻塞原因和剩余风险。
+  - 记录：已在 `docs/live-verification.md` 新增 Milestone 9.3 `blocked`/`not_run` 记录，明确未提供 Discord credentials、测试频道、Hermes gateway 测试环境和显式执行确认；剩余风险包括真实 Discord auth/channel/permission/rate limit、真实 Hermes hook loading、gateway restart/cache、handler live fail-open 和真实 rollback。
+- [x] 提交 live verification 记录。
   - commit：`docs: 记录 Hermeship live verification 结果`
 
 ## Milestone 10：Hermes Plugin / Observer 研究
@@ -742,6 +750,17 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-17 - Milestone 9.3 Live Check 未执行记录
+
+- [x] 已复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且未执行的 live check 必须记录原因和剩余风险。
+- [x] 已确认当前分支为 `codex/milestone-1-cli`，启动时工作树干净；最近提交为 `6be5661 docs: 更新 Hermeship Milestone 9.3 交接状态`、`2e60902 docs: 增加 live verification runbook`、`252ad6a docs: 更新 Hermeship Milestone 9.2 交接入口`。
+- [x] 已确认 Milestone 9.3 清单；真实 daemon status、Discord custom message、Hermes sample event、Hermes gateway hook smoke 和 rollback 均需要凭据、测试频道、Hermes gateway 测试环境与显式执行确认。
+- [x] 已阅读 `docs/live-verification.md`、`README.md`、`ARCHITECTURE.md`、`docs/operations.md`、`docs/hermes-event-contract.md`、`docs/plans/2026-06-15-hermeship-development-plan.md`、`src/release_preflight.rs` 和 `tests/fixtures/README.md`。
+- [x] 本轮未执行真实 Discord/Hermes live check；原因是未提供 Discord credentials、测试频道、Hermes gateway 测试环境和显式执行确认，且启动指令明确默认不要执行真实 Discord/Hermes live check。
+- [x] 已更新 `docs/live-verification.md`，新增 Milestone 9.3 `blocked`/`not_run` 记录，覆盖 daemon health、Discord live、Hermes gateway hook smoke、rollback、实际消息形态、未执行项和剩余风险。
+- [x] 已运行验证：`cargo test release_preflight`（12 passed）、`cargo run -- release preflight 0.1.0`（all checks ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（194 lib tests + 15 bin tests passed）。
+- [x] 已准备本阶段提交：`docs: 记录 Hermeship live verification 结果`。
 
 ### 2026-06-17 - Milestone 9.3 下一入口交接更新
 

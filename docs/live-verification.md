@@ -232,6 +232,92 @@ hermeship uninstall --remove-state --remove-config --remove-hooks --hermes-home 
 
 ## Current Results
 
+### 2026-06-17 - Milestone 9.3 Live Check Not Run
+
+#### Baseline
+
+| 字段 | 记录 |
+| --- | --- |
+| 日期 | 2026-06-17 Asia/Shanghai |
+| commit | `6be5661` |
+| operator | Codex local development session |
+| environment | `/Users/zq/Desktop/ai-projs/posp/hermeship`, branch `codex/milestone-1-cli`, default daemon URL `http://127.0.0.1:25295` |
+| test channel | not provided |
+| credentials | Discord credentials not provided; Hermes gateway test environment not confirmed |
+| trigger event | planned `send`, `hermes.agent.started`, `agent:start`, `agent:end` only |
+| actual message shape | not observed in real Discord or real Hermes gateway |
+| status | `blocked` for real live verification |
+| evidence | Startup instructions explicitly defaulted to not executing real Discord/Hermes live check without credentials and user confirmation; `git status --short --branch` was clean on `codex/milestone-1-cli`; `git log -3 --oneline` showed `6be5661`, `2e60902`, `252ad6a` |
+| not executed | manual daemon live session, real Discord custom message, real Discord Hermes event summary, isolated or real Hermes gateway hook smoke, real rollback |
+| remaining risk | Real Discord token validity, channel permissions, rate-limit behavior, real Hermes gateway hook loading, gateway restart/cache behavior, handler behavior under the operator environment and real rollback remain unverified |
+| rollback | no live hook or Discord state changed; rollback commands remain documented below |
+
+#### Daemon Health Verification
+
+| 字段 | 记录 |
+| --- | --- |
+| 日期 | 2026-06-17 Asia/Shanghai |
+| commit | `6be5661` |
+| test channel | not applicable |
+| credentials | not applicable |
+| trigger event | planned `hermeship start` and `hermeship status` only |
+| actual message shape | no notification message |
+| status | `not_run` for manual live daemon check |
+| evidence | Default deterministic daemon coverage remains in tests; no long-running manual daemon was started in this stage |
+| not executed | `hermeship start`, `hermeship status` against a live operator daemon |
+| remaining risk | Operator-specific port binding, process supervision and local daemon lifecycle outside the deterministic test harness remain unverified in this live record |
+| rollback | no daemon process was started by this live record |
+
+#### Discord Live Verification
+
+| 字段 | 记录 |
+| --- | --- |
+| 日期 | 2026-06-17 Asia/Shanghai |
+| commit | `6be5661` |
+| test channel | not provided |
+| credentials | Discord credentials not provided |
+| trigger event | planned `hermeship send --channel <id> --message "hermeship live check"` and `hermeship emit hermes.agent.started --payload '{"session_id":"live-check"}'` |
+| actual message shape | not observed in real Discord |
+| status | `not_run` |
+| evidence | Real Discord live check was not executed because no Discord token, test channel or explicit execution confirmation was available |
+| not executed | Discord custom message and Discord Hermes agent summary |
+| remaining risk | Discord auth, channel id correctness, bot permissions, API rate-limit behavior and live delivery formatting remain unverified beyond fake HTTP and local sink coverage |
+| rollback | no Discord message was sent by this live record |
+
+#### Hermes Gateway Hook Smoke
+
+| 字段 | 记录 |
+| --- | --- |
+| 日期 | 2026-06-17 Asia/Shanghai |
+| commit | `6be5661` |
+| test channel | not provided |
+| credentials | Hermes gateway test environment not confirmed |
+| trigger event | planned isolated `HERMES_HOME` install smoke and real `gateway:startup`, `agent:start`, `agent:end` only |
+| actual message shape | not observed in real Hermes/Discord |
+| status | `not_run` |
+| evidence | Real Hermes gateway smoke was not executed because no Hermes gateway test environment and explicit execution confirmation were available |
+| not executed | isolated `HERMES_HOME` hook install smoke, direct `hermeship hermes hook --payload -` smoke, real Hermes gateway startup and agent lifecycle trigger |
+| remaining risk | Real Hermes hook discovery, hook cache/reload behavior, gateway payload shape and fail-open behavior under a live Hermes gateway remain unverified |
+| rollback | no Hermes hook was installed by this live record |
+
+#### Rollback Verification
+
+| 字段 | 记录 |
+| --- | --- |
+| 日期 | 2026-06-17 Asia/Shanghai |
+| commit | `6be5661` |
+| test channel | not applicable |
+| credentials | not applicable |
+| trigger event | planned `hermeship hermes uninstall-hooks` only |
+| actual message shape | not applicable |
+| status | `not_run` |
+| evidence | Real rollback was not executed because no live hook install was executed in this stage |
+| not executed | `hermeship hermes uninstall-hooks` against an operator Hermes home and post-uninstall hook-file checks |
+| remaining risk | User-modified hook preservation, marker checksum behavior against a real Hermes home and Hermes gateway reload behavior remain unverified in live conditions |
+| rollback | commands documented; no files changed by this live record |
+
+本轮完成的是 Milestone 9.3 的真实状态记录，而不是一次真实 live pass。真实 Discord/Hermes live verification 仍需要凭据、测试频道、Hermes gateway 测试环境和明确执行确认后重新运行。
+
 ### 2026-06-17 - Milestone 9.2 Runbook Creation
 
 #### Baseline

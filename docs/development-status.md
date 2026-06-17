@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-17 Milestone 9.2 已完成，下一入口 Milestone 9.3
+最后更新：2026-06-17 Milestone 9.3 已记录未执行原因，真实 live verification 仍待凭据与确认
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -12,14 +12,15 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 最新交接提交：本次交接提交，提交标题为 `docs: 更新 Hermeship Milestone 9.3 交接状态`；下次启动后用 `git log -3 --oneline` 确认实际 hash。
+- 最新 live 记录提交：本次提交，提交标题为 `docs: 记录 Hermeship live verification 结果`；下次启动后用 `git log -3 --oneline` 确认实际 hash。
+- 最新交接提交：`6be5661 docs: 更新 Hermeship Milestone 9.3 交接状态`。
 - 最新文档阶段提交：`2e60902 docs: 增加 live verification runbook`。
 - 最新功能阶段提交：`0b12de3 feat: 增加 cron 与 memory scaffold`。
 - 当前最新功能阶段：Milestone 8.4 Cron 与 Memory Scaffold 本地 deterministic parity 已完成。
 - 当前最新文档阶段：Milestone 9.2 Live Verification Runbook 已完成。
-- 当前交接工作台：`tasks/todo.md` 已切换为 Milestone 9.3 首次 Live Check 下一入口。
+- 当前工作台：`tasks/todo.md` 已切换为 Milestone 9.3 首次 Live Check 记录。
 - 下次继续开发前必须先运行 `git status --short --branch` 确认工作树，只在预期文档/代码变更上继续。
-- 当前下一步：继续 Milestone 9.3 首次 Live Check；真实 Discord/Hermes live verification 是否执行仍取决于凭据可用性和用户确认范围。
+- 当前下一步：真实 Discord/Hermes live verification 仍取决于凭据可用性、测试频道、Hermes gateway 测试环境和用户确认范围；在这些条件满足前不得启动 Hermes plugin/observer。
 
 ## 阶段状态总览
 
@@ -39,7 +40,7 @@
 | Milestone 8.4 | 已完成并提交 | `0b12de3 feat: 增加 cron 与 memory scaffold` |
 | Milestone 9.1 | 已完成并提交 | `1c52655 docs: 增加 Hermeship 运维与事件契约` |
 | Milestone 9.2 | 已完成并提交 | `docs/live-verification.md` runbook |
-| Milestone 9.3 | 未完成 | 首次 Live Check |
+| Milestone 9.3 | 阻塞 | 已记录未执行原因；真实 Live Check 未通过 |
 | Milestone 10 | 未完成 | Hermes plugin / observer 研究 |
 
 ## 已完成
@@ -355,9 +356,9 @@
 
 ## 未完成
 
-- Milestone 9.3 首次 Live Check 未执行；真实 Discord/Hermes 投递尚未验证。
+- Milestone 9.3 首次 Live Check 已记录 `blocked`/`not_run` 原因；真实 Discord/Hermes 投递尚未验证。
 - Milestone 10 Hermes plugin / observer 研究未执行。
-- live verification runbook 已创建；真实 Discord/Hermes live verification 结果尚未记录。
+- live verification runbook 已创建；真实 Discord/Hermes live verification 尚未获得 `pass` 结果。
 - 默认 daemon queue 已有 dispatcher consumer；Discord sink 已实现并覆盖本地失败矩阵；daemon 到 fake sink 的本地 smoke 已覆盖，真实 Discord live delivery 尚未执行。
 - live Discord verification 凭据是否可用尚未确认。
 - Slack sink 不在当前默认范围内，除非开发清单明确更新。
