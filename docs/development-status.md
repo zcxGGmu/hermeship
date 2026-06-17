@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-17 Milestone 9.3 已记录未执行原因，真实 live verification 仍待凭据与确认
+最后更新：2026-06-18 最新开发状态交接；Milestone 9.3 已记录未执行原因，真实 live verification 仍待凭据与确认
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -12,13 +12,14 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 最新 live 记录提交：本次提交，提交标题为 `docs: 记录 Hermeship live verification 结果`；下次启动后用 `git log -3 --oneline` 确认实际 hash。
+- 最新状态交接提交：本次提交，提交标题为 `docs: 更新 Hermeship 最新开发状态`；下次启动后用 `git log -3 --oneline` 确认实际 hash。
+- 最新 live 记录提交：`bc4c027 docs: 记录 Hermeship live verification 结果`。
 - 最新交接提交：`6be5661 docs: 更新 Hermeship Milestone 9.3 交接状态`。
 - 最新文档阶段提交：`2e60902 docs: 增加 live verification runbook`。
 - 最新功能阶段提交：`0b12de3 feat: 增加 cron 与 memory scaffold`。
 - 当前最新功能阶段：Milestone 8.4 Cron 与 Memory Scaffold 本地 deterministic parity 已完成。
 - 当前最新文档阶段：Milestone 9.2 Live Verification Runbook 已完成。
-- 当前工作台：`tasks/todo.md` 已切换为 Milestone 9.3 首次 Live Check 记录。
+- 当前工作台：`tasks/todo.md` 已切换为最新开发状态交接更新。
 - 下次继续开发前必须先运行 `git status --short --branch` 确认工作树，只在预期文档/代码变更上继续。
 - 当前下一步：真实 Discord/Hermes live verification 仍取决于凭据可用性、测试频道、Hermes gateway 测试环境和用户确认范围；在这些条件满足前不得启动 Hermes plugin/observer。
 
@@ -354,6 +355,17 @@
 - 已运行验证：`rg -n "HERMES_HOME|Discord|hermeship status|agent:start|rollback" docs/live-verification.md`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
 - 已提交：`2e60902 docs: 增加 live verification runbook`。
 
+### Milestone 9.3：首次 Live Check 记录
+
+- 已新增 `docs/live-verification.md` 的 Milestone 9.3 当前结果记录，状态为 `blocked`/`not_run`。
+- 已明确真实 Discord/Hermes live check 本阶段未执行，原因是当前未提供 Discord credentials、测试频道、Hermes gateway 测试环境和显式执行确认。
+- 已记录 daemon health、Discord live、Hermes gateway hook smoke 和 rollback 的未执行项、实际消息形态缺失和剩余风险。
+- 已更新 `tasks/development-checklist.md`：真实 daemon、Discord、Hermes hook smoke 和 rollback 项保持未勾选；只勾选“凭据不可用时记录阻塞原因和剩余风险”及本阶段记录提交。
+- 已更新 `tasks/todo.md`：记录 Milestone 9.3 live check 的实际状态和验证结果。
+- 已运行验证：`cargo test release_preflight`（12 passed）、`cargo run -- release preflight 0.1.0`（all checks ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（194 lib tests + 15 bin tests passed）。
+- 已提交：`bc4c027 docs: 记录 Hermeship live verification 结果`。
+- 当前结论：Milestone 9.3 已完成“未执行原因和风险记录”，但没有完成真实 live verification pass；进入 Milestone 10 前必须由用户明确确认是否豁免真实 live pass。
+
 ## 未完成
 
 - Milestone 9.3 首次 Live Check 已记录 `blocked`/`not_run` 原因；真实 Discord/Hermes 投递尚未验证。
@@ -366,7 +378,7 @@
 
 ## 下一步入口
 
-从 `tasks/development-checklist.md` 的 **Milestone 9：文档与 Live Verification** 继续，下一项是 **任务 9.3：首次 Live Check**。
+从 `tasks/development-checklist.md` 的 **Milestone 9：文档与 Live Verification** 继续。当前状态是：Milestone 9.3 已记录未执行原因，但真实 Discord/Hermes live verification 仍未获得 `pass`。
 
 建议第一段工作：
 
@@ -374,19 +386,19 @@
 2. 确认当前分支、最新提交和未提交变更：
    - `git status --short --branch`
    - `git log -3 --oneline`
-3. 确认最新提交包含 `docs: 增加 live verification runbook`；Milestone 9.2 已完成，Milestone 9.3 未完成。
-4. 将当前任务计划写入 `tasks/todo.md`，范围锁定为 Milestone 9.3：首次真实 Live Check。
+3. 确认最新提交包含本轮状态交接提交；最新 live 记录提交为 `bc4c027 docs: 记录 Hermeship live verification 结果`。
+4. 将当前任务计划写入 `tasks/todo.md`。
 5. 阅读 `docs/live-verification.md`、`README.md`、`ARCHITECTURE.md`、`docs/operations.md`、`docs/hermes-event-contract.md`、`docs/plans/2026-06-15-hermeship-development-plan.md`、`src/release_preflight.rs`、`tests/fixtures/README.md`。
-6. 真实 Discord/Hermes live verification 是否执行，以凭据可用性和用户确认范围为准；未执行项必须记录原因和剩余风险。
-7. 默认不实现 Slack sink 或 Hermes plugin/observer，除非清单明确更新。
-8. 若凭据或用户确认不足，按 `docs/live-verification.md` 记录 `not_run` 或 `blocked`，不要伪造 live pass。
-9. 运行 Milestone 9.3 对应验证命令，至少包含：
+6. 如果用户提供 Discord credentials、测试频道、Hermes gateway 测试环境和明确执行确认，则继续 Milestone 9.3 真实 live check，并按 `docs/live-verification.md` 记录 daemon status、Discord custom message、Hermes sample event、Hermes gateway hook smoke、rollback、实际消息形态、未执行项和剩余风险。
+7. 如果用户未提供真实 live check 条件，但明确要求继续后续研发，需要先记录“真实 live pass 被用户豁免”的决策；否则不要启动 Milestone 10。
+8. 默认不实现 Slack sink 或 Hermes plugin/observer，除非清单明确更新或用户明确豁免 Milestone 9.3 live pass 后指定进入 Milestone 10。
+9. 运行对应验证命令，至少包含：
    - `cargo test release_preflight`
    - `cargo run -- release preflight 0.1.0`
    - `cargo fmt --all -- --check`
    - `cargo clippy --all-targets -- -D warnings`
    - `cargo test`
-10. 更新 `tasks/development-checklist.md` 的运行状态日志和 `tasks/todo.md` 的 Review。
+10. 更新 `docs/development-status.md`、`tasks/development-checklist.md` 的运行状态日志和 `tasks/todo.md` 的 Review。
 11. 阶段完成后必须验证并提交，commit 信息使用详细中文，说明变更、验证和影响。
 
 ## 下次启动提示词
@@ -403,26 +415,29 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新交接提交：本次交接提交 docs: 更新 Hermeship Milestone 9.3 交接状态；启动后用 git log -3 --oneline 确认实际 hash。
+- 最新状态交接提交：本次交接提交 docs: 更新 Hermeship 最新开发状态；启动后用 git log -3 --oneline 确认实际 hash。
+- 最新 live 记录提交：bc4c027 docs: 记录 Hermeship live verification 结果。
+- 最新 Milestone 9.3 交接提交：6be5661 docs: 更新 Hermeship Milestone 9.3 交接状态。
 - 最新文档阶段提交：2e60902 docs: 增加 live verification runbook。
 - 最新功能阶段提交：0b12de3 feat: 增加 cron 与 memory scaffold。
 - Milestone 0 到 Milestone 8.4 已完成并提交。
 - Milestone 9.1 已完成并提交：README、docs/operations.md、docs/hermes-event-contract.md、ARCHITECTURE.md 已对齐当前能力和边界。
 - Milestone 9.2 已完成并提交：docs/live-verification.md runbook 已创建。
-- Milestone 9.3 未完成：首次真实 live check 尚未执行。
+- Milestone 9.3 已记录未执行原因：docs/live-verification.md 有 blocked/not_run 记录；真实 Discord/Hermes live verification 仍未获得 pass。
 - Milestone 10 未完成：Hermes plugin / observer 研究尚未启动。
 - Hermeship 是 Hermes-native daemon-first event router，不是 thin adapter，不调用 clawhip runtime，也不依赖运行中的 clawhip daemon。
 - 方案文档只维护架构和边界，执行进度维护在 tasks/development-checklist.md 和 tasks/todo.md。
-- 默认测试只使用本地 deterministic fixture；真实 Discord/Hermes live verification 需要凭据和用户确认。
-- 默认不实现 Slack sink 或 Hermes plugin/observer，除非清单明确更新。
+- 默认测试只使用本地 deterministic fixture；真实 Discord/Hermes live verification 需要凭据、测试频道、Hermes gateway 测试环境和用户确认。
+- 默认不实现 Slack sink 或 Hermes plugin/observer，除非清单明确更新，或用户明确豁免 Milestone 9.3 真实 live pass 后指定进入 Milestone 10。
 
-请从 tasks/development-checklist.md 的 Milestone 9.3 继续：
+请从当前状态继续：
 1. 先复习 tasks/lessons.md，并确认当前分支、最新提交和未提交变更：git status --short --branch、git log -3 --oneline。
-2. 确认 tasks/development-checklist.md 的 Milestone 9.3 清单，并将当前任务计划写入 tasks/todo.md。
-3. 阅读 docs/live-verification.md、README.md、ARCHITECTURE.md、docs/operations.md、docs/hermes-event-contract.md、docs/plans/2026-06-15-hermeship-development-plan.md、src/release_preflight.rs、tests/fixtures/README.md。
-4. 真实 live check 是否执行，以凭据可用性和用户确认范围为准；默认不要执行真实 Discord/Hermes live check。
-5. 如执行 live check，按 docs/live-verification.md 记录 daemon status、Discord custom message、Hermes sample event、Hermes gateway hook smoke、rollback、实际消息形态、未执行项和剩余风险；如不执行，记录原因和风险。
-6. 运行验证：cargo test release_preflight、cargo run -- release preflight 0.1.0、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
-7. 更新 tasks/development-checklist.md 的运行状态日志和 tasks/todo.md 的 Review。
-8. 阶段完成后必须验证并提交，commit 信息使用详细中文，说明变更、验证和影响。
+2. 阅读 docs/development-status.md、tasks/development-checklist.md、tasks/todo.md、docs/live-verification.md、README.md、ARCHITECTURE.md、docs/operations.md、docs/hermes-event-contract.md、docs/plans/2026-06-15-hermeship-development-plan.md、src/release_preflight.rs、tests/fixtures/README.md。
+3. 将本轮计划写入 tasks/todo.md。
+4. 如果我提供 Discord credentials、测试频道、Hermes gateway 测试环境和明确执行确认，则继续 Milestone 9.3 真实 live check，并按 docs/live-verification.md 记录 daemon status、Discord custom message、Hermes sample event、Hermes gateway hook smoke、rollback、实际消息形态、未执行项和剩余风险。
+5. 如果我没有提供真实 live check 条件，但要求继续研发，先记录“真实 live pass 被用户豁免”的决策；否则不要启动 Milestone 10。
+6. 默认不要执行真实 Discord/Hermes live check，不要实现 Slack sink，不要启动 Hermes plugin/observer。
+7. 运行验证：cargo test release_preflight、cargo run -- release preflight 0.1.0、cargo fmt --all -- --check、cargo clippy --all-targets -- -D warnings、cargo test。
+8. 更新 docs/development-status.md、tasks/development-checklist.md 的运行状态日志和 tasks/todo.md 的 Review。
+9. 阶段完成后必须验证并提交，commit 信息使用详细中文，说明变更、验证和影响。
 ```

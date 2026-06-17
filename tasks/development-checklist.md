@@ -751,6 +751,17 @@
 
 最新记录放在最上方。
 
+### 2026-06-18 - 最新开发状态交接更新
+
+- [x] 已复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且状态入口需要准确区分已完成、未完成和阻塞项。
+- [x] 已确认当前分支为 `codex/milestone-1-cli`，启动时工作树干净；最近提交为 `bc4c027 docs: 记录 Hermeship live verification 结果`、`6be5661 docs: 更新 Hermeship Milestone 9.3 交接状态`、`2e60902 docs: 增加 live verification runbook`。
+- [x] 已更新 `README.md` Current State，明确 Milestone 9.3 已记录 `blocked`/`not_run`，但真实 Discord/Hermes live verification 仍未获得 `pass`。
+- [x] 已更新 `docs/development-status.md`，明确最新 live 记录提交、已完成范围、未完成范围、下一步入口和下次启动提示词。
+- [x] 已更新 `tasks/todo.md`，将当前工作台切换为最新开发状态交接更新。
+- [x] 已确认默认不执行真实 Discord/Hermes live check，不实现 Slack sink，不启动 Hermes plugin/observer；如无真实 live 条件但要继续 Milestone 10，必须先记录用户豁免真实 live pass 的决策。
+- [x] 已运行验证：`rg -n "bc4c027|Milestone 9\\.3|真实 Discord/Hermes|Hermes plugin / observer|cargo test release_preflight" docs/development-status.md tasks/todo.md tasks/development-checklist.md README.md`、`cargo test release_preflight`（12 passed）、`cargo run -- release preflight 0.1.0`（all checks ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（194 lib tests + 15 bin tests passed）。
+- [x] 已准备本次状态交接提交：`docs: 更新 Hermeship 最新开发状态`。
+
 ### 2026-06-17 - Milestone 9.3 Live Check 未执行记录
 
 - [x] 已复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且未执行的 live check 必须记录原因和剩余风险。
