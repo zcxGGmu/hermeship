@@ -234,6 +234,10 @@ fn check_public_commands(repo_root: &Path) -> CheckResult {
         "github pr-opened",
         "github check-failed",
         "github release-published",
+        "tmux keyword",
+        "tmux stale",
+        "tmux watch",
+        "tmux list",
         "install",
         "uninstall",
         "release preflight",
@@ -284,6 +288,10 @@ fn check_docs_commands(repo_root: &Path) -> CheckResult {
         "hermeship github pr-opened",
         "hermeship github check-failed",
         "hermeship github release-published",
+        "hermeship tmux keyword",
+        "hermeship tmux stale",
+        "hermeship tmux watch",
+        "hermeship tmux list",
         "hermeship release preflight",
     ];
     let missing = required
@@ -302,7 +310,7 @@ fn check_docs_commands(repo_root: &Path) -> CheckResult {
     if missing.is_empty() && operations_missing.is_empty() {
         CheckResult::pass(
             "docs commands",
-            "README/plan/operations mention lifecycle, git, and GitHub commands",
+            "README/plan/operations mention lifecycle, git, GitHub, and tmux commands",
         )
     } else {
         let mut all_missing = missing;
@@ -550,6 +558,30 @@ version = "0.1.0"
     }
 
     #[test]
+    fn preflight_fails_when_public_command_fixture_omits_tmux_commands() {
+        let root = temp_dir("preflight-tmux-command-fail");
+        write_project_fixture(
+            &root,
+            Some(ProjectFixtureOverrides {
+                public_commands: Some(
+                    "start\nstatus\nsetup --default-channel ops\nsend --channel ops --message hello\nemit hermes.agent.started --payload '{}'\nexplain hermes.agent.started --payload '{}'\nconfig show\nconfig path\nconfig verify\nhermes hook --payload '{}'\nhermes install-hooks --scope global --force\nhermes uninstall-hooks --dry-run\ngit commit --repo hermeship --branch main --commit 1234567890abcdef1234567890abcdef12345678 --summary ship\ngit branch-changed --repo hermeship --old-branch main --new-branch codex/milestone-8-git\ngithub issue-opened --owner posp --repo hermeship --number 42 --title issue\ngithub pr-opened --owner posp --repo hermeship --number 17 --title pr --branch codex/milestone-8-github\ngithub check-failed --owner posp --repo hermeship --workflow ci --status failure --branch main\ngithub release-published --owner posp --repo hermeship --tag v0.1.0\ninstall\nuninstall\nrelease preflight 0.1.0\n",
+                ),
+                ..ProjectFixtureOverrides::default()
+            }),
+        );
+
+        let report = run_preflight(&root, "0.1.0").unwrap();
+
+        assert!(!report.ok());
+        assert!(report.render().contains("tmux keyword"));
+        assert!(report.render().contains("tmux stale"));
+        assert!(report.render().contains("tmux watch"));
+        assert!(report.render().contains("tmux list"));
+
+        remove_temp_dir(&root);
+    }
+
+    #[test]
     fn preflight_fails_when_docs_omit_github_pr_check_and_release_commands() {
         let root = temp_dir("preflight-github-docs-fail");
         write_project_fixture(
@@ -572,6 +604,30 @@ version = "0.1.0"
                 .render()
                 .contains("hermeship github release-published")
         );
+
+        remove_temp_dir(&root);
+    }
+
+    #[test]
+    fn preflight_fails_when_docs_omit_tmux_commands() {
+        let root = temp_dir("preflight-tmux-docs-fail");
+        write_project_fixture(
+            &root,
+            Some(ProjectFixtureOverrides {
+                readme: Some(
+                    "hermeship setup\nhermeship install\nhermeship uninstall\nhermeship git commit\nhermeship git branch-changed\nhermeship github issue-opened\nhermeship github pr-opened\nhermeship github check-failed\nhermeship github release-published\nhermeship release preflight <version>\n",
+                ),
+                ..ProjectFixtureOverrides::default()
+            }),
+        );
+
+        let report = run_preflight(&root, "0.1.0").unwrap();
+
+        assert!(!report.ok());
+        assert!(report.render().contains("hermeship tmux keyword"));
+        assert!(report.render().contains("hermeship tmux stale"));
+        assert!(report.render().contains("hermeship tmux watch"));
+        assert!(report.render().contains("hermeship tmux list"));
 
         remove_temp_dir(&root);
     }
@@ -631,7 +687,7 @@ version = "0.1.0"
         write(
             root.join("README.md"),
             overrides.readme.unwrap_or(
-                "hermeship setup\nhermeship install\nhermeship uninstall\nhermeship git commit\nhermeship git branch-changed\nhermeship github issue-opened\nhermeship github pr-opened\nhermeship github check-failed\nhermeship github release-published\nhermeship release preflight <version>\n",
+                "hermeship setup\nhermeship install\nhermeship uninstall\nhermeship git commit\nhermeship git branch-changed\nhermeship github issue-opened\nhermeship github pr-opened\nhermeship github check-failed\nhermeship github release-published\nhermeship tmux keyword\nhermeship tmux stale\nhermeship tmux watch\nhermeship tmux list\nhermeship release preflight <version>\n",
             ),
         );
         write(
@@ -647,7 +703,7 @@ version = "0.1.0"
         write(
             root.join("tests/fixtures/cli/public_commands.txt"),
             overrides.public_commands.unwrap_or(
-                "start\nstatus\nsetup --default-channel ops\nsend --channel ops --message hello\nemit hermes.agent.started --payload '{}'\nexplain hermes.agent.started --payload '{}'\nconfig show\nconfig path\nconfig verify\nhermes hook --payload '{}'\nhermes install-hooks --scope global --force\nhermes uninstall-hooks --dry-run\ngit commit --repo hermeship --branch main --commit 1234567890abcdef1234567890abcdef12345678 --summary ship\ngit branch-changed --repo hermeship --old-branch main --new-branch codex/milestone-8-git\ngithub issue-opened --owner posp --repo hermeship --number 42 --title issue\ngithub pr-opened --owner posp --repo hermeship --number 17 --title pr --branch codex/milestone-8-github\ngithub check-failed --owner posp --repo hermeship --workflow ci --status failure --branch main\ngithub release-published --owner posp --repo hermeship --tag v0.1.0\ninstall\nuninstall\nrelease preflight 0.1.0\n",
+                "start\nstatus\nsetup --default-channel ops\nsend --channel ops --message hello\nemit hermes.agent.started --payload '{}'\nexplain hermes.agent.started --payload '{}'\nconfig show\nconfig path\nconfig verify\nhermes hook --payload '{}'\nhermes install-hooks --scope global --force\nhermes uninstall-hooks --dry-run\ngit commit --repo hermeship --branch main --commit 1234567890abcdef1234567890abcdef12345678 --summary ship\ngit branch-changed --repo hermeship --old-branch main --new-branch codex/milestone-8-git\ngithub issue-opened --owner posp --repo hermeship --number 42 --title issue\ngithub pr-opened --owner posp --repo hermeship --number 17 --title pr --branch codex/milestone-8-github\ngithub check-failed --owner posp --repo hermeship --workflow ci --status failure --branch main\ngithub release-published --owner posp --repo hermeship --tag v0.1.0\ntmux keyword --session hermes-agent --keyword FAILED --line failed\ntmux stale --session hermes-agent --pane %2 --minutes 15 --last-line waiting\ntmux watch --session hermes-agent --keywords FAILED,complete --stale-minutes 10 --tmux-output 'hermes-agent\tmain\t%1\t0\tbash\tready'\ntmux list --tmux-output 'hermes-agent\tmain\t%1\t0\tbash\tready'\ninstall\nuninstall\nrelease preflight 0.1.0\n",
             ),
         );
         write(

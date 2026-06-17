@@ -608,16 +608,17 @@
 
 ### 任务 8.3：Tmux Source
 
-- [ ] 新建 tmux source。
+- [x] 新建 tmux source。
   - 新建：`src/source/tmux.rs`
-- [ ] 实现 keyword/stale 事件。
-- [ ] 实现 `hermeship tmux keyword/stale/watch/list`。
-- [ ] 编写测试。
+- [x] 实现 keyword/stale 事件。
+- [x] 实现 `hermeship tmux keyword/stale/watch/list`。
+- [x] 编写测试。
   - fake tmux 命令输出。
-- [ ] 验证任务 8.3。
+- [x] 验证任务 8.3。
   - 命令：`cargo test tmux`
-- [ ] 提交任务 8.3。
+- [x] 提交任务 8.3。
   - commit：`feat: 增加 tmux 事件 source`
+  - 记录：本阶段随当前提交完成。
 
 ### 任务 8.4：Cron 与 Memory Scaffold
 
@@ -730,6 +731,22 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-17 - Milestone 8.3 Tmux Source 本地 deterministic parity
+
+- [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
+- [x] 已确认启动时工作树干净，最近提交为 `9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`、`91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归`、`9d8b05c docs: 更新 Hermeship Milestone 8.2 交接入口`。
+- [x] 已阅读 `src/cli.rs`、`src/main.rs`、`src/config.rs`、`src/events.rs`、`src/event/`、`src/source/git.rs`、`src/source/github.rs`、`src/router.rs`、`src/render/`、`src/dispatch.rs`、`src/lifecycle.rs`、`src/release_preflight.rs`、`tests/fixtures/README.md` 与方案文档 parity/source 章节。
+- [x] 已先写失败测试并运行 Red：`cargo test tmux` 在实现前失败于缺少 `source::tmux` API、`TmuxCommands`、`Commands::Tmux` 和 tmux typed body variants；审查回归测试在修复前失败于 `watch/list` 报表原样回显 command/last_line。
+- [x] 已新增 `src/source/tmux.rs`，实现 deterministic `keyword_event`、`stale_event`、`parse_tmux_panes_output`、`watch_plan_from_output`、`format_watch_plan` 和 `format_pane_list`；只处理显式 fake tmux 输出，不调用真实 `tmux`、不读取真实 session、不启动真实 watch loop。
+- [x] 已新增 typed tmux body：`TmuxKeywordEvent`、`TmuxStaleEvent`，并将 `tmux.keyword`、`tmux.stale` 接入 `IncomingEvent -> EventEnvelope` conversion；`tmux.stale` 标记为 high priority。
+- [x] 已接入 CLI：`hermeship tmux keyword`、`hermeship tmux stale`、`hermeship tmux watch`、`hermeship tmux list`；keyword/stale 复用现有 `DaemonClient::post_event()` 投递 `/event`，watch/list 只输出本地 deterministic 报表。
+- [x] 已扩展 router 与默认 renderer：tmux route filter 可用 session/session_name、window、pane、keyword、minutes；compact/raw 输出受控摘要。
+- [x] 已根据代码审查收紧 `watch/list` 报表隐私边界：不再原样输出 fake tmux input 中的 command 或 last_line，只输出 command 是否存在和 last_line 字符数，并补充 token/path/authorization 回归测试。
+- [x] 已更新公开命令 fixture、release preflight 和 README/方案 CLI 示例，要求覆盖四个 tmux 公开命令；README watch/list 示例改为可复制的 tab 分隔 `$'...'` 形式。
+- [x] 已运行验证：`cargo test tmux`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test` 均通过。
+- [x] 已确认本阶段没有实现真实 tmux session 读取、真实 tmux watch、cron、memory、真实 live verification、Slack sink 或 Hermes plugin/observer。
+- [x] 提交状态：本阶段随当前提交完成。
 
 ### 2026-06-17 - Milestone 8.2 完成后交接更新
 

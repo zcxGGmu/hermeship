@@ -70,6 +70,26 @@ pub struct GithubReleaseEvent {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TmuxKeywordEvent {
+    pub session: String,
+    pub window: Option<String>,
+    pub pane: Option<String>,
+    pub keyword: String,
+    pub line: String,
+    pub line_chars: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TmuxStaleEvent {
+    pub session: String,
+    pub window: Option<String>,
+    pub pane: String,
+    pub minutes: u64,
+    pub last_line: String,
+    pub last_line_chars: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HermesGatewayEvent {
     pub provider: Option<String>,
     pub source: Option<String>,

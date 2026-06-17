@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::event::{
     CustomEvent, EventBody, EventEnvelope, EventMetadata, EventPriority, GitBranchChangedEvent,
     GitCommitEvent, GithubCheckEvent, GithubIssueEvent, GithubPullRequestEvent, GithubReleaseEvent,
-    HermesAgentEvent, HermesGatewayEvent, HermesSessionEvent,
+    HermesAgentEvent, HermesGatewayEvent, HermesSessionEvent, TmuxKeywordEvent, TmuxStaleEvent,
 };
 use crate::events::IncomingEvent;
 use crate::source::git::{
@@ -102,6 +102,8 @@ fn body_for(kind: &str, payload: &Value, metadata: &EventMetadata) -> Result<Eve
         "github.release-published" => {
             EventBody::GithubRelease(github_release_event(payload, metadata)?)
         }
+        "tmux.keyword" => EventBody::TmuxKeyword(tmux_keyword_event(payload)?),
+        "tmux.stale" => EventBody::TmuxStale(tmux_stale_event(payload)?),
         "hermes.gateway.started" => EventBody::HermesGatewayStarted(HermesGatewayEvent {
             provider: metadata.provider.clone(),
             source: metadata.source.clone(),
@@ -275,6 +277,44 @@ fn github_release_event(payload: &Value, metadata: &EventMetadata) -> Result<Git
     })
 }
 
+fn tmux_keyword_event(payload: &Value) -> Result<TmuxKeywordEvent> {
+    let line = required_summary_field(payload, "line")?;
+    let line_chars = u64_field(payload, "line_chars")
+        .map(|value| value as usize)
+        .unwrap_or_else(|| line.chars().count());
+
+    Ok(TmuxKeywordEvent {
+        session: required_display_field(payload, "session")?,
+        window: validate_optional_display_field(
+            "window",
+            string_field(payload, "window").as_deref(),
+        )?,
+        pane: validate_optional_display_field("pane", string_field(payload, "pane").as_deref())?,
+        keyword: required_display_field(payload, "keyword")?,
+        line,
+        line_chars,
+    })
+}
+
+fn tmux_stale_event(payload: &Value) -> Result<TmuxStaleEvent> {
+    let last_line = required_summary_field(payload, "last_line")?;
+    let last_line_chars = u64_field(payload, "last_line_chars")
+        .map(|value| value as usize)
+        .unwrap_or_else(|| last_line.chars().count());
+
+    Ok(TmuxStaleEvent {
+        session: required_display_field(payload, "session")?,
+        window: validate_optional_display_field(
+            "window",
+            string_field(payload, "window").as_deref(),
+        )?,
+        pane: required_display_field(payload, "pane")?,
+        minutes: validate_positive_minutes(u64_field(payload, "minutes").unwrap_or_default())?,
+        last_line,
+        last_line_chars,
+    })
+}
+
 fn required_repo(payload: &Value, metadata: &EventMetadata) -> Result<String> {
     let repo = string_field(payload, "repo").or_else(|| metadata.repo_name.clone());
     validate_display_field("repo", repo.as_deref().unwrap_or_default())
@@ -318,6 +358,13 @@ fn optional_github_short_sha(payload: &Value, sha: Option<&str>) -> Result<Optio
         .map(|value| value.or_else(|| sha.map(github_short_sha)))
 }
 
+fn validate_positive_minutes(minutes: u64) -> Result<u64> {
+    if minutes == 0 {
+        anyhow::bail!("minutes must be greater than 0");
+    }
+    Ok(minutes)
+}
+
 fn session_event(status: &str, payload: &Value, metadata: &EventMetadata) -> HermesSessionEvent {
     HermesSessionEvent {
         status: status.to_string(),
@@ -357,6 +404,7 @@ fn agent_event(status: &str, payload: &Value, metadata: &EventMetadata) -> Herme
 fn priority_for(kind: &str) -> EventPriority {
     match kind {
         "hermes.agent.failed" => EventPriority::Critical,
+        "tmux.stale" => EventPriority::High,
         "custom" => EventPriority::Low,
         _ if !kind.starts_with("hermes.") => EventPriority::Low,
         _ => EventPriority::Normal,
@@ -888,6 +936,105 @@ mod tests {
     }
 
     #[test]
+    fn tmux_keyword_and_stale_events_convert_to_typed_bodies() {
+        let keyword = from_incoming_event(&IncomingEvent::new(
+            "tmux.keyword",
+            json!({
+                "session": "hermes-agent",
+                "window": "main",
+                "pane": "%1",
+                "keyword": "FAILED",
+                "line": "build FAILED at deterministic fixture",
+                "line_chars": 37
+            }),
+        ))
+        .unwrap();
+
+        assert_eq!(keyword.source, "tmux");
+        assert_eq!(keyword.canonical_kind(), "tmux.keyword");
+        assert_eq!(keyword.metadata.priority, EventPriority::Low);
+        match keyword.body {
+            EventBody::TmuxKeyword(body) => {
+                assert_eq!(body.session, "hermes-agent");
+                assert_eq!(body.window.as_deref(), Some("main"));
+                assert_eq!(body.pane.as_deref(), Some("%1"));
+                assert_eq!(body.keyword, "FAILED");
+                assert_eq!(body.line, "build FAILED at deterministic fixture");
+                assert_eq!(body.line_chars, 37);
+            }
+            other => panic!("expected TmuxKeyword, got {other:?}"),
+        }
+
+        let stale = from_incoming_event(&IncomingEvent::new(
+            "tmux.stale",
+            json!({
+                "session": "hermes-agent",
+                "window": "main",
+                "pane": "%2",
+                "minutes": 15,
+                "last_line": "waiting for agent output",
+                "last_line_chars": 24
+            }),
+        ))
+        .unwrap();
+
+        assert_eq!(stale.source, "tmux");
+        assert_eq!(stale.canonical_kind(), "tmux.stale");
+        assert_eq!(stale.metadata.priority, EventPriority::High);
+        match stale.body {
+            EventBody::TmuxStale(body) => {
+                assert_eq!(body.session, "hermes-agent");
+                assert_eq!(body.window.as_deref(), Some("main"));
+                assert_eq!(body.pane, "%2");
+                assert_eq!(body.minutes, 15);
+                assert_eq!(body.last_line, "waiting for agent output");
+                assert_eq!(body.last_line_chars, 24);
+            }
+            other => panic!("expected TmuxStale, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn tmux_events_reject_empty_multiline_and_zero_minute_fields() {
+        let empty_session = from_incoming_event(&IncomingEvent::new(
+            "tmux.keyword",
+            json!({
+                "session": "",
+                "keyword": "FAILED",
+                "line": "build failed"
+            }),
+        ))
+        .unwrap_err()
+        .to_string();
+        assert!(empty_session.contains("session must not be empty"));
+
+        let multiline = from_incoming_event(&IncomingEvent::new(
+            "tmux.keyword",
+            json!({
+                "session": "hermes-agent",
+                "keyword": "FAILED",
+                "line": "build failed\nfull pane capture should not render"
+            }),
+        ))
+        .unwrap_err()
+        .to_string();
+        assert!(multiline.contains("line must be a single line"));
+
+        let zero_minutes = from_incoming_event(&IncomingEvent::new(
+            "tmux.stale",
+            json!({
+                "session": "hermes-agent",
+                "pane": "%2",
+                "minutes": 0,
+                "last_line": "waiting"
+            }),
+        ))
+        .unwrap_err()
+        .to_string();
+        assert!(zero_minutes.contains("minutes must be greater than 0"));
+    }
+
+    #[test]
     fn unknown_event_becomes_custom_without_losing_payload() {
         let event = IncomingEvent::new(
             "plugin.custom",
@@ -946,6 +1093,8 @@ mod tests {
             EventBody::GithubPullRequest(_) => "GithubPullRequest",
             EventBody::GithubCheck(_) => "GithubCheck",
             EventBody::GithubRelease(_) => "GithubRelease",
+            EventBody::TmuxKeyword(_) => "TmuxKeyword",
+            EventBody::TmuxStale(_) => "TmuxStale",
             EventBody::HermesGatewayStarted(_) => "HermesGatewayStarted",
             EventBody::HermesSessionStarted(_) => "HermesSessionStarted",
             EventBody::HermesSessionFinished(_) => "HermesSessionFinished",

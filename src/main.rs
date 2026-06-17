@@ -4,6 +4,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use hermeship::cli::{
     Cli, Commands, ConfigCommand, GitCommands, GithubCommands, HermesCommands, ReleaseCommands,
+    TmuxCommands,
 };
 use hermeship::client::DaemonClient;
 use hermeship::config::AppConfig;
@@ -139,6 +140,18 @@ async fn real_main() -> Result<()> {
             print_event_accepted("github", &accepted);
             Ok(())
         }
+        Commands::Tmux { command } => match tmux_command_into_event(command)? {
+            TmuxCommandResult::Event(event) => {
+                let config = AppConfig::load_or_default(&config_path)?;
+                let accepted = submit_event(&config, event).await?;
+                print_event_accepted("tmux", &accepted);
+                Ok(())
+            }
+            TmuxCommandResult::Report(report) => {
+                print!("{report}");
+                Ok(())
+            }
+        },
         Commands::Install(args) => {
             let home = args.home.unwrap_or_else(hermeship::lifecycle::default_home);
             let config_path = lifecycle_config_path(config_path, config_was_overridden, &home);
@@ -381,6 +394,78 @@ fn github_command_into_event(command: GithubCommands) -> Result<IncomingEvent> {
     }
 }
 
+enum TmuxCommandResult {
+    Event(IncomingEvent),
+    Report(String),
+}
+
+impl TmuxCommandResult {
+    #[cfg(test)]
+    fn unwrap_event(self) -> IncomingEvent {
+        match self {
+            Self::Event(event) => event,
+            Self::Report(report) => panic!("expected tmux event, got report: {report}"),
+        }
+    }
+
+    #[cfg(test)]
+    fn unwrap_report(self) -> String {
+        match self {
+            Self::Report(report) => report,
+            Self::Event(event) => panic!("expected tmux report, got event: {}", event.kind),
+        }
+    }
+}
+
+fn tmux_command_into_event(command: TmuxCommands) -> Result<TmuxCommandResult> {
+    match command {
+        TmuxCommands::Keyword(args) => {
+            hermeship::source::tmux::keyword_event(hermeship::source::tmux::TmuxKeywordInput {
+                session: args.session,
+                window: args.window,
+                pane: args.pane,
+                keyword: args.keyword,
+                line: args.line,
+                channel: args.channel,
+            })
+            .map(TmuxCommandResult::Event)
+        }
+        TmuxCommands::Stale(args) => {
+            hermeship::source::tmux::stale_event(hermeship::source::tmux::TmuxStaleInput {
+                session: args.session,
+                window: args.window,
+                pane: args.pane,
+                minutes: args.minutes,
+                last_line: args.last_line,
+                channel: args.channel,
+            })
+            .map(TmuxCommandResult::Event)
+        }
+        TmuxCommands::Watch(args) => {
+            let plan = hermeship::source::tmux::watch_plan_from_output(
+                hermeship::source::tmux::TmuxWatchInput {
+                    session: args.session,
+                    keywords: args.keywords,
+                    stale_minutes: args.stale_minutes,
+                    channel: args.channel,
+                    tmux_output: args.tmux_output.unwrap_or_default(),
+                },
+            )?;
+            Ok(TmuxCommandResult::Report(
+                hermeship::source::tmux::format_watch_plan(&plan),
+            ))
+        }
+        TmuxCommands::List(args) => {
+            let panes = hermeship::source::tmux::parse_tmux_panes_output(
+                &args.tmux_output.unwrap_or_default(),
+            )?;
+            Ok(TmuxCommandResult::Report(
+                hermeship::source::tmux::format_pane_list(&panes),
+            ))
+        }
+    }
+}
+
 fn path_to_string(path: std::path::PathBuf) -> String {
     path.to_string_lossy().into_owned()
 }
@@ -455,6 +540,7 @@ mod tests {
     use super::{
         VERSION, explain_event, git_command_into_event, github_command_into_event,
         read_payload_arg, read_setup_token, submit_event, submit_hermes_hook,
+        tmux_command_into_event,
     };
 
     #[tokio::test]
@@ -676,6 +762,155 @@ mod tests {
             }
             other => panic!("expected GithubIssue, got {other:?}"),
         }
+    }
+
+    #[tokio::test]
+    async fn daemon_tmux_keyword_command_posts_tmux_event_to_daemon() {
+        let cli = Cli::parse_from([
+            "hermeship",
+            "tmux",
+            "keyword",
+            "--session",
+            "hermes-agent",
+            "--window",
+            "main",
+            "--pane",
+            "%1",
+            "--keyword",
+            "FAILED",
+            "--line",
+            "build FAILED at deterministic fixture",
+            "--channel",
+            "ops",
+        ]);
+        let Some(Commands::Tmux { command }) = cli.command else {
+            panic!("expected tmux command");
+        };
+        let event = tmux_command_into_event(command).unwrap().unwrap_event();
+
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config.clone(), queue_tx).await;
+        let mut config = config;
+        config.daemon.base_url = Some(base_url);
+
+        let accepted = submit_event(&config, event).await.unwrap();
+
+        assert!(accepted.queued);
+        assert_eq!(accepted.canonical_kind, "tmux.keyword");
+        assert_eq!(accepted.queue.pending, 1);
+
+        let envelope = queue_rx.try_recv().unwrap();
+        server.abort();
+
+        assert_eq!(envelope.canonical_kind(), "tmux.keyword");
+        match envelope.body {
+            EventBody::TmuxKeyword(body) => {
+                assert_eq!(body.session, "hermes-agent");
+                assert_eq!(body.window.as_deref(), Some("main"));
+                assert_eq!(body.pane.as_deref(), Some("%1"));
+                assert_eq!(body.keyword, "FAILED");
+                assert_eq!(body.line, "build FAILED at deterministic fixture");
+            }
+            other => panic!("expected TmuxKeyword, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn daemon_tmux_stale_command_posts_tmux_event_to_daemon() {
+        let cli = Cli::parse_from([
+            "hermeship",
+            "tmux",
+            "stale",
+            "--session",
+            "hermes-agent",
+            "--window",
+            "main",
+            "--pane",
+            "%2",
+            "--minutes",
+            "15",
+            "--last-line",
+            "waiting for agent output",
+            "--channel",
+            "ops",
+        ]);
+        let Some(Commands::Tmux { command }) = cli.command else {
+            panic!("expected tmux command");
+        };
+        let event = tmux_command_into_event(command).unwrap().unwrap_event();
+
+        let config = AppConfig::default();
+        let (queue_tx, mut queue_rx) = mpsc::channel(8);
+        let (base_url, server) = spawn_test_daemon(config.clone(), queue_tx).await;
+        let mut config = config;
+        config.daemon.base_url = Some(base_url);
+
+        let accepted = submit_event(&config, event).await.unwrap();
+
+        assert!(accepted.queued);
+        assert_eq!(accepted.canonical_kind, "tmux.stale");
+        assert_eq!(accepted.queue.pending, 1);
+
+        let envelope = queue_rx.try_recv().unwrap();
+        server.abort();
+
+        assert_eq!(envelope.canonical_kind(), "tmux.stale");
+        assert_eq!(envelope.metadata.channel_hint.as_deref(), Some("ops"));
+        match envelope.body {
+            EventBody::TmuxStale(body) => {
+                assert_eq!(body.session, "hermes-agent");
+                assert_eq!(body.window.as_deref(), Some("main"));
+                assert_eq!(body.pane, "%2");
+                assert_eq!(body.minutes, 15);
+                assert_eq!(body.last_line, "waiting for agent output");
+            }
+            other => panic!("expected TmuxStale, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn tmux_watch_and_list_commands_render_deterministic_reports() {
+        let watch = Cli::parse_from([
+            "hermeship",
+            "tmux",
+            "watch",
+            "--session",
+            "hermes-agent",
+            "--keywords",
+            "FAILED,complete",
+            "--stale-minutes",
+            "10",
+            "--channel",
+            "ops",
+            "--tmux-output",
+            "hermes-agent\tmain\t%1\t0\tbash\tready\nother\tlogs\t%3\t1\tsh\tdone",
+        ]);
+        let Some(Commands::Tmux { command }) = watch.command else {
+            panic!("expected tmux command");
+        };
+        let report = tmux_command_into_event(command).unwrap().unwrap_report();
+
+        assert!(report.contains("tmux watch planned: hermes-agent"));
+        assert!(report.contains("keywords=FAILED,complete"));
+        assert!(report.contains("stale_minutes=10"));
+        assert!(report.contains("pane=%1"));
+        assert!(!report.contains("other\tlogs"));
+
+        let list = Cli::parse_from([
+            "hermeship",
+            "tmux",
+            "list",
+            "--tmux-output",
+            "hermes-agent\tmain\t%1\t0\tbash\tready",
+        ]);
+        let Some(Commands::Tmux { command }) = list.command else {
+            panic!("expected tmux command");
+        };
+        let report = tmux_command_into_event(command).unwrap().unwrap_report();
+
+        assert!(report.contains("SESSION\tWINDOW\tPANE\tDEAD\tHAS_COMMAND\tLAST_LINE_CHARS"));
+        assert!(report.contains("hermes-agent\tmain\t%1\tfalse\ttrue\t5"));
     }
 
     #[tokio::test]

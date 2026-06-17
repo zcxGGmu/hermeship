@@ -388,6 +388,20 @@ fn insert_body_fields(context: &mut BTreeMap<String, String>, body: &EventBody) 
             insert_context(context, "repo_name", Some(body.repo.as_str()));
             insert_context(context, "tag", Some(body.tag.as_str()));
         }
+        EventBody::TmuxKeyword(body) => {
+            insert_context(context, "session", Some(body.session.as_str()));
+            insert_context(context, "session_name", Some(body.session.as_str()));
+            insert_context(context, "window", body.window.as_deref());
+            insert_context(context, "pane", body.pane.as_deref());
+            insert_context(context, "keyword", Some(body.keyword.as_str()));
+        }
+        EventBody::TmuxStale(body) => {
+            insert_context(context, "session", Some(body.session.as_str()));
+            insert_context(context, "session_name", Some(body.session.as_str()));
+            insert_context(context, "window", body.window.as_deref());
+            insert_context(context, "pane", Some(body.pane.as_str()));
+            insert_context(context, "minutes", Some(body.minutes.to_string().as_str()));
+        }
         _ => {}
     }
 }
@@ -782,6 +796,121 @@ mod tests {
         assert_eq!(
             explanation.routes[0].filter_results[0].actual.as_deref(),
             Some("other")
+        );
+    }
+
+    #[test]
+    fn tmux_route_filters_match_session_window_pane_and_keyword() {
+        let config = AppConfig {
+            routes: vec![
+                RouteRule {
+                    event: "tmux.*".to_string(),
+                    filter: BTreeMap::from([
+                        ("session".to_string(), "hermes-*".to_string()),
+                        ("window".to_string(), "main".to_string()),
+                        ("pane".to_string(), "%1".to_string()),
+                        ("keyword".to_string(), "FAILED".to_string()),
+                    ]),
+                    channel: Some("tmux-alerts".to_string()),
+                    ..RouteRule::default()
+                },
+                RouteRule {
+                    event: "tmux.*".to_string(),
+                    filter: BTreeMap::from([("keyword".to_string(), "complete".to_string())]),
+                    channel: Some("done".to_string()),
+                    ..RouteRule::default()
+                },
+            ],
+            ..AppConfig::default()
+        };
+        let envelope = envelope(
+            "tmux.keyword",
+            json!({
+                "session": "hermes-agent",
+                "window": "main",
+                "pane": "%1",
+                "keyword": "FAILED",
+                "line": "build FAILED at deterministic fixture"
+            }),
+        );
+
+        let explanation = Router::new(config).explain(&envelope);
+
+        assert_eq!(explanation.canonical_kind, "tmux.keyword");
+        assert_eq!(explanation.route_candidates, vec!["tmux.keyword", "tmux.*"]);
+        assert_eq!(explanation.deliveries.len(), 1);
+        assert_eq!(
+            explanation.deliveries[0].target,
+            SinkTarget::DiscordChannel("tmux-alerts".to_string())
+        );
+        assert!(explanation.routes[0].matched);
+        assert_eq!(
+            explanation.routes[0].filter_results[0].actual.as_deref(),
+            Some("FAILED")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[1].actual.as_deref(),
+            Some("%1")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[2].actual.as_deref(),
+            Some("hermes-agent")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[3].actual.as_deref(),
+            Some("main")
+        );
+        assert_eq!(
+            explanation.routes[1].skipped_reason.as_deref(),
+            Some("filter mismatch")
+        );
+    }
+
+    #[test]
+    fn tmux_stale_route_filters_match_session_pane_and_minutes() {
+        let config = AppConfig {
+            routes: vec![RouteRule {
+                event: "tmux.stale".to_string(),
+                filter: BTreeMap::from([
+                    ("session".to_string(), "hermes-agent".to_string()),
+                    ("pane".to_string(), "%2".to_string()),
+                    ("minutes".to_string(), "15".to_string()),
+                ]),
+                channel: Some("tmux-stale".to_string()),
+                ..RouteRule::default()
+            }],
+            ..AppConfig::default()
+        };
+        let envelope = envelope(
+            "tmux.stale",
+            json!({
+                "session": "hermes-agent",
+                "window": "main",
+                "pane": "%2",
+                "minutes": 15,
+                "last_line": "waiting for agent output"
+            }),
+        );
+
+        let explanation = Router::new(config).explain(&envelope);
+
+        assert_eq!(explanation.canonical_kind, "tmux.stale");
+        assert_eq!(explanation.deliveries.len(), 1);
+        assert_eq!(
+            explanation.deliveries[0].target,
+            SinkTarget::DiscordChannel("tmux-stale".to_string())
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[0].actual.as_deref(),
+            Some("15")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[1].actual.as_deref(),
+            Some("%2")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[2].actual.as_deref(),
+            Some("hermes-agent")
         );
     }
 

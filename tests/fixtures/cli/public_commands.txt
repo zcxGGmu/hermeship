@@ -17,6 +17,10 @@ github issue-opened --owner posp --repo hermeship --number 42 --title "Add deter
 github pr-opened --owner posp --repo hermeship --number 17 --title "Ship GitHub source" --branch codex/milestone-8-github --base-branch main --commit 1234567890abcdef1234567890abcdef12345678 --channel ops
 github check-failed --owner posp --repo hermeship --workflow ci --status failure --branch main --commit abcdef1234567890abcdef1234567890abcdef12 --title "cargo test failed" --channel ops
 github release-published --owner posp --repo hermeship --tag v0.1.0 --title "Hermeship v0.1.0" --author synthetic-user --channel ops
+tmux keyword --session hermes-agent --window main --pane %1 --keyword FAILED --line "build FAILED at deterministic fixture" --channel ops
+tmux stale --session hermes-agent --window main --pane %2 --minutes 15 --last-line "waiting for agent output" --channel ops
+tmux watch --session hermes-agent --keywords FAILED,complete --stale-minutes 10 --channel ops --tmux-output "hermes-agent	main	%1	0	bash	ready"
+tmux list --tmux-output "hermes-agent	main	%1	0	bash	ready"
 install --dry-run
 uninstall --remove-config --remove-state --remove-hooks --hermes-home /tmp/hermeship-test-home --dry-run
 release preflight 0.1.0

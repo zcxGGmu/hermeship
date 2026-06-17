@@ -1,22 +1,22 @@
-# Task: Milestone 8.3 - Tmux Source 本地 deterministic parity
+# Task: Milestone 8.4 - Cron 与 Memory Scaffold
 
-更新时间：2026-06-17 Milestone 8.2 已完成，Milestone 8.3 待执行
+更新时间：2026-06-17 Milestone 8.3 已完成，下一入口为 Milestone 8.4
 
-本文件是当前开发工作台。下次启动应从 Milestone 8.3 Tmux Source 继续。Hermeship 仍然是 Hermes-native daemon-first event router，不调用 clawhip runtime，不依赖运行中的 clawhip daemon。
+本文件是当前开发工作台。下次启动应从 Milestone 8.4 Cron 与 Memory Scaffold 继续。Hermeship 仍然是 Hermes-native daemon-first event router，不调用 clawhip runtime，不依赖运行中的 clawhip daemon。
 
-本次边界：下一阶段只实现 Tmux Source 的本地 deterministic parity 路径；默认不依赖真实 tmux session，不执行真实 tmux watch，不执行 live verification，不实现 Slack sink，不启动 Hermes plugin/observer。
+本次边界：下一阶段只实现 cron 与 memory scaffold 的本地 deterministic 路径；默认不执行真实 live verification，不实现 Slack sink，不启动 Hermes plugin/observer。
 
 ## 当前基线
 
 - 当前分支：`codex/milestone-1-cli`。
-- 当前工作树：最近一次交接检查时 `git status --short --branch` 只显示分支行，工作树干净。
-- 文档交接提交：本文件当前更新提交；下次启动以 `git log -3 --oneline` 的最新 docs 提交为准。上一文档交接提交为 `9d8b05c docs: 更新 Hermeship Milestone 8.2 交接入口`。
-- 最新功能阶段提交：`91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归`。
-- 最新功能阶段：Milestone 8.2 GitHub Source 本地 deterministic parity 已完成并提交。
-- 最近提交基线（本次文档更新前）：`91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归`、`9d8b05c docs: 更新 Hermeship Milestone 8.2 交接入口`、`a6bd734 docs: 更新 Hermeship Milestone 8.1 交接状态`。
-- Milestone 0 到 Milestone 8.2 已完成并提交。
-- Milestone 8.3 到 Milestone 10 未完成。
-- 下一入口：Milestone 8.3 Tmux Source。
+- 当前工作树：本轮启动时 `git status --short --branch` 只显示分支行，工作树干净。
+- 文档交接提交：`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`。
+- 最新功能阶段提交：Milestone 8.3 Tmux Source 本地 deterministic parity 随当前提交完成；提交后用 `git log -3 --oneline` 确认实际提交号。
+- 最新功能阶段：Milestone 8.3 Tmux Source 本地 deterministic parity 已完成。
+- 最近提交基线：`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`、`91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归`、`9d8b05c docs: 更新 Hermeship Milestone 8.2 交接入口`。
+- Milestone 0 到 Milestone 8.3 已完成。
+- Milestone 8.4 到 Milestone 10 未完成。
+- 下一入口：Milestone 8.4 Cron 与 Memory Scaffold。
 
 ## 已完成能力
 
@@ -28,10 +28,10 @@
 - 已新增 `deploy/hermeship.service` 与 `docs/operations.md`；当前不真实执行 `systemctl` 或 `launchctl`。
 - 已实现 Git Source 本地 deterministic parity：`hermeship git commit`、`hermeship git branch-changed`、`git.commit` / `git.branch-changed` typed event、route metadata 和默认安全渲染。
 - 已实现 GitHub Source 本地 deterministic parity：`hermeship github issue-opened`、`hermeship github pr-opened`、`hermeship github check-failed`、`hermeship github release-published`、typed GitHub event、route metadata 和默认安全渲染。
+- 已实现 Tmux Source 本地 deterministic parity：`hermeship tmux keyword`、`hermeship tmux stale`、`hermeship tmux watch`、`hermeship tmux list`、typed tmux event、route metadata、默认渲染和隐私收紧的 watch/list 报表。
 
 ## 未完成范围
 
-- Milestone 8.3：tmux Source。
 - Milestone 8.4：cron 与 memory scaffold。
 - Milestone 9：README/architecture/event contract/live verification runbook 与首次 live check。
 - Milestone 10：Hermes plugin / observer 研究与可选 MVP。
@@ -42,24 +42,27 @@
 
 ## 当前执行计划
 
-- [ ] 复习启动文档与 lessons。
+- [x] 复习启动文档与 lessons。
   - `tasks/lessons.md`
   - `docs/development-status.md`
   - `docs/plans/2026-06-15-hermeship-development-plan.md`
   - `tasks/development-checklist.md`
   - `tasks/todo.md`
+  - 记录：已确认阶段完成后必须验证并提交、方案/清单分离、Hermeship 不是 thin adapter；下一阶段只做本地 deterministic cron/memory scaffold。
 
-- [ ] 确认当前分支、最新提交和未提交变更。
+- [x] 确认当前分支、最新提交和未提交变更。
   - 命令：`git status --short --branch`
   - 命令：`git log -3 --oneline`
   - 完成标准：确认仍在 `codex/milestone-1-cli`，并识别是否存在未提交变更。
+  - 记录：当前分支为 `codex/milestone-1-cli`；工作树启动时干净；最近提交为 `9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`、`91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归`、`9d8b05c docs: 更新 Hermeship Milestone 8.2 交接入口`。
 
-- [ ] 确认 Milestone 8.3 计划。
+- [x] 确认 Milestone 8.4 计划。
   - 文件：`tasks/development-checklist.md`
   - 入口：`## Milestone 8：clawhip 功能 Parity 扩展`
-  - 下一项：任务 8.3 Tmux Source。
+  - 下一项：任务 8.4 Cron 与 Memory Scaffold。
+  - 记录：下一阶段只实现 configured cron job run 与 memory scaffold 的本地 deterministic 路径；默认不执行真实 live verification、Slack sink 或 Hermes plugin/observer。
 
-- [ ] 阅读 Milestone 8.3 相关代码和 fixture 规则。
+- [ ] 阅读 Milestone 8.4 相关代码和 fixture 规则。
   - `src/cli.rs`
   - `src/main.rs`
   - `src/config.rs`
@@ -67,19 +70,34 @@
   - `src/event/`
   - `src/source/git.rs`
   - `src/source/github.rs`
+  - `src/source/tmux.rs`
   - `src/router.rs`
   - `src/render/`
   - `src/dispatch.rs`
+  - `src/lifecycle.rs`
   - `src/release_preflight.rs`
   - `tests/fixtures/README.md`
   - 方案文档中 CLI、source/parity、测试矩阵和发布章节。
 
-- [ ] 先写失败测试，再实现 Tmux Source 本地 deterministic parity。
-  - 新建：`src/source/tmux.rs`
-  - 覆盖：keyword、stale、watch/list 的本地 deterministic 形态；默认使用 fake tmux 输出，不依赖真实 tmux session。
+- [ ] 先写失败测试，再实现 Cron 与 Memory Scaffold 本地 deterministic 路径。
+  - 可能新建：`src/cron.rs`
+  - 可能新建：`src/memory.rs`
+  - 修改：`src/cli.rs`
+  - 修改：`src/main.rs`
+  - 可能修改：`src/config.rs`
+  - 修改：`src/release_preflight.rs`
+  - 修改：`tests/fixtures/cli/public_commands.txt`
+  - 可能更新：`docs/plans/2026-06-15-hermeship-development-plan.md`
+  - 覆盖：configured cron job run、本地 memory init/status scaffold；默认只使用本地 deterministic fixture。
+  - TDD 计划：
+    - 先新增 cron/memory CLI parse 与 public command fixture 测试。
+    - 再新增本地 deterministic cron job run 和 memory init/status 行为测试。
+    - 再新增 release preflight/docs 覆盖，避免公开命令漂移。
+    - 运行 `cargo test cron`、`cargo test memory` 确认 Red 后实现最小代码。
 
-- [ ] 运行 Milestone 8.3 验证。
-  - `cargo test tmux`
+- [ ] 运行 Milestone 8.4 验证。
+  - `cargo test cron`
+  - `cargo test memory`
   - `cargo test release_preflight`
   - `cargo run -- release preflight 0.1.0`
   - `cargo fmt --all -- --check`
@@ -188,6 +206,16 @@
 
 ## Review
 
+- Milestone 8.3 Tmux Source 本地 deterministic parity 已实现，随当前阶段提交完成。
+- 已新增 `src/source/tmux.rs`，提供 keyword/stale 的本地 `IncomingEvent` 构造，以及 watch/list 对 fake tmux 输出的 deterministic 解析和报表；本阶段不调用真实 `tmux`、不读取真实 session、不启动真实 watch loop。
+- 已新增 typed tmux body，并让 `tmux.keyword` / `tmux.stale` 进入现有 `IncomingEvent -> EventEnvelope -> Router -> Renderer -> Sink` 管线；`tmux.stale` 使用 high priority。
+- 已接入 CLI：`hermeship tmux keyword`、`hermeship tmux stale`、`hermeship tmux watch`、`hermeship tmux list`，并更新公开命令 fixture、README 示例与 release preflight 检查。
+- 默认 renderer 输出 tmux 安全摘要；raw JSON 不展开 pane capture、buffer、完整 pane output、history、token、cookie 或 secret。
+- 已根据代码审查收紧 watch/list 报表：不再原样输出 command 或 last_line，只显示 command 是否存在和 last_line 字符数，并补充 token/path/authorization 回归测试。
+- 已验证：`cargo test tmux`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
+- 当前交接下一入口：Milestone 8.4 Cron 与 Memory Scaffold；继续默认使用本地 deterministic fixture。
+- 未进入范围：真实 tmux session 读取、真实 tmux watch、cron/memory 以外能力、live verification、Slack sink、Hermes plugin/observer。
+
 - Milestone 8.2 GitHub Source 本地 deterministic parity 已实现并提交：`91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归`。
 - 已新增 `src/source/github.rs`，提供 issue、PR、check/CI、release 的本地 `IncomingEvent` 构造；本阶段不访问真实 GitHub API、不依赖外网、不读取 token 或 webhook secret。
 - 已新增 typed GitHub body，并让 `github.issue-opened`、`github.pr-opened`、`github.check-failed`、`github.release-published` 进入现有 `IncomingEvent -> EventEnvelope -> Router -> Renderer -> Sink` 管线。
@@ -195,7 +223,7 @@
 - 默认 renderer 输出 GitHub 安全摘要；raw JSON 不展开完整 issue/PR body、URL、provider response、token、cookie 或 secret。
 - 已根据代码审查补充并修复 GitHub route metadata poisoning 回归：router filter 中的 `repo_name` 使用 typed body 的已校验 repo 覆盖原始 payload metadata。
 - 已验证：`cargo test github`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
-- 当前交接下一入口：Milestone 8.3 Tmux Source；继续默认使用本地 deterministic fixture，不依赖真实 tmux session。
+- 当时交接下一入口：Milestone 8.3 Tmux Source；继续默认使用本地 deterministic fixture，不依赖真实 tmux session。
 - 未进入范围：真实 GitHub API source、GitHub webhook receiver、GitHub credential handling、真实 git polling source、tmux source、cron、memory、live verification、Slack sink、Hermes plugin/observer。
 
 - Milestone 8.1 Git Source 本地 deterministic parity 已完成并提交：`1536b6a feat: 增加 Git Source 本地事件路径`。

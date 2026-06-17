@@ -2,7 +2,7 @@
 
 Hermeship is a Hermes-native event-to-channel notification router. It keeps notification delivery outside Hermes gateway sessions so lifecycle events can reach Discord, Slack, webhooks, or other sinks without polluting the agent conversation context.
 
-The project has completed Milestone 8.1. The Rust CLI skeleton, configuration model, repository quality gates, event model, privacy sanitization, daemon HTTP ingress, Hermes hook ingress, router, renderer, dispatcher, fake sink, Discord sink, sink failure handling, local daemon-to-fake-sink smoke coverage, Hermes hook bridge installation, local lifecycle CLI, release preflight, and deterministic Git source CLI are implemented. Live verification, Slack sink, GitHub/tmux parity, cron/memory scaffold, and Hermes plugin/observer work are still pending.
+The project has completed Milestone 8.3. The Rust CLI skeleton, configuration model, repository quality gates, event model, privacy sanitization, daemon HTTP ingress, Hermes hook ingress, router, renderer, dispatcher, fake sink, Discord sink, sink failure handling, local daemon-to-fake-sink smoke coverage, Hermes hook bridge installation, local lifecycle CLI, release preflight, and deterministic Git, GitHub, and tmux source CLI paths are implemented. Live verification, Slack sink, cron/memory scaffold, and Hermes plugin/observer work are still pending.
 
 ## Project Direction
 
@@ -102,6 +102,14 @@ hermeship hermes hook --provider gateway --payload '{"event":"agent:start"}'
 hermeship hermes install-hooks --home ~/.hermes --force
 hermeship git commit --repo hermeship --branch main --commit <sha> --summary "ship git source"
 hermeship git branch-changed --repo hermeship --old-branch main --new-branch codex/milestone-8-git
+hermeship github issue-opened --owner posp --repo hermeship --number 42 --title "Add deterministic GitHub source"
+hermeship github pr-opened --owner posp --repo hermeship --number 17 --title "Ship GitHub source" --branch codex/milestone-8-github
+hermeship github check-failed --owner posp --repo hermeship --workflow ci --status failure --branch main
+hermeship github release-published --owner posp --repo hermeship --tag v0.1.0
+hermeship tmux keyword --session hermes-agent --keyword FAILED --line "build FAILED at deterministic fixture"
+hermeship tmux stale --session hermes-agent --pane %2 --minutes 15 --last-line "waiting for agent output"
+hermeship tmux watch --session hermes-agent --keywords FAILED,complete --stale-minutes 10 --tmux-output $'hermes-agent\tmain\t%1\t0\tbash\tready'
+hermeship tmux list --tmux-output $'hermes-agent\tmain\t%1\t0\tbash\tready'
 hermeship install
 hermeship uninstall
 hermeship release preflight <version>
@@ -156,7 +164,7 @@ Current state:
 - Architecture and test strategy are documented in `docs/plans/2026-06-15-hermeship-development-plan.md`.
 - Execution progress is tracked in `tasks/development-checklist.md`.
 - Session handoff status is tracked in `docs/development-status.md`.
-- Milestone 0 through Milestone 8.1 are complete.
+- Milestone 0 through Milestone 8.3 are complete.
 - Milestone 1 completed the Rust project skeleton, CLI command tree, configuration model, repository quality gates, and fixture baseline.
 - Milestone 2 completed `IncomingEvent`, typed `EventEnvelope`, Hermes canonical mapping, and privacy sanitization.
 - Milestone 3 completed daemon `/health`, `/event`, `/api/hermes/hook`, bounded queue ingress, and daemon client POST paths.
@@ -165,5 +173,7 @@ Current state:
 - Milestone 6 completed Hermes gateway hook bridge templates, install/uninstall, safe marker-based rollback, and fail-open handler smoke coverage.
 - Milestone 7 completed local install/setup/uninstall lifecycle CLI, service template documentation, and local release preflight.
 - Milestone 8.1 completed deterministic Git source CLI events, typed Git event conversion, route metadata, and default rendering.
+- Milestone 8.2 completed deterministic GitHub source CLI events, typed GitHub event conversion, route metadata, and default rendering.
+- Milestone 8.3 completed deterministic tmux source CLI events, typed tmux event conversion, route metadata, default rendering, and privacy-scoped watch/list reports.
 
-Next implementation phase is Milestone 8.2: GitHub source parity. Keep live verification, Slack sink, and Hermes plugin/observer out of Milestone 8 unless the checklist is explicitly updated.
+Next implementation phase is Milestone 8.4: cron and memory scaffold. Keep live verification, Slack sink, and Hermes plugin/observer out of Milestone 8 unless the checklist is explicitly updated.

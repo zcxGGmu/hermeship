@@ -5,7 +5,7 @@ use crate::config::{MessageFormat, PrivacyConfig};
 use crate::event::{
     CustomEvent, EventBody, EventEnvelope, EventMetadata, GitBranchChangedEvent, GitCommitEvent,
     GithubCheckEvent, GithubIssueEvent, GithubPullRequestEvent, GithubReleaseEvent,
-    HermesAgentEvent, HermesGatewayEvent, HermesSessionEvent,
+    HermesAgentEvent, HermesGatewayEvent, HermesSessionEvent, TmuxKeywordEvent, TmuxStaleEvent,
 };
 use crate::privacy::sanitize_payload;
 use crate::router::{ResolvedDelivery, SinkTarget};
@@ -157,6 +157,8 @@ fn detail_parts(event: &EventEnvelope) -> Vec<String> {
         EventBody::GithubPullRequest(body) => github_pull_request_parts(body),
         EventBody::GithubCheck(body) => github_check_parts(body),
         EventBody::GithubRelease(body) => github_release_parts(body),
+        EventBody::TmuxKeyword(body) => tmux_keyword_parts(body),
+        EventBody::TmuxStale(body) => tmux_stale_parts(body),
         EventBody::HermesGatewayStarted(body) => gateway_parts(body),
         EventBody::HermesSessionStarted(body)
         | EventBody::HermesSessionFinished(body)
@@ -234,6 +236,26 @@ fn github_release_parts(body: &GithubReleaseEvent) -> Vec<String> {
     push_part(&mut parts, "tag", Some(body.tag.as_str()));
     push_part(&mut parts, "title", body.title.as_deref());
     push_part(&mut parts, "author", body.author.as_deref());
+    parts
+}
+
+fn tmux_keyword_parts(body: &TmuxKeywordEvent) -> Vec<String> {
+    let mut parts = Vec::new();
+    push_part(&mut parts, "session", Some(body.session.as_str()));
+    push_part(&mut parts, "window", body.window.as_deref());
+    push_part(&mut parts, "pane", body.pane.as_deref());
+    push_part(&mut parts, "keyword", Some(body.keyword.as_str()));
+    push_part(&mut parts, "line", Some(body.line.as_str()));
+    parts
+}
+
+fn tmux_stale_parts(body: &TmuxStaleEvent) -> Vec<String> {
+    let mut parts = Vec::new();
+    push_part(&mut parts, "session", Some(body.session.as_str()));
+    push_part(&mut parts, "window", body.window.as_deref());
+    push_part(&mut parts, "pane", Some(body.pane.as_str()));
+    push_u64_part(&mut parts, "minutes", Some(body.minutes));
+    push_part(&mut parts, "last_line", Some(body.last_line.as_str()));
     parts
 }
 
@@ -358,6 +380,8 @@ fn body_json(body: &EventBody) -> Value {
         EventBody::GithubPullRequest(body) => github_pull_request_json(body),
         EventBody::GithubCheck(body) => github_check_json(body),
         EventBody::GithubRelease(body) => github_release_json(body),
+        EventBody::TmuxKeyword(body) => tmux_keyword_json(body),
+        EventBody::TmuxStale(body) => tmux_stale_json(body),
         EventBody::HermesGatewayStarted(body) => json!({
             "kind": "hermes.gateway.started",
             "provider": body.provider,
@@ -454,6 +478,30 @@ fn github_release_json(body: &GithubReleaseEvent) -> Value {
         "tag": body.tag,
         "title": body.title,
         "author": body.author,
+    })
+}
+
+fn tmux_keyword_json(body: &TmuxKeywordEvent) -> Value {
+    json!({
+        "kind": "tmux.keyword",
+        "session": body.session,
+        "window": body.window,
+        "pane": body.pane,
+        "keyword": body.keyword,
+        "line": body.line,
+        "line_chars": body.line_chars,
+    })
+}
+
+fn tmux_stale_json(body: &TmuxStaleEvent) -> Value {
+    json!({
+        "kind": "tmux.stale",
+        "session": body.session,
+        "window": body.window,
+        "pane": body.pane,
+        "minutes": body.minutes,
+        "last_line": body.last_line,
+        "last_line_chars": body.last_line_chars,
     })
 }
 
@@ -995,6 +1043,106 @@ mod tests {
             "github check failed (repo=hermeship, owner=posp, workflow=ci, status=failure, branch=main, commit=abcdef1, title=cargo test failed)"
         );
         assert!(!rendered.content.contains("synthetic provider response"));
+    }
+
+    #[test]
+    fn render_tmux_keyword_compact_and_raw_without_capture_leaks() {
+        let event = sanitized_envelope(
+            "tmux.keyword",
+            json!({
+                "session": "hermes-agent",
+                "window": "main",
+                "pane": "%1",
+                "keyword": "FAILED",
+                "line": "build FAILED at deterministic fixture",
+                "line_chars": 37,
+                "pane_capture": "full synthetic pane capture should not render",
+                "buffer": "synthetic scrollback should not render",
+                "token": "synthetic-token-should-not-render"
+            }),
+        );
+
+        let rendered = DefaultRenderer
+            .render(&event, &delivery(MessageFormat::Compact))
+            .unwrap();
+
+        assert_eq!(
+            rendered.content,
+            "tmux keyword (session=hermes-agent, window=main, pane=%1, keyword=FAILED, line=build FAILED at deterministic fixture)"
+        );
+
+        let raw = DefaultRenderer
+            .render(&event, &delivery(MessageFormat::Raw))
+            .unwrap();
+        let raw_json: Value = serde_json::from_str(&raw.content).unwrap();
+
+        assert_eq!(raw_json["event"], json!("tmux.keyword"));
+        assert_eq!(raw_json["body"]["session"], json!("hermes-agent"));
+        assert_eq!(raw_json["body"]["keyword"], json!("FAILED"));
+        assert_eq!(
+            raw_json["body"]["line"],
+            json!("build FAILED at deterministic fixture")
+        );
+        for forbidden in [
+            "full synthetic pane capture should not render",
+            "synthetic scrollback should not render",
+            "synthetic-token-should-not-render",
+        ] {
+            assert!(
+                !raw.content.contains(forbidden),
+                "tmux raw render leaked `{forbidden}`"
+            );
+        }
+    }
+
+    #[test]
+    fn render_tmux_stale_compact_and_raw_without_full_pane_output() {
+        let event = sanitized_envelope(
+            "tmux.stale",
+            json!({
+                "session": "hermes-agent",
+                "window": "main",
+                "pane": "%2",
+                "minutes": 15,
+                "last_line": "waiting for agent output",
+                "last_line_chars": 24,
+                "pane_output": "full synthetic pane output should not render",
+                "history": "synthetic history should not render",
+                "secret": "synthetic-secret-should-not-render"
+            }),
+        );
+
+        let rendered = DefaultRenderer
+            .render(&event, &delivery(MessageFormat::Compact))
+            .unwrap();
+
+        assert_eq!(
+            rendered.content,
+            "tmux stale (session=hermes-agent, window=main, pane=%2, minutes=15, last_line=waiting for agent output)"
+        );
+
+        let raw = DefaultRenderer
+            .render(&event, &delivery(MessageFormat::Raw))
+            .unwrap();
+        let raw_json: Value = serde_json::from_str(&raw.content).unwrap();
+
+        assert_eq!(raw_json["event"], json!("tmux.stale"));
+        assert_eq!(raw_json["priority"], json!("high"));
+        assert_eq!(raw_json["body"]["minutes"], json!(15));
+        assert_eq!(
+            raw_json["body"]["last_line"],
+            json!("waiting for agent output")
+        );
+        for forbidden in [
+            "full synthetic pane output should not render",
+            "synthetic history should not render",
+            "synthetic-secret-should-not-render",
+        ] {
+            assert!(
+                !raw.content.contains(forbidden),
+                "tmux raw render leaked `{forbidden}`"
+            );
+        }
     }
 
     fn sanitized_envelope(kind: &str, payload: Value) -> crate::event::EventEnvelope {

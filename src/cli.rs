@@ -76,6 +76,11 @@ pub enum Commands {
         #[command(subcommand)]
         command: GithubCommands,
     },
+    /// Emit or inspect local tmux source events using deterministic input.
+    Tmux {
+        #[command(subcommand)]
+        command: TmuxCommands,
+    },
     /// Install hermeship local files and service scaffolding.
     Install(InstallArgs),
     /// Uninstall hermeship local files and service scaffolding.
@@ -289,6 +294,88 @@ pub struct GithubReleaseArgs {
     pub channel: Option<String>,
 }
 
+#[derive(Debug, Clone, Subcommand)]
+pub enum TmuxCommands {
+    /// Emit a tmux keyword hit event.
+    Keyword(TmuxKeywordArgs),
+    /// Emit a tmux stale pane event.
+    Stale(TmuxStaleArgs),
+    /// Plan a tmux watch from fake tmux list output.
+    Watch(TmuxWatchArgs),
+    /// List panes from fake tmux list output.
+    List(TmuxListArgs),
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct TmuxKeywordArgs {
+    /// Tmux session name.
+    #[arg(long)]
+    pub session: String,
+    /// Tmux window name.
+    #[arg(long)]
+    pub window: Option<String>,
+    /// Tmux pane id.
+    #[arg(long)]
+    pub pane: Option<String>,
+    /// Keyword that matched.
+    #[arg(long)]
+    pub keyword: String,
+    /// One-line synthetic summary of the matching pane line.
+    #[arg(long)]
+    pub line: String,
+    /// Override the delivery channel.
+    #[arg(long)]
+    pub channel: Option<String>,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct TmuxStaleArgs {
+    /// Tmux session name.
+    #[arg(long)]
+    pub session: String,
+    /// Tmux window name.
+    #[arg(long)]
+    pub window: Option<String>,
+    /// Tmux pane id.
+    #[arg(long)]
+    pub pane: String,
+    /// Number of idle minutes before the stale event.
+    #[arg(long)]
+    pub minutes: u64,
+    /// One-line synthetic summary of the last observed pane line.
+    #[arg(long)]
+    pub last_line: String,
+    /// Override the delivery channel.
+    #[arg(long)]
+    pub channel: Option<String>,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct TmuxWatchArgs {
+    /// Tmux session name.
+    #[arg(long)]
+    pub session: String,
+    /// Keywords to watch, separated by commas.
+    #[arg(long, value_delimiter = ',')]
+    pub keywords: Vec<String>,
+    /// Number of idle minutes before a stale event would be generated.
+    #[arg(long, default_value_t = 10)]
+    pub stale_minutes: u64,
+    /// Override the delivery channel.
+    #[arg(long)]
+    pub channel: Option<String>,
+    /// Synthetic tmux pane listing. Format: session<TAB>window<TAB>pane<TAB>dead<TAB>command<TAB>last_line.
+    #[arg(long)]
+    pub tmux_output: Option<String>,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct TmuxListArgs {
+    /// Synthetic tmux pane listing. Format: session<TAB>window<TAB>pane<TAB>dead<TAB>command<TAB>last_line.
+    #[arg(long)]
+    pub tmux_output: Option<String>,
+}
+
 impl EventArgs {
     pub fn into_event(self) -> Result<IncomingEvent> {
         let mut channel = None;
@@ -497,6 +584,7 @@ mod tests {
 
     use super::{
         Cli, Commands, ConfigCommand, GitCommands, GithubCommands, HermesCommands, ReleaseCommands,
+        TmuxCommands,
     };
     use crate::events::MessageFormat;
 
@@ -817,6 +905,109 @@ mod tests {
     }
 
     #[test]
+    fn parses_tmux_keyword_stale_watch_and_list_commands() {
+        let keyword = Cli::parse_from([
+            "hermeship",
+            "tmux",
+            "keyword",
+            "--session",
+            "hermes-agent",
+            "--window",
+            "main",
+            "--pane",
+            "%1",
+            "--keyword",
+            "FAILED",
+            "--line",
+            "build FAILED at deterministic fixture",
+            "--channel",
+            "ops",
+        ]);
+        match keyword.command {
+            Some(Commands::Tmux {
+                command: TmuxCommands::Keyword(args),
+            }) => {
+                assert_eq!(args.session, "hermes-agent");
+                assert_eq!(args.window.as_deref(), Some("main"));
+                assert_eq!(args.pane.as_deref(), Some("%1"));
+                assert_eq!(args.keyword, "FAILED");
+                assert_eq!(args.line, "build FAILED at deterministic fixture");
+                assert_eq!(args.channel.as_deref(), Some("ops"));
+            }
+            other => panic!("expected tmux keyword command, got {other:?}"),
+        }
+
+        let stale = Cli::parse_from([
+            "hermeship",
+            "tmux",
+            "stale",
+            "--session",
+            "hermes-agent",
+            "--window",
+            "main",
+            "--pane",
+            "%2",
+            "--minutes",
+            "15",
+            "--last-line",
+            "waiting for agent output",
+            "--channel",
+            "ops",
+        ]);
+        assert!(matches!(
+            stale.command,
+            Some(Commands::Tmux {
+                command: TmuxCommands::Stale(args),
+            }) if args.session == "hermes-agent"
+                && args.window.as_deref() == Some("main")
+                && args.pane == "%2"
+                && args.minutes == 15
+                && args.last_line == "waiting for agent output"
+                && args.channel.as_deref() == Some("ops")
+        ));
+
+        let watch = Cli::parse_from([
+            "hermeship",
+            "tmux",
+            "watch",
+            "--session",
+            "hermes-agent",
+            "--keywords",
+            "FAILED,complete",
+            "--stale-minutes",
+            "10",
+            "--channel",
+            "ops",
+            "--tmux-output",
+            "hermes-agent\tmain\t%1\t0\tbash\tready",
+        ]);
+        assert!(matches!(
+            watch.command,
+            Some(Commands::Tmux {
+                command: TmuxCommands::Watch(args),
+            }) if args.session == "hermes-agent"
+                && args.keywords == vec!["FAILED", "complete"]
+                && args.stale_minutes == 10
+                && args.channel.as_deref() == Some("ops")
+                && args.tmux_output.as_deref() == Some("hermes-agent\tmain\t%1\t0\tbash\tready")
+        ));
+
+        let list = Cli::parse_from([
+            "hermeship",
+            "tmux",
+            "list",
+            "--tmux-output",
+            "hermes-agent\tmain\t%1\t0\tbash\tready",
+        ]);
+        assert!(matches!(
+            list.command,
+            Some(Commands::Tmux {
+                command: TmuxCommands::List(args),
+            }) if args.tmux_output.as_deref() == Some("hermes-agent\tmain\t%1\t0\tbash\tready")
+        ));
+    }
+
+    #[test]
     fn emit_args_construct_incoming_event_from_payload_and_flags() {
         let cli = Cli::parse_from([
             "hermeship",
@@ -1023,6 +1214,10 @@ mod tests {
             "github pr-opened",
             "github check-failed",
             "github release-published",
+            "tmux keyword",
+            "tmux stale",
+            "tmux watch",
+            "tmux list",
             "install",
             "uninstall",
             "release preflight",
