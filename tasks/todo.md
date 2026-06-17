@@ -11,9 +11,9 @@
 - 当前分支：`codex/milestone-1-cli`。
 - 当前工作树：本轮启动时 `git status --short --branch` 只显示分支行，工作树干净。
 - 文档交接提交：`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`。
-- 最新功能阶段提交：Milestone 8.3 Tmux Source 本地 deterministic parity 随当前提交完成；提交后用 `git log -3 --oneline` 确认实际提交号。
+- 最新功能阶段提交：`3745bb8 feat: 增加 tmux 事件 source`。
 - 最新功能阶段：Milestone 8.3 Tmux Source 本地 deterministic parity 已完成。
-- 最近提交基线：`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`、`91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归`、`9d8b05c docs: 更新 Hermeship Milestone 8.2 交接入口`。
+- 最近提交基线：`3745bb8 feat: 增加 tmux 事件 source`、`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`、`91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归`。
 - Milestone 0 到 Milestone 8.3 已完成。
 - Milestone 8.4 到 Milestone 10 未完成。
 - 下一入口：Milestone 8.4 Cron 与 Memory Scaffold。
@@ -54,7 +54,7 @@
   - 命令：`git status --short --branch`
   - 命令：`git log -3 --oneline`
   - 完成标准：确认仍在 `codex/milestone-1-cli`，并识别是否存在未提交变更。
-  - 记录：当前分支为 `codex/milestone-1-cli`；工作树启动时干净；最近提交为 `9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`、`91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归`、`9d8b05c docs: 更新 Hermeship Milestone 8.2 交接入口`。
+  - 记录：当前分支为 `codex/milestone-1-cli`；工作树启动时干净；最近提交为 `3745bb8 feat: 增加 tmux 事件 source`、`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`、`91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归`。
 
 - [x] 确认 Milestone 8.4 计划。
   - 文件：`tasks/development-checklist.md`
@@ -206,7 +206,7 @@
 
 ## Review
 
-- Milestone 8.3 Tmux Source 本地 deterministic parity 已实现，随当前阶段提交完成。
+- Milestone 8.3 Tmux Source 本地 deterministic parity 已实现并提交：`3745bb8 feat: 增加 tmux 事件 source`。
 - 已新增 `src/source/tmux.rs`，提供 keyword/stale 的本地 `IncomingEvent` 构造，以及 watch/list 对 fake tmux 输出的 deterministic 解析和报表；本阶段不调用真实 `tmux`、不读取真实 session、不启动真实 watch loop。
 - 已新增 typed tmux body，并让 `tmux.keyword` / `tmux.stale` 进入现有 `IncomingEvent -> EventEnvelope -> Router -> Renderer -> Sink` 管线；`tmux.stale` 使用 high priority。
 - 已接入 CLI：`hermeship tmux keyword`、`hermeship tmux stale`、`hermeship tmux watch`、`hermeship tmux list`，并更新公开命令 fixture、README 示例与 release preflight 检查。

@@ -618,7 +618,7 @@
   - 命令：`cargo test tmux`
 - [x] 提交任务 8.3。
   - commit：`feat: 增加 tmux 事件 source`
-  - 记录：本阶段随当前提交完成。
+  - 记录：`3745bb8 feat: 增加 tmux 事件 source`
 
 ### 任务 8.4：Cron 与 Memory Scaffold
 
@@ -732,6 +732,14 @@
 
 最新记录放在最上方。
 
+### 2026-06-17 - Milestone 8.3 完成后交接更新
+
+- [x] 已确认当前分支为 `codex/milestone-1-cli`，文档更新前工作树干净，最近提交为 `3745bb8 feat: 增加 tmux 事件 source`、`9cf4341 docs: 更新 Hermeship Milestone 8.3 交接状态`、`91d13d8 feat: 完成 GitHub Source 本地确定性路径并修复回归`。
+- [x] 已更新 `docs/development-status.md`，明确 Milestone 0 到 Milestone 8.3 已完成，Milestone 8.4 到 Milestone 10 未完成，下一入口为 Milestone 8.4 Cron 与 Memory Scaffold。
+- [x] 已更新 `tasks/todo.md`，将当前工作台切换并固定为 Milestone 8.4 Cron 与 Memory Scaffold。
+- [x] 已确认本次只做文档交接更新，不进入 Milestone 8.4 实现，不执行真实 live verification、Slack sink、真实 tmux watch 或 Hermes plugin/observer。
+- [x] 本次文档验证：`git diff --check`、状态文档一致性搜索、`cargo run -- release preflight 0.1.0`。
+
 ### 2026-06-17 - Milestone 8.3 Tmux Source 本地 deterministic parity
 
 - [x] 已复习 `tasks/lessons.md`、`docs/development-status.md`、方案文档、`tasks/development-checklist.md` 与 `tasks/todo.md`，并确认当前分支为 `codex/milestone-1-cli`。
@@ -746,7 +754,7 @@
 - [x] 已更新公开命令 fixture、release preflight 和 README/方案 CLI 示例，要求覆盖四个 tmux 公开命令；README watch/list 示例改为可复制的 tab 分隔 `$'...'` 形式。
 - [x] 已运行验证：`cargo test tmux`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test` 均通过。
 - [x] 已确认本阶段没有实现真实 tmux session 读取、真实 tmux watch、cron、memory、真实 live verification、Slack sink 或 Hermes plugin/observer。
-- [x] 提交状态：本阶段随当前提交完成。
+- [x] 提交状态：已提交 `3745bb8 feat: 增加 tmux 事件 source`。
 
 ### 2026-06-17 - Milestone 8.2 完成后交接更新
 
