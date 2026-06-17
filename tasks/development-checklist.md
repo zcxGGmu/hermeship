@@ -661,18 +661,27 @@
 
 ### 任务 9.2：Live Verification Runbook
 
-- [ ] 新增 live verification 文档。
+- [x] 新增 live verification 文档。
   - 新建：`docs/live-verification.md`
-- [ ] 记录 fake sink 验证。
-- [ ] 记录 daemon health 验证。
-- [ ] 记录 Discord live 验证。
-- [ ] 记录 Hermes gateway hook smoke。
-- [ ] 记录回滚验证。
-- [ ] 每条 live 记录包含 commit、时间、测试频道、触发事件、实际消息形态、未执行项和剩余风险。
-- [ ] live 记录不得包含 token、cookie、secret、完整 prompt、完整对话或 provider request/response body。
-- [ ] 验证任务 9.2。
+  - 记录：已新增 `docs/live-verification.md`，包含 scope、safety rules、result fields、preconditions、runbook 和当前结果记录。
+- [x] 记录 fake sink 验证。
+  - 记录：已记录本地 deterministic fake sink 闭环验证命令和结果字段；真实外部依赖不进入默认验证。
+- [x] 记录 daemon health 验证。
+  - 记录：已记录 `hermeship status` 对本地 daemon `/health` 的验证步骤和结果字段。
+- [x] 记录 Discord live 验证。
+  - 记录：已记录真实 Discord live verification 的前置条件、命令、消息形态字段和当前未执行原因；本阶段未执行真实 Discord 投递。
+- [x] 记录 Hermes gateway hook smoke。
+  - 记录：已记录隔离 `HERMES_HOME` hook smoke、`agent:start` payload、真实 Hermes gateway 触发步骤和当前未执行原因；本阶段未启动真实 Hermes gateway。
+- [x] 记录回滚验证。
+  - 记录：已记录 `hermeship hermes uninstall-hooks --home "$HERMES_HOME"`、Hermeship-managed hook marker 检查和 destructive uninstall 路径；本阶段未执行真实 hook rollback。
+- [x] 每条 live 记录包含 commit、时间、测试频道、触发事件、实际消息形态、未执行项和剩余风险。
+  - 记录：`docs/live-verification.md` 的 Result Fields 和 Current Results 已覆盖这些字段。
+- [x] live 记录不得包含 token、cookie、secret、完整 prompt、完整对话或 provider request/response body。
+  - 记录：已在 Safety Rules 中明确禁止，当前记录没有写入真实 secret、完整 prompt、完整对话或 provider request/response body。
+- [x] 验证任务 9.2。
   - 命令：`rg -n "HERMES_HOME|Discord|hermeship status|agent:start|rollback" docs/live-verification.md`
-- [ ] 提交任务 9.2。
+  - 记录：已通过该 `rg` 检查，并额外通过 `cargo test release_preflight`、`cargo run -- release preflight 0.1.0`、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`。
+- [x] 提交任务 9.2。
   - commit：`docs: 增加 live verification runbook`
 
 ### 任务 9.3：首次 Live Check
@@ -733,6 +742,16 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-17 - Milestone 9.2 Live Verification Runbook 完成
+
+- [x] 已新增 `docs/live-verification.md`，记录 fake sink、daemon health、Discord live、Hermes gateway hook smoke 和 rollback 的 runbook、结果字段与安全规则。
+- [x] 已根据文档审查修正 runbook 可执行性：将前台阻塞的 `hermeship start` 拆分为 Terminal A/B，rollback 增加 `HOOK.yaml`/`handler.py` 残留检查，并将 Current Results 按 fake sink、daemon health、Discord live、Hermes hook smoke 和 rollback 分项记录。
+- [x] 已明确真实 Discord/Hermes live check 本阶段未执行，原因是当前未提供 Discord credentials、测试频道、Hermes gateway 测试环境和显式执行确认；剩余风险进入 Milestone 9.3。
+- [x] 已更新 `README.md` 和 `docs/development-status.md`，将当前状态推进到 Milestone 9.2 已完成，下一入口为 Milestone 9.3 首次 Live Check。
+- [x] 已通过 `rg -n "HERMES_HOME|Discord|hermeship status|agent:start|rollback" docs/live-verification.md`。
+- [x] 已通过 `cargo test release_preflight`（12 passed）、`cargo run -- release preflight 0.1.0`（live verification 字段检查 ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（194 lib tests + 15 bin tests passed）。
+- [x] 已确认本阶段没有执行真实 Discord delivery、真实 Hermes gateway hook smoke、Slack sink、Hermes plugin/observer、真实 GitHub/tmux/scheduler/service-manager 路径。
 
 ### 2026-06-17 - Milestone 9.1 完成后交接更新
 

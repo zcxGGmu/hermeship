@@ -13,7 +13,7 @@ Hermeship 不是 clawhip thin adapter：
 
 ## Current State
 
-Milestone 0 到 Milestone 9.1 已完成。当前已实现：
+Milestone 0 到 Milestone 9.2 已完成。当前已实现：
 
 - Rust CLI、配置模型、质量门禁。
 - daemon `/health`、`/event`、`/api/hermes/hook`。
@@ -25,10 +25,10 @@ Milestone 0 到 Milestone 9.1 已完成。当前已实现：
 - deterministic Git/GitHub/tmux/cron source CLI 路径。
 - memory filesystem scaffold。
 - README、operations、Hermes event contract 和 architecture 文档。
+- live verification runbook。
 
 仍未完成：
 
-- `docs/live-verification.md` runbook。
 - 真实 live verification 记录。
 - Slack sink。
 - Hermes plugin/observer。
@@ -293,8 +293,15 @@ Live verification is separate from default tests. It needs an explicit test Disc
 
 Planned manual flow:
 
+Terminal A:
+
 ```bash
 hermeship start
+```
+
+Terminal B:
+
+```bash
 hermeship status
 hermeship send --channel <discord-channel-id> --message "hermeship live check"
 hermeship emit hermes.agent.started --payload '{"session_id":"live-check"}'
