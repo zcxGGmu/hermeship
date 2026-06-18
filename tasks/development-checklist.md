@@ -751,6 +751,16 @@
 
 最新记录放在最上方。
 
+### 2026-06-18 - 最新开发状态与下次启动提示词更新
+
+- [x] 已复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且状态入口需要准确区分完成、未完成和阻塞项。
+- [x] 已确认当前分支为 `codex/milestone-1-cli`，启动时工作树干净；最近提交为 `23133f9 docs: 记录 Hermeship 本地验证续接状态`、`28c6fc8 docs: 更新 Hermeship 最新开发状态与下次启动提示词`、`659b8ff docs: 记录 Hermeship 本地验证续接状态`、`93e231a docs: 更新 Hermeship 最新开发状态与下次启动提示词`、`5d9f21f docs: 记录本地验证续接状态`。
+- [x] 已更新 `docs/development-status.md`，明确 Milestone 0 到 8.4、9.1、9.2 已完成；Milestone 9.3 只完成 blocked/not_run 记录但真实 live pass 未完成；Milestone 10 未启动。
+- [x] 已更新 `tasks/todo.md`，将当前工作台切换为“更新最新开发状态与下次启动提示词”，并保留本轮验证和提交计划。
+- [x] 已确认本轮只做文档状态同步，不执行真实 Discord/Hermes live check，不记录真实 live pass 豁免，不实现 Slack sink，不启动 Hermes plugin/observer。
+- [x] 已准备下次启动提示词，要求下次先复习 lessons、确认 git 状态、阅读状态文档，并在没有真实 live 条件或用户豁免前不进入 Milestone 10。
+- [x] 已运行验证：关键词 `rg` 通过；`cargo test release_preflight`（12 passed）、`cargo run -- release preflight 0.1.0`（8 checks ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（194 lib tests + 15 bin tests passed）。
+
 ### 2026-06-18 - 本地验证续接与状态记录
 
 - [x] 已复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且不能把未验证、未完成或无关工作混入阶段提交。
@@ -1325,7 +1335,7 @@
 
 - [ ] 确认 live Discord verification 凭据是否可用。
 - [ ] 确认是否需要第一版就支持 Slack sink。
-- [ ] 确认 git/GitHub/tmux parity 是否必须进入 `0.1.0`，还是 `0.2.0`。
+- [x] 历史项：git/GitHub/tmux 本地 deterministic parity 已在 Milestone 8.1、8.2、8.3 完成并提交；真实 GitHub API source 和真实 tmux watch 仍不在当前默认范围。
 - [ ] 确认 macOS launchd 是否必须和 systemd 同期实现。
 
 ## 决策记录
