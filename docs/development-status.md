@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-18 最新开发状态与下次启动提示词更新；Milestone 9.3 已记录未执行原因，真实 live verification 仍待凭据、测试环境与确认
+最后更新：2026-06-18 本地验证续接与状态记录；Milestone 9.3 已记录未执行原因，真实 live verification 仍待凭据、测试环境与确认
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -12,20 +12,20 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 最新状态文档提交：本次提交，提交标题为 `docs: 更新 Hermeship 最新开发状态与下次启动提示词`；下次启动后用 `git log -5 --oneline` 确认实际 hash。
-- 最新状态续接提交：`589c9e2 docs: 记录 Hermeship 本地验证续接状态`。
+- 最新状态文档提交：`92790ef docs: 更新 Hermeship 最新开发状态与下次启动提示词`。
+- 最新状态续接提交：本次提交，提交标题为 `docs: 记录 Hermeship 本地验证续接状态`；下次启动后用 `git log -5 --oneline` 确认实际 hash。
 - 最新 live 记录提交：`bc4c027 docs: 记录 Hermeship live verification 结果`。
 - 最新交接提交：`6be5661 docs: 更新 Hermeship Milestone 9.3 交接状态`。
 - 最新文档阶段提交：`2e60902 docs: 增加 live verification runbook`。
 - 最新功能阶段提交：`0b12de3 feat: 增加 cron 与 memory scaffold`。
 - 当前最新功能阶段：Milestone 8.4 Cron 与 Memory Scaffold 本地 deterministic parity 已完成。
 - 当前最新文档阶段：Milestone 9.2 Live Verification Runbook 已完成。
-- 当前工作台：`tasks/todo.md` 已切换为最新开发状态与下次启动提示词更新。
+- 当前工作台：`tasks/todo.md` 已切换为本地验证续接与状态记录。
 - 最近本地验证已重新执行：`cargo test release_preflight`（12 passed）、`cargo run -- release preflight 0.1.0`（8 checks ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（194 lib tests + 15 bin tests passed）均通过。
 - `cargo run -- release preflight 0.1.0` 的 `live verification` check 只证明 `docs/live-verification.md` 必填字段存在，不证明真实 Discord/Hermes live pass。
 - 本轮未提供 Discord credentials、测试频道、Hermes gateway 测试环境或明确执行确认，因此未执行真实 Discord/Hermes live check。
 - 本轮未记录“真实 live pass 被用户豁免”的决策，因此未启动 Milestone 10、Slack sink 或 Hermes plugin/observer。
-- 本轮只做文档状态同步和下次启动提示词整理；不修改功能代码，不新增真实 live verification 结果。
+- 本轮只做本地验证续接和状态记录；不修改功能代码，不新增真实 live verification 结果。
 - 下次继续开发前必须先运行 `git status --short --branch` 确认工作树，只在预期文档/代码变更上继续。
 - 当前下一步：真实 Discord/Hermes live verification 仍取决于凭据可用性、测试频道、Hermes gateway 测试环境和用户确认范围；在这些条件满足前不得启动 Hermes plugin/observer。
 
@@ -376,6 +376,18 @@
 - 已提交：`bc4c027 docs: 记录 Hermeship live verification 结果`。
 - 当前结论：Milestone 9.3 已完成“未执行原因和风险记录”，但没有完成真实 live verification pass；进入 Milestone 10 前必须由用户明确确认是否豁免真实 live pass。
 
+### 2026-06-18：本地验证续接与状态记录
+
+- 已按启动要求复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且不能把未验证、未完成或无关工作混入阶段提交。
+- 已确认当前分支为 `codex/milestone-1-cli`；启动时工作树干净，最近提交为 `92790ef docs: 更新 Hermeship 最新开发状态与下次启动提示词`、`589c9e2 docs: 记录 Hermeship 本地验证续接状态`、`3f2e758 docs: 更新 Hermeship 最新开发状态与下次启动提示词`、`9602856 docs: 记录 Hermeship 本地验证续接状态`、`01d601a docs: 更新 Hermeship 最新开发状态与下次启动提示词`。
+- 已阅读本轮指定上下文：本文、开发清单、当前 todo、live verification runbook、README、架构、运维、事件契约、方案文档、release preflight 和 fixture 规范。
+- 已将 `tasks/todo.md` 切换为本轮“本地验证续接与状态记录”工作台。
+- 本轮未提供 Discord credentials、测试频道、Hermes gateway 测试环境或明确执行确认，因此未执行真实 Discord/Hermes live check。
+- 本轮未记录“真实 live pass 被用户豁免”的决策，因此未启动 Milestone 10、未实现 Slack sink、未研究 Hermes plugin/observer。
+- 已重新运行默认本地验证：`cargo test release_preflight`（12 passed）、`cargo run -- release preflight 0.1.0`（8 checks ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（194 lib tests + 15 bin tests passed）。
+- 已确认 `cargo run -- release preflight 0.1.0` 的 `live verification` check 只是验证 `docs/live-verification.md` 中 `日期`、`commit`、`Discord`、`Hermes`、`回滚` 等字段存在，不执行真实 Discord/Hermes live verification，也不代表真实 live pass。
+- 本轮只更新状态记录和当前工作台，不修改功能代码，不新增 `docs/live-verification.md` 真实结果。
+
 ### 2026-06-18：最新开发状态与下次启动提示词更新
 
 - 已按用户要求更新最新开发状态入口和下次启动提示词，明确完成范围、未完成范围、阻塞项和下一步入口。
@@ -517,7 +529,7 @@
 2. 确认当前分支、最新提交和未提交变更：
    - `git status --short --branch`
    - `git log -5 --oneline`
-3. 确认最新提交包含本轮最新开发状态与下次启动提示词提交；最新状态续接提交为 `589c9e2 docs: 记录 Hermeship 本地验证续接状态`；最新 live 记录提交为 `bc4c027 docs: 记录 Hermeship live verification 结果`。
+3. 确认最新提交包含本轮本地验证续接状态提交；最新状态文档提交为 `92790ef docs: 更新 Hermeship 最新开发状态与下次启动提示词`；最新 live 记录提交为 `bc4c027 docs: 记录 Hermeship live verification 结果`。
 4. 将当前任务计划写入 `tasks/todo.md`。
 5. 阅读 `docs/live-verification.md`、`README.md`、`ARCHITECTURE.md`、`docs/operations.md`、`docs/hermes-event-contract.md`、`docs/plans/2026-06-15-hermeship-development-plan.md`、`src/release_preflight.rs`、`tests/fixtures/README.md`。
 6. 如果用户提供 Discord credentials、测试频道、Hermes gateway 测试环境和明确执行确认，则继续 Milestone 9.3 真实 live check，并按 `docs/live-verification.md` 记录 daemon status、Discord custom message、Hermes sample event、Hermes gateway hook smoke、rollback、实际消息形态、未执行项和剩余风险。
@@ -546,8 +558,8 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新状态文档提交：本次提交 docs: 更新 Hermeship 最新开发状态与下次启动提示词；启动后用 git log -5 --oneline 确认实际 hash。
-- 最新状态续接提交：589c9e2 docs: 记录 Hermeship 本地验证续接状态。
+- 最新状态文档提交：92790ef docs: 更新 Hermeship 最新开发状态与下次启动提示词。
+- 最新状态续接提交：本次提交 docs: 记录 Hermeship 本地验证续接状态；启动后用 git log -5 --oneline 确认实际 hash。
 - 最新 live 记录提交：bc4c027 docs: 记录 Hermeship live verification 结果。
 - 最新 Milestone 9.3 交接提交：6be5661 docs: 更新 Hermeship Milestone 9.3 交接状态。
 - 最新文档阶段提交：2e60902 docs: 增加 live verification runbook。
