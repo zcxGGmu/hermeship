@@ -17,13 +17,14 @@ Hermeship is a Hermes-native daemon-first event router. It mirrors the broad sha
 - No call-through to a running `clawhip` daemon.
 - No notification messages injected into Hermes conversations.
 - No Slack sink in the current milestone.
-- No Hermes plugin/observer until gateway hook MVP is verified.
+- No runtime Hermes observer plugin scaffold in Milestone 10.1; this stage defines the contract only.
 - No real GitHub polling, real tmux watch, real scheduler or service-manager automation in the completed milestones.
 
 ## Data Flow
 
 ```text
 Hermes gateway hook
+Hermes observer plugin (planned)
 CLI send/emit
 local git/GitHub/tmux/cron commands
         |

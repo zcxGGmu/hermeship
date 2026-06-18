@@ -74,7 +74,7 @@
   - 补充阅读：`gateway/run.py`、`gateway/slash_commands.py`
   - 记录：gateway hook 支持 `gateway:startup`、`session:start`、`session:end`、`session:reset`、`agent:start`、`agent:step`、`agent:end`、`command:*`，hook 错误被捕获并记录，不阻塞主流程；plugin hook 提供 `on_session_start`、`on_session_end`、`pre_tool_call`、`post_tool_call`、`pre_llm_call`、`post_llm_call`、`api_request_error`、`subagent_start`、`subagent_stop` 等后续 observer 能力。
 - [x] 确认项目技术栈。
-  - 决策：Rust 2024 daemon-first，Python 只用于 Hermes hook bridge 模板。
+  - 决策：Rust 2024 daemon-first，Python 当前用于 Hermes hook bridge 模板；Milestone 10.2 可新增可选 observer plugin 模板。
   - 完成标准：记录到本清单决策记录。
 - [x] 更新 README 项目定位。
   - 文件：`README.md`
@@ -718,16 +718,22 @@
 
 门禁：Milestone 1-9 完成或被明确豁免前，不启动本阶段。
 
+- [x] 记录 Milestone 9.3 真实 live pass 豁免决策。
+  - 决策：用户明确要求“先进入 10”，在未提供 Discord credentials、测试频道、Hermes gateway 测试环境和明确执行确认的前提下，视为豁免 Milestone 9.3 真实 live pass 对 Milestone 10 的阻塞。
+  - 边界：真实 Discord/Hermes live verification 仍未获得 `pass`；该豁免只解除 Milestone 10 研究/实现门禁，不代表 live verification 通过。
+  - 边界：Slack sink 仍不在当前默认范围内。
+
 ### 任务 10.1：Observer 契约研究
 
-- [ ] 复读 Hermes plugin 文档和源码。
+- [x] 复读 Hermes plugin 文档和源码。
   - 文件：`/Users/zq/Desktop/ai-projs/posp/agents-contributions/hermes-agent/hermes_cli/plugins.py`
-- [ ] 确认 plugin 安装与启用机制。
+- [x] 确认 plugin 安装与启用机制。
   - 重点：`~/.hermes/plugins`、`plugins.enabled`、entry point。
-- [ ] 起草 observer event mapping。
+- [x] 起草 observer event mapping。
   - 新建：`docs/observer-plugin.md`
-- [ ] 决定 observer mode 进入 v0.2 还是更晚。
-  - 记录决策到本清单。
+- [x] 决定 observer mode 进入 v0.2 还是更晚。
+  - 决策：进入 Milestone 10 / v0.3 方向的研究与 scaffold，不回填 v0.2 默认范围。
+  - 记录：`docs/observer-plugin.md` 定义 `hermes.observer.*` namespace、safe summary fields、fail-open、插件启用方式和 10.2 follow-up。
 
 ### 任务 10.2：Observer Plugin MVP
 
@@ -750,6 +756,23 @@
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-18 - Milestone 10.1 Observer 契约研究
+
+- [x] 用户已回复 `ok` 确认按“10.1 研究文档优先，然后再实现 10.2 plugin scaffold”的顺序推进。
+- [x] 已读取 Hermes plugin loader、启用机制、hook invocation、synthetic hook payload 和代表性 observability plugin 注册方式。
+- [x] 已新增 `docs/observer-plugin.md`，记录 plugin discovery、`plugins.enabled`、observer hook mapping、隐私字段、fail-open、`/event` ingress 策略和 Milestone 10.2 follow-up。
+- [x] 已确认 10.1 不新增 Rust canonical observer event，先让 `hermes.observer.*` 通过 `Custom` fallback 进入现有 daemon/router/renderer 路径。
+- [x] 已确认 10.1 不创建 plugin 模板；10.2 再创建 `templates/hermes-plugin/plugin.yaml` 与 `templates/hermes-plugin/__init__.py`。
+- [x] 已运行验证：observer 文档关键词检查、`git diff --check`、`cargo test release_preflight`（12 passed）、`cargo run -- release preflight 0.1.0`（8 checks ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（194 lib tests + 15 bin tests passed）。
+- [x] 已确认 `release preflight` 的 `live verification` ok 只证明 `docs/live-verification.md` 必填字段存在，不证明真实 Discord/Hermes live pass。
+
+### 2026-06-18 - Milestone 10 解锁
+
+- [x] 用户明确要求“先进入 10”，已记录为 Milestone 9.3 真实 live pass 被用户豁免。
+- [x] 已确认该豁免不等于真实 Discord/Hermes live verification 通过；`docs/live-verification.md` 的 `blocked`/`not_run` 记录仍然成立。
+- [x] 已确认 Slack sink 仍不在当前默认范围内。
+- [x] 已开始读取 Milestone 10 清单和 Hermes plugin loader 源码，下一步先做 Observer 契约研究与设计 check-in。
 
 ### 2026-06-18 - 本地验证续接与状态记录
 
@@ -1425,7 +1448,7 @@
 - [x] Hermeship 不依赖运行中的 clawhip。
 - [x] Hermeship 以 `template/clawhip` 为架构和功能参考。
 - [x] 主实现采用 Rust daemon-first 架构。
-- [x] Python 只用于 Hermes gateway hook bridge 模板。
+- [x] Python 当前用于 Hermes gateway hook bridge 模板；Milestone 10.2 可新增可选 observer plugin 模板。
 - [x] MVP 不修改 Hermes 核心。
 - [x] MVP 首选 Hermes gateway hooks，observer plugin 后续推进。
 - [x] 默认不转发完整 message/response/request/response/tool body。

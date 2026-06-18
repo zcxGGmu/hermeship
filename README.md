@@ -13,7 +13,7 @@ Hermeship 不是 clawhip thin adapter：
 
 ## Current State
 
-Milestone 0 到 Milestone 9.2 已完成。Milestone 9.3 已记录真实 live check 未执行原因，但真实 Discord/Hermes live verification 仍未获得 `pass`。当前已实现：
+Milestone 0 到 Milestone 9.2 已完成。Milestone 9.3 已记录真实 live check 未执行原因，但真实 Discord/Hermes live verification 仍未获得 `pass`；该 live pass 已被用户豁免用于进入 Milestone 10。Milestone 10.1 已完成 Hermes observer plugin 契约研究。当前已实现：
 
 - Rust CLI、配置模型、质量门禁。
 - daemon `/health`、`/event`、`/api/hermes/hook`。
@@ -27,18 +27,19 @@ Milestone 0 到 Milestone 9.2 已完成。Milestone 9.3 已记录真实 live che
 - README、operations、Hermes event contract 和 architecture 文档。
 - live verification runbook。
 - Milestone 9.3 `blocked`/`not_run` live verification 记录。
+- Milestone 10.1 Hermes observer plugin contract research in `docs/observer-plugin.md`.
 
 仍未完成：
 
 - 真实 Discord/Hermes live verification pass。
 - Slack sink。
-- Hermes plugin/observer。
+- Hermes observer plugin scaffold。
 - 真实 GitHub API source、真实 tmux watch、真实 scheduler、真实 service manager 自动安装。
 
 ## Architecture
 
 ```text
-Hermes gateway hooks / CLI / git / GitHub / tmux / cron
+Hermes gateway hooks / Hermes observer plugin (planned) / CLI / git / GitHub / tmux / cron
   -> source ingress
   -> IncomingEvent
   -> typed EventEnvelope
