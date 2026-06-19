@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-19 Milestone 10.3 observer plugin install/enable CLI 后状态同步；下一步为真实 live 条件补测、typed observer body 或真实使用反馈修正
+最后更新：2026-06-19 `803aefa` 后最新开发状态同步；下一步为真实 live 条件补测、typed observer body 或真实使用反馈修正
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -12,21 +12,21 @@
 - 方案文档与执行清单已经拆分：方案文档维护架构和边界，`tasks/development-checklist.md` 和 `tasks/todo.md` 维护可勾选进度。
 - 默认测试策略已经确定：使用本地 fixture、fake sink、fake HTTP、fake Hermes home、fake hermeship binary；真实 Discord/Hermes 只进入 live verification。
 - 当前开发分支：`codex/milestone-1-cli`。
-- 最新 Milestone 10.3 功能阶段提交：本次 `feat: 增加 Hermes observer plugin 安装启用 CLI` 提交；最终 hash 以提交后 `git log -5 --oneline` 为准。
+- 最新 Milestone 10.3 功能阶段提交：`803aefa feat: 增加 Hermes observer plugin 安装启用 CLI`。
 - 最新 Milestone 10.2 功能阶段提交：`f352222 feat: 增加可选 Hermes observer plugin scaffold`。
-- 最新状态文档提交：本次 Milestone 10.3 功能提交包含状态文档更新；启动后以 `git log -5 --oneline` 的当前 HEAD 为准。上一状态文档提交为 `5d4c534 docs: 更新 Hermeship 最新开发状态`。
+- 最新状态文档提交：本次 `docs: 更新 Hermeship 最新开发状态` 提交；启动后以 `git log -5 --oneline` 的当前 HEAD 为准。上一状态文档提交为 `5d4c534 docs: 更新 Hermeship 最新开发状态`，上一状态相关功能提交为 `803aefa feat: 增加 Hermes observer plugin 安装启用 CLI`。
 - 最新状态续接提交：`0d0d354 docs: 记录 Hermeship 本地验证续接状态`。
 - 最新 Milestone 10.1 契约研究提交：`93aa9ec docs: 完成 Hermes observer plugin 契约研究`。
 - 最新 live 记录提交：`bc4c027 docs: 记录 Hermeship live verification 结果`。
 - 最新交接提交：`6be5661 docs: 更新 Hermeship Milestone 9.3 交接状态`。
 - 最新文档阶段提交：`2e60902 docs: 增加 live verification runbook`。
-- 最新功能阶段提交：本次 `feat: 增加 Hermes observer plugin 安装启用 CLI` 提交；上一功能阶段提交为 `f352222 feat: 增加可选 Hermes observer plugin scaffold`。
+- 最新功能阶段提交：`803aefa feat: 增加 Hermes observer plugin 安装启用 CLI`；上一功能阶段提交为 `f352222 feat: 增加可选 Hermes observer plugin scaffold`。
 - 当前最新功能阶段：Milestone 10.3 Observer Plugin install/enable CLI 本地 deterministic parity 已完成。
 - 当前最新文档阶段：Milestone 10.1 Hermes Observer 契约研究由 `93aa9ec` 完成。
-- 当前工作台：`tasks/todo.md` 已切换为“Milestone 10.3 Observer Plugin Install/Enable CLI Automation”。
+- 当前工作台：`tasks/todo.md` 已切换为“更新最新开发状态与下次启动提示词”。
 - 最近 Milestone 10.3 验证已执行：`python3 -m py_compile templates/hermes-plugin/__init__.py`、`cargo test observer_plugin`、`cargo test release_preflight`、`cargo run -- release preflight 0.1.0`；全局验证记录见 `tasks/todo.md` Review 和 `tasks/development-checklist.md` 运行状态日志。
 - `cargo run -- release preflight 0.1.0` 的 `live verification` check 只证明 `docs/live-verification.md` 必填字段存在，不证明真实 Discord/Hermes live pass。
-- 最近 Milestone 10.2 实现未提供 Discord credentials、测试频道、Hermes gateway 测试环境或明确执行确认，因此未执行真实 Discord/Hermes live check；本次状态同步同样不执行真实 live check。
+- 最近 Milestone 10.3 功能阶段和本次状态同步均未提供 Discord credentials、测试频道、Hermes gateway 测试环境或明确执行确认，因此未执行真实 Discord/Hermes live check。
 - 本轮用户已明确要求进入 Milestone 10，记录为“真实 live pass 被用户豁免”；Milestone 10 已解锁，Slack sink 仍不在当前默认范围内。
 - Milestone 10.1 Observer 契约研究已由 `93aa9ec` 完成并提交：新增 `docs/observer-plugin.md`。
 - Milestone 10.2 Observer Plugin MVP scaffold 已由 `f352222` 完成并提交：新增 `templates/hermes-plugin/plugin.yaml` 与 `templates/hermes-plugin/__init__.py`，实现 fail-open safe-field forwarding 到 `POST /event`，并扩展 release preflight 与 Python smoke 覆盖。
@@ -56,7 +56,7 @@
 | Milestone 10 解锁 | 已完成 | 用户已豁免 Milestone 9.3 真实 live pass 对 Milestone 10 的阻塞；不代表 live pass 已通过 |
 | Milestone 10.1 | 已完成并提交 | `93aa9ec docs: 完成 Hermes observer plugin 契约研究` |
 | Milestone 10.2 | 已完成并提交 | `f352222 feat: 增加可选 Hermes observer plugin scaffold` |
-| Milestone 10.3 | 已完成并提交 | 本提交：`hermeship hermes install-plugin` / `enable-plugin` 本地 deterministic CLI |
+| Milestone 10.3 | 已完成并提交 | `803aefa feat: 增加 Hermes observer plugin 安装启用 CLI` |
 | Milestone 10 后续 | 未完成 | typed Rust observer body、真实使用反馈修正按后续需求推进 |
 
 ## 完成与未完成边界
@@ -67,6 +67,7 @@
 - Milestone 9.3 的 `blocked`/`not_run` 状态记录已完成；真实 live pass 没有完成。
 - Milestone 10.1 Observer 契约研究已由 `93aa9ec` 完成并提交。
 - Milestone 10.2 Observer Plugin MVP scaffold 已由 `f352222` 完成并提交。
+- Milestone 10.3 Observer Plugin install/enable CLI 已由 `803aefa` 完成并提交。
 - 本地 deterministic 验证、release preflight observer plugin template check、Python compile/smoke 覆盖已完成。
 
 未完成：
@@ -605,7 +606,7 @@
 2. 确认当前分支、最新提交和未提交变更：
    - `git status --short --branch`
    - `git log -5 --oneline`
-3. 确认最新提交包含本轮 Milestone 10.3 功能提交；最新 Milestone 10.2 功能提交为 `f352222 feat: 增加可选 Hermes observer plugin scaffold`；最新 Milestone 10.1 契约研究提交为 `93aa9ec docs: 完成 Hermes observer plugin 契约研究`；最新 live 记录提交为 `bc4c027 docs: 记录 Hermeship live verification 结果`。
+3. 确认最新提交包含本轮状态文档更新；最新 Milestone 10.3 功能提交为 `803aefa feat: 增加 Hermes observer plugin 安装启用 CLI`；最新 Milestone 10.2 功能提交为 `f352222 feat: 增加可选 Hermes observer plugin scaffold`；最新 Milestone 10.1 契约研究提交为 `93aa9ec docs: 完成 Hermes observer plugin 契约研究`；最新 live 记录提交为 `bc4c027 docs: 记录 Hermeship live verification 结果`。
 4. 将当前任务计划写入 `tasks/todo.md`。
 5. 阅读 `docs/live-verification.md`、`README.md`、`ARCHITECTURE.md`、`docs/operations.md`、`docs/hermes-event-contract.md`、`docs/plans/2026-06-15-hermeship-development-plan.md`、`src/release_preflight.rs`、`tests/fixtures/README.md`。
 6. 如果用户提供 Discord credentials、测试频道、Hermes gateway 测试环境和明确执行确认，则继续 Milestone 9.3 真实 live check，并按 `docs/live-verification.md` 记录 daemon status、Discord custom message、Hermes sample event、Hermes gateway hook smoke、rollback、实际消息形态、未执行项和剩余风险。
@@ -634,9 +635,9 @@
 
 当前状态：
 - 当前分支是 codex/milestone-1-cli。
-- 最新 Milestone 10.3 功能阶段提交：本次 feat: 增加 Hermes observer plugin 安装启用 CLI；启动后以 git log -5 --oneline 的当前 HEAD 为准。
+- 最新 Milestone 10.3 功能阶段提交：803aefa feat: 增加 Hermes observer plugin 安装启用 CLI。
 - 最新 Milestone 10.2 功能阶段提交：f352222 feat: 增加可选 Hermes observer plugin scaffold。
-- 最新状态文档提交：5d4c534 docs: 更新 Hermeship 最新开发状态。
+- 最新状态文档提交：本次 docs: 更新 Hermeship 最新开发状态；启动后以 git log -5 --oneline 的当前 HEAD 为准。
 - 最新状态续接提交：0d0d354 docs: 记录 Hermeship 本地验证续接状态。
 - 最新 Milestone 10.1 契约研究提交：93aa9ec docs: 完成 Hermes observer plugin 契约研究。
 - 最新 live 记录提交：bc4c027 docs: 记录 Hermeship live verification 结果。
@@ -647,7 +648,7 @@
 - Milestone 9.1 已完成并提交：README、docs/operations.md、docs/hermes-event-contract.md、ARCHITECTURE.md 已对齐当前能力和边界。
 - Milestone 9.2 已完成并提交：docs/live-verification.md runbook 已创建。
 - Milestone 9.3 已完成 blocked/not_run 记录：docs/live-verification.md 有未执行原因和剩余风险；真实 Discord/Hermes live verification 仍未获得 pass。
-- Milestone 10 已解锁：10.1 Observer 契约研究已完成并提交，10.2 Observer Plugin MVP scaffold 已完成并提交，10.3 Observer Plugin install/enable CLI 已完成。
+- Milestone 10 已解锁：10.1 Observer 契约研究已完成并提交，10.2 Observer Plugin MVP scaffold 已完成并提交，10.3 Observer Plugin install/enable CLI 已由 803aefa 完成并提交。
 - docs/observer-plugin.md 已定义 observer plugin 需要遵守的 hook mapping、safe fields、fail-open、POST /event ingress、隐私边界和验证策略。
 - templates/hermes-plugin/ 已提供可选 Hermes observer plugin 模板；`hermeship hermes install-plugin` 可显式安装模板，`hermeship hermes enable-plugin` 只输出启用指引，真正启用仍需 operator 执行 `hermes plugins enable hermeship-observer`。
 - Hermeship 是 Hermes-native daemon-first event router，不是 thin adapter，不调用 clawhip runtime，也不依赖运行中的 clawhip daemon。

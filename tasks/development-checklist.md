@@ -795,6 +795,17 @@
 
 最新记录放在最上方。
 
+### 2026-06-19 - 最新开发状态与下次启动提示词更新
+
+- [x] 已复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且状态入口需要准确区分已完成、未完成和阻塞项。
+- [x] 已确认当前分支为 `codex/milestone-1-cli`，启动时工作树干净；最近提交为 `803aefa feat: 增加 Hermes observer plugin 安装启用 CLI`、`5d4c534 docs: 更新 Hermeship 最新开发状态`、`f352222 feat: 增加可选 Hermes observer plugin scaffold`、`eb64408 docs: 更新 Hermeship 最新开发状态`、`93aa9ec docs: 完成 Hermes observer plugin 契约研究`。
+- [x] 已更新 `tasks/todo.md`，将当前工作台切换为本轮“更新最新开发状态与下次启动提示词”。
+- [x] 已更新 `docs/development-status.md`，明确最新 Milestone 10.3 功能阶段提交为 `803aefa feat: 增加 Hermes observer plugin 安装启用 CLI`。
+- [x] 已明确完成范围：Milestone 0 到 8.4、9.1、9.2、10.1、10.2、10.3 已完成并提交；Milestone 9.3 已完成 `blocked`/`not_run` 记录但真实 live pass 未完成。
+- [x] 已明确未完成范围：真实 Discord/Hermes live verification pass、Hermes observer typed Rust event body、真实 GitHub/tmux/scheduler/service automation、Slack sink。
+- [x] 已确认本轮只做文档状态同步，不修改功能代码，不执行真实 Discord/Hermes live check，不实现 Slack sink。
+- [x] 已运行验证：状态文档一致性搜索无过时状态命中、`git diff --check`、`python3 -m py_compile templates/hermes-plugin/__init__.py`、`cargo test observer_plugin`（13 passed）、`cargo test release_preflight`（15 passed）、`cargo run -- release preflight 0.1.0`（9 checks ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（207 lib tests + 15 bin tests passed）。
+
 ### 2026-06-19 - Milestone 10.3 Observer Plugin install/enable CLI automation
 
 - [x] 已复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且不能把未验证、未完成或无关工作混入阶段提交。
