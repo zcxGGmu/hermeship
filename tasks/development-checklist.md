@@ -824,6 +824,17 @@
 
 最新记录放在最上方。
 
+### 2026-06-20 - 本地验证续接与状态记录
+
+- [x] 已复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且不能把未验证、未完成或无关工作混入阶段提交。
+- [x] 已确认当前分支为 `codex/milestone-1-cli`；启动时工作树干净，最近提交为 `b76a007 docs: 记录 Hermeship 本地验证续接`、`95a53d5 docs: 更新 Hermeship 最新开发状态与启动提示词`、`608704e docs: 记录 Hermeship 本地验证续接状态`、`c226514 docs: 更新 Hermeship 最新开发状态与下次启动提示词`、`6053cdf feat: 增加 typed observer body 并收紧安全边界`。
+- [x] 已将本轮计划写入 `tasks/todo.md`，范围限定为 2026-06-20 本地 deterministic 验证、状态日志更新和阶段提交。
+- [x] 已确认 Milestone 10.1、10.2、10.3 和 typed Rust observer body 已完成；本轮没有真实 observer 使用反馈输入，因此不修改功能代码。
+- [x] 本轮未提供 Discord credentials、测试频道、Hermes gateway 测试环境或明确执行确认，因此未执行真实 Discord/Hermes live check。
+- [x] 本轮默认不实现 Slack sink，不自动启用 Hermes observer plugin，不新增 `docs/live-verification.md` 真实 pass 结果。
+- [x] 已运行验证：`python3 -m py_compile templates/hermes-plugin/__init__.py`、`cargo test observer_plugin`（13 passed）、`cargo test release_preflight`（16 passed）、`cargo run -- release preflight 0.1.0`（9 checks ok，`live verification` 输出为记录字段存在且不声明真实 pass）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（221 lib tests + 15 bin tests + doctests passed）。
+- [x] 已确认 `cargo run -- release preflight 0.1.0` 的 `live verification` check 只证明 `docs/live-verification.md` 记录字段存在，不执行真实 Discord/Hermes live verification，也不代表真实 live pass。
+
 ### 2026-06-19 - 本地验证续接与状态记录
 
 - [x] 已复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且不能把未验证、未完成或无关工作混入阶段提交。
