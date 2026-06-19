@@ -17,7 +17,7 @@
 - [ ] MVP 阶段不修改 Hermes 核心。
 - [ ] MVP 阶段不依赖运行中的 `clawhip`。
 - [ ] `template/clawhip` 只作为架构和实现参考，不作为运行时依赖。
-- [ ] Hermes plugin/observer 必须等 gateway hook bridge MVP 完成 live verification 后再启动。
+- [ ] Hermes plugin/observer 必须等 gateway hook bridge MVP 完成 live verification，或用户明确豁免该 live pass 阻塞后再启动。
 - [ ] 未执行的 live check 必须记录原因和剩余风险。
 
 ## 测试执行规则
@@ -74,7 +74,7 @@
   - 补充阅读：`gateway/run.py`、`gateway/slash_commands.py`
   - 记录：gateway hook 支持 `gateway:startup`、`session:start`、`session:end`、`session:reset`、`agent:start`、`agent:step`、`agent:end`、`command:*`，hook 错误被捕获并记录，不阻塞主流程；plugin hook 提供 `on_session_start`、`on_session_end`、`pre_tool_call`、`post_tool_call`、`pre_llm_call`、`post_llm_call`、`api_request_error`、`subagent_start`、`subagent_stop` 等后续 observer 能力。
 - [x] 确认项目技术栈。
-  - 决策：Rust 2024 daemon-first，Python 当前用于 Hermes hook bridge 模板；Milestone 10.2 可新增可选 observer plugin 模板。
+  - 决策：Rust 2024 daemon-first，Python 当前用于 Hermes hook bridge 模板；Milestone 10.2 已新增可选 observer plugin 模板。
   - 完成标准：记录到本清单决策记录。
 - [x] 更新 README 项目定位。
   - 文件：`README.md`
@@ -761,11 +761,23 @@
 - [x] 编写 plugin smoke test。
   - 覆盖：Python compile、fake ctx hook registration、fake HTTP `/event` payload、disabled env、fail-open、forbidden raw field 不泄漏。
 - [x] 提交 observer plugin。
-  - commit：`feat: 增加可选 Hermes observer plugin`
+  - commit：`f352222 feat: 增加可选 Hermes observer plugin scaffold`
 
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-19 - Milestone 10.2 后最新开发状态与下次启动提示词更新
+
+- [x] 已复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且状态入口需要准确区分已完成、未完成和阻塞项。
+- [x] 已确认当前分支为 `codex/milestone-1-cli`，启动时工作树干净；最近提交为 `f352222 feat: 增加可选 Hermes observer plugin scaffold`、`eb64408 docs: 更新 Hermeship 最新开发状态`、`93aa9ec docs: 完成 Hermes observer plugin 契约研究`、`0d0d354 docs: 记录 Hermeship 本地验证续接状态`、`92790ef docs: 更新 Hermeship 最新开发状态与下次启动提示词`。
+- [x] 已更新 `tasks/todo.md`，将当前工作台切换为本轮“更新最新开发状态与下次启动提示词”。
+- [x] 已更新 `docs/development-status.md`，明确 Milestone 10.2 已由 `f352222 feat: 增加可选 Hermes observer plugin scaffold` 完成并提交。
+- [x] 已明确完成范围：Milestone 0 到 8.4、9.1、9.2 已完成；Milestone 9.3 已完成 `blocked`/`not_run` 记录但真实 live pass 未完成；Milestone 10.1 和 10.2 已完成并提交。
+- [x] 已明确未完成范围：真实 Discord/Hermes live verification pass、observer plugin install/enable CLI automation、typed Rust observer event body、真实 GitHub/tmux/scheduler/service automation、Slack sink。
+- [x] 已确认本轮只做文档状态同步，不修改功能代码，不执行真实 Discord/Hermes live check，不实现 Slack sink。
+- [x] 已运行验证：状态文档一致性搜索无过时状态命中、`git diff --check`、`python3 -m py_compile templates/hermes-plugin/__init__.py`、`cargo test observer_plugin`（3 passed）、`cargo test release_preflight`（15 passed）、`cargo run -- release preflight 0.1.0`（9 checks ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（197 lib tests + 15 bin tests passed）。
+- [x] 已提交本轮文档状态同步：`docs: 更新 Hermeship 最新开发状态`；最终 hash 以提交后 `git log -5 --oneline` 为准。
 
 ### 2026-06-19 - Milestone 10.2 Observer Plugin MVP scaffold
 
@@ -783,7 +795,7 @@
 - [x] 已更新 `README.md`、`ARCHITECTURE.md`、`docs/operations.md`、`docs/hermes-event-contract.md`、`docs/observer-plugin.md` 和 `docs/development-status.md`，记录 10.2 scaffold、手动启用方式、preflight 覆盖和剩余边界。
 - [x] 本轮未执行真实 Discord/Hermes live check，未新增 `docs/live-verification.md` 真实 pass 结果，未实现 Slack sink，未新增 observer install/enable CLI，未新增 typed Rust observer body。
 - [x] 已运行最终验证：`python3 -m py_compile templates/hermes-plugin/__init__.py`、`cargo test observer_plugin`（3 passed）、`cargo test release_preflight`（15 passed）、`cargo run -- release preflight 0.1.0`（9 checks ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（197 lib tests + 15 bin tests passed）。
-- [x] 已提交 Milestone 10.2 observer plugin scaffold。
+- [x] 已提交 Milestone 10.2 observer plugin scaffold：`f352222 feat: 增加可选 Hermes observer plugin scaffold`。
 
 ### 2026-06-19 - 最新开发状态与下次启动提示词更新
 
@@ -792,7 +804,7 @@
 - [x] 已更新 `docs/development-status.md`，明确 Milestone 0 到 8.4、9.1、9.2、10.1 已完成并提交；Milestone 9.3 仍无真实 live pass；Milestone 10.2 未启动。
 - [x] 已更新 `README.md` Current State，明确下一步为 Milestone 10.2 observer plugin scaffold。
 - [x] 已更新 `tasks/todo.md`，将当前工作台切换为“最新开发状态与下次启动提示词更新”。
-- [x] 已确认本轮只做文档状态同步，不执行真实 Discord/Hermes live check，不实现 Slack sink，不创建 Hermes observer plugin scaffold。
+- [x] 当时确认本轮只做文档状态同步，不执行真实 Discord/Hermes live check，不实现 Slack sink，未创建 Hermes observer plugin scaffold。
 - [x] 已运行验证：状态文档一致性搜索、`git diff --check`、`cargo test release_preflight`（12 passed）、`cargo run -- release preflight 0.1.0`（8 checks ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（194 lib tests + 15 bin tests passed）。
 - [x] 已确认 `release preflight` 的 `live verification` ok 只证明 `docs/live-verification.md` 必填字段存在，不证明真实 Discord/Hermes live pass。
 
@@ -1477,7 +1489,7 @@
 ## 阻塞项
 
 - [ ] 确认 live Discord verification 凭据是否可用。
-- [ ] 确认是否需要第一版就支持 Slack sink。
+- [ ] Slack sink 不在当前默认范围内；只有后续明确更新清单时才启动。
 - [x] 历史项：git/GitHub/tmux 本地 deterministic parity 已在 Milestone 8.1、8.2、8.3 完成并提交；真实 GitHub API source 和真实 tmux watch 仍不在当前默认范围。
 - [ ] 确认 macOS launchd 是否必须和 systemd 同期实现。
 
@@ -1487,8 +1499,8 @@
 - [x] Hermeship 不依赖运行中的 clawhip。
 - [x] Hermeship 以 `template/clawhip` 为架构和功能参考。
 - [x] 主实现采用 Rust daemon-first 架构。
-- [x] Python 当前用于 Hermes gateway hook bridge 模板；Milestone 10.2 可新增可选 observer plugin 模板。
+- [x] Python 当前用于 Hermes gateway hook bridge 模板和 Milestone 10.2 已新增的可选 observer plugin 模板。
 - [x] MVP 不修改 Hermes 核心。
-- [x] MVP 首选 Hermes gateway hooks，observer plugin 后续推进。
+- [x] MVP 首选 Hermes gateway hooks；observer plugin scaffold 已完成，后续只在明确需求下推进 install/enable CLI、typed Rust observer body、真实使用反馈或 live verification。
 - [x] 默认不转发完整 message/response/request/response/tool body。
 - [x] 方案文档和进度清单分离维护。

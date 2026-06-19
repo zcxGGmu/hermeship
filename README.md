@@ -35,6 +35,7 @@ Milestone 0 到 Milestone 9.2 已完成。Milestone 9.3 已记录真实 live che
 - 真实 Discord/Hermes live verification pass。
 - Slack sink。
 - Hermes observer plugin install/enable CLI automation.
+- Hermes observer typed Rust event body；当前 `hermes.observer.*` 仍使用 `Custom` fallback。
 - 真实 GitHub API source、真实 tmux watch、真实 scheduler、真实 service manager 自动安装。
 
 ## Architecture
@@ -352,7 +353,7 @@ Results must be recorded in `docs/live-verification.md` without tokens, cookies,
 hermeship release preflight 0.1.0
 ```
 
-Preflight checks local release consistency: Cargo version, `Cargo.lock`, public CLI fixture, docs command coverage, hook templates, observer plugin template, fixture policy, service template and live verification status. Missing live verification is `pending`, not a default local failure.
+Preflight checks local release consistency: Cargo version, `Cargo.lock`, public CLI fixture, docs command coverage, hook templates, observer plugin template, fixture policy, service template and live verification status. Missing live verification is `pending`, not a default local failure. The `live verification` ok check only proves required `docs/live-verification.md` fields are present; it is not proof of a real Discord/Hermes live pass.
 
 ## Development Gates
 
