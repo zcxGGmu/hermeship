@@ -13,6 +13,7 @@ use hermeship::events::IncomingEvent;
 use hermeship::hermes::HermesHookEnvelope;
 use hermeship::hooks::{HookInstallOptions, HookInstallReport, HookUninstallReport};
 use hermeship::lifecycle::{InstallOptions, SetupOptions, UninstallOptions};
+use hermeship::observer_plugin::{ObserverPluginInstallOptions, ObserverPluginInstallReport};
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -125,6 +126,33 @@ async fn real_main() -> Result<()> {
                     .unwrap_or_else(hermeship::hooks::default_hermes_home);
                 let report = hermeship::hooks::uninstall_hermes_hooks(hermes_home, args.dry_run)?;
                 print_hook_uninstall_report(&report);
+                Ok(())
+            }
+            HermesCommands::InstallPlugin(args) => {
+                let hermes_home = args
+                    .home
+                    .unwrap_or_else(hermeship::hooks::default_hermes_home);
+                let report = hermeship::observer_plugin::install_observer_plugin(
+                    &ObserverPluginInstallOptions {
+                        hermes_home,
+                        force: args.force,
+                        dry_run: args.dry_run,
+                    },
+                )?;
+                print_observer_plugin_install_report(&report);
+                Ok(())
+            }
+            HermesCommands::EnablePlugin(args) => {
+                let hermes_home = args
+                    .home
+                    .unwrap_or_else(hermeship::hooks::default_hermes_home);
+                print!(
+                    "{}",
+                    hermeship::observer_plugin::render_enable_instructions(
+                        &hermes_home,
+                        args.dry_run
+                    )
+                );
                 Ok(())
             }
         },
@@ -314,6 +342,32 @@ fn print_hook_uninstall_report(report: &HookUninstallReport) {
     for path in &report.removed_paths {
         println!("  removed {}", path.display());
     }
+}
+
+fn print_observer_plugin_install_report(report: &ObserverPluginInstallReport) {
+    if report.dry_run {
+        println!(
+            "hermes observer plugin dry-run: would write {}",
+            report.plugin_dir.display()
+        );
+        for path in &report.planned_files {
+            println!("  would write {}", path.display());
+        }
+        println!("enable manually with: hermes plugins enable hermeship-observer");
+        return;
+    }
+
+    println!(
+        "hermes observer plugin installed: {}",
+        report.plugin_dir.display()
+    );
+    for path in &report.written_files {
+        println!("  wrote {}", path.display());
+    }
+    for path in &report.skipped_files {
+        println!("  skipped existing {}", path.display());
+    }
+    println!("enable manually with: hermes plugins enable hermeship-observer");
 }
 
 async fn submit_event(config: &AppConfig, event: IncomingEvent) -> Result<EventAcceptedResponse> {

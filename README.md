@@ -13,7 +13,7 @@ Hermeship 不是 clawhip thin adapter：
 
 ## Current State
 
-Milestone 0 到 Milestone 9.2 已完成。Milestone 9.3 已记录真实 live check 未执行原因，但真实 Discord/Hermes live verification 仍未获得 `pass`；该 live pass 已被用户豁免用于进入 Milestone 10。Milestone 10.1 已完成 Hermes observer plugin 契约研究，Milestone 10.2 已新增可选 observer plugin scaffold。当前已实现：
+Milestone 0 到 Milestone 9.2 已完成。Milestone 9.3 已记录真实 live check 未执行原因，但真实 Discord/Hermes live verification 仍未获得 `pass`；该 live pass 已被用户豁免用于进入 Milestone 10。Milestone 10.1 已完成 Hermes observer plugin 契约研究，Milestone 10.2 已新增可选 observer plugin scaffold，Milestone 10.3 已新增 observer plugin install/enable CLI automation。当前已实现：
 
 - Rust CLI、配置模型、质量门禁。
 - daemon `/health`、`/event`、`/api/hermes/hook`。
@@ -29,12 +29,12 @@ Milestone 0 到 Milestone 9.2 已完成。Milestone 9.3 已记录真实 live che
 - Milestone 9.3 `blocked`/`not_run` live verification 记录。
 - Milestone 10.1 Hermes observer plugin contract research in `docs/observer-plugin.md`.
 - Optional Hermes observer plugin scaffold in `templates/hermes-plugin/`.
+- Local deterministic observer plugin install/enable CLI: `hermeship hermes install-plugin` and `hermeship hermes enable-plugin`.
 
 仍未完成：
 
 - 真实 Discord/Hermes live verification pass。
 - Slack sink。
-- Hermes observer plugin install/enable CLI automation.
 - Hermes observer typed Rust event body；当前 `hermes.observer.*` 仍使用 `Custom` fallback。
 - 真实 GitHub API source、真实 tmux watch、真实 scheduler、真实 service manager 自动安装。
 
@@ -65,6 +65,7 @@ Hermes gateway hooks / optional Hermes observer plugin / CLI / git / GitHub / tm
 - `src/render/`：`compact`、`inline`、`alert`、`raw` 渲染。
 - `src/sink/`：Discord sink 和 fake sink。
 - `src/hooks.rs`：Hermes gateway hook bridge 安装/卸载。
+- `src/observer_plugin.rs`：可选 Hermes observer plugin 模板安装和启用指引。
 - `src/lifecycle.rs`：本地 install/setup/uninstall。
 - `src/release_preflight.rs`：发布一致性检查。
 
@@ -209,15 +210,25 @@ templates/hermes-plugin/
   __init__.py
 ```
 
-Install it manually as:
+Install the template with Hermeship:
+
+```bash
+hermeship hermes install-plugin --home ~/.hermes --force
+hermeship hermes enable-plugin --home ~/.hermes --dry-run
+```
+
+`install-plugin` writes:
 
 ```text
 ~/.hermes/plugins/hermeship-observer/
   plugin.yaml
   __init__.py
+  .hermeship-managed.json
 ```
 
-Then enable it from Hermes:
+It refuses symlinked plugin directories, template files and marker files, so `--force` does not follow links outside the Hermes plugin directory.
+
+Then enable it from Hermes. Hermeship prints the command but does not run Hermes or edit Hermes config:
 
 ```bash
 hermes plugins enable hermeship-observer

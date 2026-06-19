@@ -12,9 +12,9 @@
 - `hermeship hermes install-hooks` / `hermeship hermes uninstall-hooks`：安装和卸载 Hermes gateway hook bridge。
 - `hermeship uninstall`：保留或显式删除本地配置、状态和 hook。
 - `hermeship release preflight`：本地发布一致性检查。
-- `templates/hermes-plugin/`：可选 Hermes observer plugin scaffold，可手动复制到 Hermes plugin 目录。
+- `hermeship hermes install-plugin` / `hermeship hermes enable-plugin`：安装可选 Hermes observer plugin 模板并输出手动启用指引。
 
-当前不自动安装真实 systemd/launchd service，不执行真实 Discord/Hermes live verification，不实现 Slack sink，也不自动安装或启用 Hermes observer plugin。
+当前不自动安装真实 systemd/launchd service，不执行真实 Discord/Hermes live verification，不实现 Slack sink，也不自动启用 Hermes observer plugin。
 
 ## Install
 
@@ -189,15 +189,36 @@ templates/hermes-plugin/
   __init__.py
 ```
 
-手动安装目标：
+安装：
+
+```bash
+hermeship hermes install-plugin --home ~/.hermes --force
+```
+
+dry-run：
+
+```bash
+hermeship hermes install-plugin --home /tmp/hermeship-test-home --dry-run
+```
+
+安装目标：
 
 ```text
 ~/.hermes/plugins/hermeship-observer/
   plugin.yaml
   __init__.py
+  .hermeship-managed.json
 ```
 
-启用：
+安装器会拒绝 symlinked plugin directory、模板文件和 marker 文件；即使使用 `--force`，也不会跟随 symlink 写入插件目录外目标。
+
+输出启用指引：
+
+```bash
+hermeship hermes enable-plugin --home ~/.hermes --dry-run
+```
+
+真正启用仍由 operator 在 Hermes 中执行：
 
 ```bash
 hermes plugins enable hermeship-observer
@@ -346,7 +367,7 @@ Preflight 本地检查：
 - 公开 CLI fixture。
 - README、方案文档和 operations 中的公开命令。
 - Hermes hook 模板。
-- Hermes observer plugin 模板。
+- Hermes observer plugin 模板和 install/enable CLI。
 - fixture policy。
 - service 模板。
 - live verification 文档状态。

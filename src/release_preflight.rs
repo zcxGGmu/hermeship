@@ -229,6 +229,8 @@ fn check_public_commands(repo_root: &Path) -> CheckResult {
         "hermes hook",
         "hermes install-hooks",
         "hermes uninstall-hooks",
+        "hermes install-plugin",
+        "hermes enable-plugin",
         "git commit",
         "git branch-changed",
         "github issue-opened",
@@ -300,6 +302,8 @@ fn check_docs_commands(repo_root: &Path) -> CheckResult {
         "hermeship memory init",
         "hermeship memory status",
         "hermeship release preflight",
+        "hermeship hermes install-plugin",
+        "hermeship hermes enable-plugin",
     ];
     let missing = required
         .into_iter()
@@ -1120,13 +1124,13 @@ assert ctx.hooks["pre_tool_call"]({{"session_id": "fail-open"}}) is None
         write(
             root.join("README.md"),
             overrides.readme.unwrap_or(
-                "hermeship setup\nhermeship install\nhermeship uninstall\nhermeship git commit\nhermeship git branch-changed\nhermeship github issue-opened\nhermeship github pr-opened\nhermeship github check-failed\nhermeship github release-published\nhermeship tmux keyword\nhermeship tmux stale\nhermeship tmux watch\nhermeship tmux list\nhermeship cron run\nhermeship memory init\nhermeship memory status\nhermeship release preflight <version>\n",
+                "hermeship setup\nhermeship install\nhermeship uninstall\nhermeship hermes install-plugin\nhermeship hermes enable-plugin\nhermeship git commit\nhermeship git branch-changed\nhermeship github issue-opened\nhermeship github pr-opened\nhermeship github check-failed\nhermeship github release-published\nhermeship tmux keyword\nhermeship tmux stale\nhermeship tmux watch\nhermeship tmux list\nhermeship cron run\nhermeship memory init\nhermeship memory status\nhermeship release preflight <version>\n",
             ),
         );
         write(
             root.join("docs/operations.md"),
             overrides.operations.unwrap_or(
-                "hermeship setup --discord-token-stdin --default-channel ops\nhermeship install\nhermeship uninstall --remove-state --remove-config --remove-hooks --hermes-home ~/.hermes\nhermeship release preflight 0.1.0\n",
+                "hermeship setup --discord-token-stdin --default-channel ops\nhermeship install\nhermeship uninstall --remove-state --remove-config --remove-hooks --hermes-home ~/.hermes\nhermeship hermes install-plugin --home ~/.hermes\nhermeship hermes enable-plugin --home ~/.hermes --dry-run\nhermeship release preflight 0.1.0\n",
             ),
         );
         write(
@@ -1136,7 +1140,7 @@ assert ctx.hooks["pre_tool_call"]({{"session_id": "fail-open"}}) is None
         write(
             root.join("tests/fixtures/cli/public_commands.txt"),
             overrides.public_commands.unwrap_or(
-                "start\nstatus\nsetup --default-channel ops\nsend --channel ops --message hello\nemit hermes.agent.started --payload '{}'\nexplain hermes.agent.started --payload '{}'\nconfig show\nconfig path\nconfig verify\nhermes hook --payload '{}'\nhermes install-hooks --scope global --force\nhermes uninstall-hooks --dry-run\ngit commit --repo hermeship --branch main --commit 1234567890abcdef1234567890abcdef12345678 --summary ship\ngit branch-changed --repo hermeship --old-branch main --new-branch codex/milestone-8-git\ngithub issue-opened --owner posp --repo hermeship --number 42 --title issue\ngithub pr-opened --owner posp --repo hermeship --number 17 --title pr --branch codex/milestone-8-github\ngithub check-failed --owner posp --repo hermeship --workflow ci --status failure --branch main\ngithub release-published --owner posp --repo hermeship --tag v0.1.0\ntmux keyword --session hermes-agent --keyword FAILED --line failed\ntmux stale --session hermes-agent --pane %2 --minutes 15 --last-line waiting\ntmux watch --session hermes-agent --keywords FAILED,complete --stale-minutes 10 --tmux-output 'hermes-agent\tmain\t%1\t0\tbash\tready'\ntmux list --tmux-output 'hermes-agent\tmain\t%1\t0\tbash\tready'\ncron run dev-followup\nmemory init --root /tmp/hermeship-memory --project Hermeship --date 2026-06-17\nmemory status --root /tmp/hermeship-memory --project Hermeship --date 2026-06-17\ninstall\nuninstall\nrelease preflight 0.1.0\n",
+                "start\nstatus\nsetup --default-channel ops\nsend --channel ops --message hello\nemit hermes.agent.started --payload '{}'\nexplain hermes.agent.started --payload '{}'\nconfig show\nconfig path\nconfig verify\nhermes hook --payload '{}'\nhermes install-hooks --scope global --force\nhermes uninstall-hooks --dry-run\nhermes install-plugin --home /tmp/hermes --dry-run --force\nhermes enable-plugin --home /tmp/hermes --dry-run\ngit commit --repo hermeship --branch main --commit 1234567890abcdef1234567890abcdef12345678 --summary ship\ngit branch-changed --repo hermeship --old-branch main --new-branch codex/milestone-8-git\ngithub issue-opened --owner posp --repo hermeship --number 42 --title issue\ngithub pr-opened --owner posp --repo hermeship --number 17 --title pr --branch codex/milestone-8-github\ngithub check-failed --owner posp --repo hermeship --workflow ci --status failure --branch main\ngithub release-published --owner posp --repo hermeship --tag v0.1.0\ntmux keyword --session hermes-agent --keyword FAILED --line failed\ntmux stale --session hermes-agent --pane %2 --minutes 15 --last-line waiting\ntmux watch --session hermes-agent --keywords FAILED,complete --stale-minutes 10 --tmux-output 'hermes-agent\tmain\t%1\t0\tbash\tready'\ntmux list --tmux-output 'hermes-agent\tmain\t%1\t0\tbash\tready'\ncron run dev-followup\nmemory init --root /tmp/hermeship-memory --project Hermeship --date 2026-06-17\nmemory status --root /tmp/hermeship-memory --project Hermeship --date 2026-06-17\ninstall\nuninstall\nrelease preflight 0.1.0\n",
             ),
         );
         write(

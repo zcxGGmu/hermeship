@@ -17,7 +17,7 @@ Hermeship is a Hermes-native daemon-first event router. It mirrors the broad sha
 - No call-through to a running `clawhip` daemon.
 - No notification messages injected into Hermes conversations.
 - No Slack sink in the current milestone.
-- No automatic Hermes observer plugin install/enable CLI in Milestone 10.2; the current deliverable is an optional template.
+- No automatic Hermes observer plugin enablement; Hermeship can install the optional template, but operators still enable it explicitly in Hermes.
 - No real GitHub polling, real tmux watch, real scheduler or service-manager automation in the completed milestones.
 
 ## Data Flow
@@ -102,6 +102,7 @@ CLI commands such as `send`, `emit`, `hermes hook`, `git`, `github`, `tmux` and 
 | `src/dispatch.rs` | Queue consumer and route-render-sink pipeline |
 | `src/sink/` | Sink trait, fake sink and Discord sink |
 | `src/hooks.rs` | Hermes hook bridge install/uninstall |
+| `src/observer_plugin.rs` | Optional Hermes observer plugin template install and enable guidance |
 | `src/lifecycle.rs` | Local install/setup/uninstall |
 | `src/release_preflight.rs` | Release consistency checks |
 | `src/source/` | Git/GitHub/tmux deterministic source builders |
@@ -258,7 +259,16 @@ Milestone 10.2 adds an optional Hermes directory plugin scaffold:
   __init__.py
 ```
 
-The repository template lives in `templates/hermes-plugin/`. Operators enable it manually with:
+The repository template lives in `templates/hermes-plugin/`. Hermeship can install it locally with:
+
+```bash
+hermeship hermes install-plugin --home ~/.hermes --force
+hermeship hermes enable-plugin --home ~/.hermes --dry-run
+```
+
+The installer validates each path with `symlink_metadata`, rejects symlinked plugin directories/files/markers, and only overwrites regular files.
+
+`enable-plugin` only prints operator instructions. Operators still enable it manually with:
 
 ```bash
 hermes plugins enable hermeship-observer

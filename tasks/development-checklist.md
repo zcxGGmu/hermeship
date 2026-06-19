@@ -763,9 +763,51 @@
 - [x] 提交 observer plugin。
   - commit：`f352222 feat: 增加可选 Hermes observer plugin scaffold`
 
+### 任务 10.3：Observer Plugin Install/Enable CLI
+
+- [x] 新增 observer plugin installer。
+  - 新建：`src/observer_plugin.rs`
+  - 覆盖：dry-run、安装模板、无 force 不覆盖、force 覆盖、marker 写入。
+- [x] 接入 CLI。
+  - 命令：`hermeship hermes install-plugin --home <path> --force --dry-run`
+  - 命令：`hermeship hermes enable-plugin --home <path> --dry-run`
+  - 边界：`enable-plugin` 只输出 `hermes plugins enable hermeship-observer` 指引，不执行 Hermes CLI，不修改 Hermes config。
+- [x] 更新公开命令 fixture 和 release preflight。
+  - 文件：`tests/fixtures/cli/public_commands.txt`
+  - 文件：`src/release_preflight.rs`
+  - 覆盖：public command fixture、docs command coverage 和 observer plugin template 检查。
+- [x] 更新文档。
+  - 文件：`README.md`
+  - 文件：`ARCHITECTURE.md`
+  - 文件：`docs/operations.md`
+  - 文件：`docs/observer-plugin.md`
+  - 文件：`docs/development-status.md`
+- [x] 验证任务 10.3。
+  - 命令：`python3 -m py_compile templates/hermes-plugin/__init__.py`
+  - 命令：`cargo test observer_plugin`
+  - 命令：`cargo test release_preflight`
+  - 命令：`cargo run -- release preflight 0.1.0`
+  - 命令：`cargo fmt --all -- --check`
+  - 命令：`cargo clippy --all-targets -- -D warnings`
+  - 命令：`cargo test`
+
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-19 - Milestone 10.3 Observer Plugin install/enable CLI automation
+
+- [x] 已复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且不能把未验证、未完成或无关工作混入阶段提交。
+- [x] 已确认当前分支为 `codex/milestone-1-cli`；启动时 `git status --short --branch` 显示当前分支，最近提交为 `5d4c534 docs: 更新 Hermeship 最新开发状态`、`f352222 feat: 增加可选 Hermes observer plugin scaffold`、`eb64408 docs: 更新 Hermeship 最新开发状态`、`93aa9ec docs: 完成 Hermes observer plugin 契约研究`、`0d0d354 docs: 记录 Hermeship 本地验证续接状态`。
+- [x] 已阅读本轮指定上下文：`docs/development-status.md`、方案文档、开发清单、当前 todo、`docs/observer-plugin.md`、live verification runbook、README、架构、运维、事件契约和 `src/release_preflight.rs`。
+- [x] 已将 `tasks/todo.md` 切换为本轮“Milestone 10.3 Observer Plugin Install/Enable CLI Automation”工作台。
+- [x] 已新增 `src/observer_plugin.rs`，实现可选 Hermes observer plugin 模板安装：目标为 `$HERMES_HOME/plugins/hermeship-observer/`，支持 `--home`、`--force`、`--dry-run`，并写入 `.hermeship-managed.json` marker。
+- [x] 已根据代码审查补充 observer plugin installer symlink 防护：plugin dir、模板文件和 marker 均拒绝 symlink；目标存在时必须是普通文件；marker 预检失败时不会先写入模板文件；全部模板都被本地修改并跳过时会把旧 marker entries 清空。
+- [x] 已接入 CLI：`hermeship hermes install-plugin` 安装模板；`hermeship hermes enable-plugin` 只输出手动启用指引，不调用真实 Hermes CLI，不修改 Hermes `config.yaml`，保持 operator opt-in。
+- [x] 已更新公开命令 fixture、release preflight、README、ARCHITECTURE、operations、observer contract 和 development status，覆盖新命令并保留“不自动启用、不做 live check、不做 Slack sink”的边界。
+- [x] 已新增 Red/Green 证据：`cargo test observer_plugin` 在实现前失败于缺少 observer plugin installer API；`cargo test cli` 在实现前失败于 `main.rs` 未分发新 Hermes 子命令；补充 symlink 安全回归后 `cargo test observer_plugin` 曾失败于 3 个 symlink negative cases，修复后局部测试通过。
+- [x] 本轮未执行真实 Discord/Hermes live check，未新增 `docs/live-verification.md` 真实 pass 结果，未实现 Slack sink，未新增 typed Rust observer body。
+- [x] 已运行最终验证：`python3 -m py_compile templates/hermes-plugin/__init__.py`、`cargo test observer_plugin`（13 passed，包含 symlink 安全回归和 stale marker 回归）、`cargo test release_preflight`（15 passed）、`cargo run -- release preflight 0.1.0`（9 checks ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（207 lib tests + 15 bin tests passed）。
 
 ### 2026-06-19 - Milestone 10.2 后最新开发状态与下次启动提示词更新
 
@@ -1501,6 +1543,6 @@
 - [x] 主实现采用 Rust daemon-first 架构。
 - [x] Python 当前用于 Hermes gateway hook bridge 模板和 Milestone 10.2 已新增的可选 observer plugin 模板。
 - [x] MVP 不修改 Hermes 核心。
-- [x] MVP 首选 Hermes gateway hooks；observer plugin scaffold 已完成，后续只在明确需求下推进 install/enable CLI、typed Rust observer body、真实使用反馈或 live verification。
+- [x] MVP 首选 Hermes gateway hooks；observer plugin scaffold 和 install/enable CLI 已完成，后续只在明确需求下推进 typed Rust observer body、真实使用反馈或 live verification。
 - [x] 默认不转发完整 message/response/request/response/tool body。
 - [x] 方案文档和进度清单分离维护。

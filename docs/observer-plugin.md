@@ -209,9 +209,18 @@ python3 -m py_compile templates/hermes-plugin/__init__.py
 
 and a local smoke test that imports the template with a fake HTTP client or monkeypatches the send function so hooks can be invoked without real Hermes, Discord, network or credentials.
 
-## Open Follow-ups For Milestone 10.2
+Milestone 10.3 install/enable CLI verification adds:
+
+```bash
+cargo test observer_plugin
+cargo test cli
+```
+
+`hermeship hermes install-plugin` installs the template into `$HERMES_HOME/plugins/hermeship-observer/` and writes a Hermeship marker. The installer rejects symlinked plugin directories, template files and marker files before writing. `hermeship hermes enable-plugin` only prints manual enable instructions; it does not call `hermes`, edit `config.yaml`, or auto-enable the plugin.
+
+## Open Follow-ups After Milestone 10.3
 
 - Decided for 10.2: `templates/hermes-plugin/__init__.py` POSTs directly with Python standard library `urllib.request` to keep Hermes plugin delivery independent from the Hermeship CLI binary path.
-- Decide whether `hermeship hermes install-hooks` should later gain a sibling `hermeship hermes install-plugin`.
+- Decided for 10.3: `hermeship hermes install-plugin` installs the optional observer plugin template, while `hermeship hermes enable-plugin` remains instruction-only to preserve explicit operator opt-in.
 - Decide whether typed Rust observer bodies are needed after plugin payloads stabilize.
 - Decided for 10.2: release preflight requires observer plugin template files and contract keywords once the scaffold lands.

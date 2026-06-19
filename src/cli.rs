@@ -541,6 +541,10 @@ pub enum HermesCommands {
     InstallHooks(InstallHooksArgs),
     /// Remove Hermes gateway hook files installed by hermeship.
     UninstallHooks(UninstallHooksArgs),
+    /// Install the optional Hermes observer plugin template.
+    InstallPlugin(InstallPluginArgs),
+    /// Print manual enable instructions for the optional Hermes observer plugin.
+    EnablePlugin(EnablePluginArgs),
 }
 
 #[derive(Debug, Clone, Args)]
@@ -575,6 +579,29 @@ pub struct UninstallHooksArgs {
     #[arg(long)]
     pub home: Option<PathBuf>,
     /// Print files that would be removed without changing disk.
+    #[arg(long, default_value_t = false)]
+    pub dry_run: bool,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct InstallPluginArgs {
+    /// Hermes home directory. Defaults to HERMES_HOME or ~/.hermes.
+    #[arg(long)]
+    pub home: Option<PathBuf>,
+    /// Print files that would be written without changing disk.
+    #[arg(long, default_value_t = false)]
+    pub dry_run: bool,
+    /// Override existing plugin template files.
+    #[arg(long, default_value_t = false)]
+    pub force: bool,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct EnablePluginArgs {
+    /// Hermes home directory. Defaults to HERMES_HOME or ~/.hermes.
+    #[arg(long)]
+    pub home: Option<PathBuf>,
+    /// Print enable instructions without changing disk or running Hermes.
     #[arg(long, default_value_t = false)]
     pub dry_run: bool,
 }
@@ -1347,6 +1374,49 @@ mod tests {
     }
 
     #[test]
+    fn parses_hermes_observer_plugin_commands() {
+        let install = Cli::parse_from([
+            "hermeship",
+            "hermes",
+            "install-plugin",
+            "--home",
+            "/tmp/hermes",
+            "--dry-run",
+            "--force",
+        ]);
+
+        match install.command {
+            Some(Commands::Hermes {
+                command: HermesCommands::InstallPlugin(args),
+            }) => {
+                assert_eq!(args.home, Some(PathBuf::from("/tmp/hermes")));
+                assert!(args.dry_run);
+                assert!(args.force);
+            }
+            other => panic!("expected hermes install-plugin command, got {other:?}"),
+        }
+
+        let enable = Cli::parse_from([
+            "hermeship",
+            "hermes",
+            "enable-plugin",
+            "--home",
+            "/tmp/hermes",
+            "--dry-run",
+        ]);
+
+        match enable.command {
+            Some(Commands::Hermes {
+                command: HermesCommands::EnablePlugin(args),
+            }) => {
+                assert_eq!(args.home, Some(PathBuf::from("/tmp/hermes")));
+                assert!(args.dry_run);
+            }
+            other => panic!("expected hermes enable-plugin command, got {other:?}"),
+        }
+    }
+
+    #[test]
     fn parses_public_command_fixture() {
         let mut commands = Vec::new();
         for raw in include_str!("../tests/fixtures/cli/public_commands.txt").lines() {
@@ -1378,6 +1448,8 @@ mod tests {
             "hermes hook",
             "hermes install-hooks",
             "hermes uninstall-hooks",
+            "hermes install-plugin",
+            "hermes enable-plugin",
             "git commit",
             "git branch-changed",
             "github issue-opened",

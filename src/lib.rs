@@ -10,6 +10,7 @@ pub mod hermes;
 pub mod hooks;
 pub mod lifecycle;
 pub mod memory;
+pub mod observer_plugin;
 pub mod privacy;
 pub mod release_preflight;
 pub mod render;
