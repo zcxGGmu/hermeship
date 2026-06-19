@@ -144,6 +144,7 @@ Current canonical body families:
 - GitHub: `github.issue-opened`, `github.pr-opened`, `github.check-failed`, `github.release-published`
 - tmux: `tmux.keyword`, `tmux.stale`
 - cron: `cron.run`
+- Hermes observer: `hermes.observer.*`, using a typed safe-field observer body
 - custom: unknown kinds and `hermeship send`
 
 See `docs/hermes-event-contract.md` for field-level rules.
@@ -276,9 +277,9 @@ hermes plugins enable hermeship-observer
 
 The plugin registers observer hooks only and posts generic `IncomingEvent` payloads to `POST /event`. It does not use `/api/hermes/hook`, because that endpoint is specific to gateway hook envelopes.
 
-Observer events use the `hermes.observer.*` namespace and currently fall through the existing `Custom` event body path. This avoids expanding typed Rust event bodies before real observer usage stabilizes.
+Observer events use the `hermes.observer.*` namespace and enter a typed Rust observer body. The typed body keeps the canonical kind unchanged, derives `observer_category` and `observer_action`, and only stores allowlisted safe fields, counts, lengths, canonical statuses, bounded codes and booleans. Raw approval `session_key`, non-canonical reason/status/error text, prompts and body-like fields are represented only as length/presence summaries.
 
-The plugin forwards only safe fields, counts, lengths, statuses and bounded summaries. It must not forward raw prompts, conversation history, request/response bodies, shell commands, tool result bodies, child goals or child summaries. Every callback returns `None`; daemon failures, serialization failures and HTTP timeouts fail open.
+The plugin forwards only safe fields, counts, lengths, statuses and bounded summaries. It must not forward raw prompts, conversation history, request/response bodies, shell commands, tool result bodies, child goals, child summaries or approval session keys. Router context gives core metadata priority; observer body fields with the same names are exposed through `observer_<field>` aliases. Every callback returns `None`; daemon failures, serialization failures and HTTP timeouts fail open.
 
 ## Privacy
 

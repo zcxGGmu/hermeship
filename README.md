@@ -13,7 +13,7 @@ Hermeship 不是 clawhip thin adapter：
 
 ## Current State
 
-Milestone 0 到 Milestone 9.2 已完成。Milestone 9.3 已记录真实 live check 未执行原因，但真实 Discord/Hermes live verification 仍未获得 `pass`；该 live pass 已被用户豁免用于进入 Milestone 10。Milestone 10.1 已完成 Hermes observer plugin 契约研究，Milestone 10.2 已新增可选 observer plugin scaffold，Milestone 10.3 已新增 observer plugin install/enable CLI automation。当前已实现：
+Milestone 0 到 Milestone 9.2 已完成。Milestone 9.3 已记录真实 live check 未执行原因，但真实 Discord/Hermes live verification 仍未获得 `pass`；该 live pass 已被用户豁免用于进入 Milestone 10。Milestone 10.1 已完成 Hermes observer plugin 契约研究，Milestone 10.2 已新增可选 observer plugin scaffold，Milestone 10.3 已新增 observer plugin install/enable CLI automation，Milestone 10 后续已新增 typed Rust observer event body。当前已实现：
 
 - Rust CLI、配置模型、质量门禁。
 - daemon `/health`、`/event`、`/api/hermes/hook`。
@@ -30,12 +30,12 @@ Milestone 0 到 Milestone 9.2 已完成。Milestone 9.3 已记录真实 live che
 - Milestone 10.1 Hermes observer plugin contract research in `docs/observer-plugin.md`.
 - Optional Hermes observer plugin scaffold in `templates/hermes-plugin/`.
 - Local deterministic observer plugin install/enable CLI: `hermeship hermes install-plugin` and `hermeship hermes enable-plugin`.
+- Typed Rust observer body for `hermes.observer.*`, including safe route fields and compact/raw rendering.
 
 仍未完成：
 
 - 真实 Discord/Hermes live verification pass。
 - Slack sink。
-- Hermes observer typed Rust event body；当前 `hermes.observer.*` 仍使用 `Custom` fallback。
 - 真实 GitHub API source、真实 tmux watch、真实 scheduler、真实 service manager 自动安装。
 
 ## Architecture
@@ -234,13 +234,13 @@ Then enable it from Hermes. Hermeship prints the command but does not run Hermes
 hermes plugins enable hermeship-observer
 ```
 
-The plugin registers observer hooks only, returns `None`, posts safe summary events to `POST /event`, and fail-opens if Hermeship is unavailable. It uses:
+The plugin registers observer hooks only, returns `None`, posts safe summary events to `POST /event`, and fail-opens if Hermeship is unavailable. `hermes.observer.*` events now enter a typed Rust observer body with structured safe fields for routing and rendering. Raw approval `session_key` values are reduced to length/presence summaries, observer event core `provider` remains `hermes`, and observer body fields that share names with core metadata are available as `observer_<field>` route keys without overriding core metadata. It uses:
 
 - `HERMESHIP_DAEMON_URL`, default `http://127.0.0.1:25295`.
 - `HERMESHIP_OBSERVER_TIMEOUT_SECS`, default `2`.
 - `HERMESHIP_OBSERVER_DISABLED`, truthy value disables delivery.
 
-It does not forward raw prompts, conversation history, request/response bodies, shell commands, tool results, child goals, or child summaries.
+It does not forward raw prompts, conversation history, request/response bodies, shell commands, tool results, child goals, child summaries, approval session keys, or arbitrary error/reason text.
 
 ## Send And Emit
 
@@ -364,7 +364,7 @@ Results must be recorded in `docs/live-verification.md` without tokens, cookies,
 hermeship release preflight 0.1.0
 ```
 
-Preflight checks local release consistency: Cargo version, `Cargo.lock`, public CLI fixture, docs command coverage, hook templates, observer plugin template, fixture policy, service template and live verification status. Missing live verification is `pending`, not a default local failure. The `live verification` ok check only proves required `docs/live-verification.md` fields are present; it is not proof of a real Discord/Hermes live pass.
+Preflight checks local release consistency: Cargo version, `Cargo.lock`, public CLI fixture, docs command coverage, hook templates, observer plugin template, fixture policy, service template and live verification status. Missing live verification is `pending`, not a default local failure. The `live verification` ok check says live verification record fields are present; it does not assert a real Discord/Hermes live pass.
 
 ## Development Gates
 

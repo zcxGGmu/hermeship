@@ -7,7 +7,7 @@ use crate::event::{
     CronRunEvent, CustomEvent, EventBody, EventEnvelope, EventMetadata, EventPriority,
     GitBranchChangedEvent, GitCommitEvent, GithubCheckEvent, GithubIssueEvent,
     GithubPullRequestEvent, GithubReleaseEvent, HermesAgentEvent, HermesGatewayEvent,
-    HermesSessionEvent, TmuxKeywordEvent, TmuxStaleEvent,
+    HermesObserverEvent, HermesSessionEvent, ObserverFieldValue, TmuxKeywordEvent, TmuxStaleEvent,
 };
 use crate::events::IncomingEvent;
 use crate::source::git::{
@@ -62,6 +62,11 @@ fn canonical_kind(kind: &str, payload: &Value) -> String {
 }
 
 fn metadata_for(event: &IncomingEvent, canonical_kind: &str) -> EventMetadata {
+    let provider = if canonical_kind.starts_with("hermes.observer.") {
+        Some("hermes".to_string())
+    } else {
+        string_field(&event.payload, "provider")
+    };
     EventMetadata {
         channel_hint: event.channel.clone(),
         mention: event
@@ -72,7 +77,7 @@ fn metadata_for(event: &IncomingEvent, canonical_kind: &str) -> EventMetadata {
         template: event.template.clone(),
         priority: priority_for(canonical_kind),
         tool: string_field(&event.payload, "tool"),
-        provider: string_field(&event.payload, "provider"),
+        provider,
         source: string_field(&event.payload, "source"),
         platform: string_field(&event.payload, "platform"),
         user_id: string_field(&event.payload, "user_id"),
@@ -130,6 +135,9 @@ fn body_for(kind: &str, payload: &Value, metadata: &EventMetadata) -> Result<Eve
         }
         "hermes.agent.failed" => {
             EventBody::HermesAgentFailed(agent_event("failed", payload, metadata))
+        }
+        observer if observer.starts_with("hermes.observer.") => {
+            EventBody::HermesObserver(observer_event(observer, payload))
         }
         _ => EventBody::Custom(CustomEvent {
             kind: kind.to_string(),
@@ -417,6 +425,157 @@ fn agent_event(status: &str, payload: &Value, metadata: &EventMetadata) -> Herme
     }
 }
 
+fn observer_event(kind: &str, payload: &Value) -> HermesObserverEvent {
+    let (category, action) = observer_category_action(kind);
+    let mut fields = std::collections::BTreeMap::new();
+
+    for key in OBSERVER_STRING_FIELDS {
+        if let Some(value) = observer_string_field(payload, key) {
+            fields.insert((*key).to_string(), ObserverFieldValue::String(value));
+        }
+    }
+    for key in OBSERVER_CODE_FIELDS {
+        insert_observer_code_or_summary(&mut fields, payload, key);
+    }
+    for key in OBSERVER_STATUS_FIELDS {
+        insert_observer_status_or_summary(&mut fields, payload, key);
+    }
+    for key in OBSERVER_SUMMARY_TEXT_FIELDS {
+        insert_observer_text_summary(&mut fields, payload, key);
+    }
+    for key in OBSERVER_NUMBER_FIELDS {
+        if let Some(value) = u64_field(payload, key) {
+            fields.insert((*key).to_string(), ObserverFieldValue::Number(value));
+        }
+    }
+    for key in OBSERVER_BOOL_FIELDS {
+        if let Some(value) = bool_field(payload, key) {
+            fields.insert((*key).to_string(), ObserverFieldValue::Bool(value));
+        }
+    }
+    for key in OBSERVER_STRING_LIST_FIELDS {
+        if let Some(values) = string_list_field(payload, key) {
+            fields.insert((*key).to_string(), ObserverFieldValue::StringList(values));
+        }
+    }
+
+    if let Some(error_summary) = string_field(payload, "error_summary")
+        .or_else(|| string_field(payload, "error_message"))
+        .or_else(|| string_field(payload, "error"))
+    {
+        fields.insert(
+            "error_message_chars".to_string(),
+            ObserverFieldValue::Number(error_summary.chars().count() as u64),
+        );
+        fields.insert(
+            "has_error_message".to_string(),
+            ObserverFieldValue::Bool(!error_summary.trim().is_empty()),
+        );
+    }
+
+    HermesObserverEvent {
+        kind: kind.to_string(),
+        category,
+        action,
+        schema_version: u64_field(payload, "observer_schema_version"),
+        fields,
+    }
+}
+
+const OBSERVER_STRING_FIELDS: &[&str] = &[
+    "session_id",
+    "task_id",
+    "turn_id",
+    "api_request_id",
+    "platform",
+    "model",
+    "provider",
+    "api_mode",
+    "response_model",
+    "finish_reason",
+    "tool_call_id",
+    "tool_name",
+    "surface",
+    "pattern_key",
+    "choice",
+    "parent_session_id",
+    "parent_turn_id",
+    "parent_subagent_id",
+    "child_session_id",
+    "child_subagent_id",
+    "child_role",
+];
+
+const OBSERVER_CODE_FIELDS: &[&str] = &["error_type"];
+const OBSERVER_STATUS_FIELDS: &[&str] = &["status", "child_status"];
+const OBSERVER_SUMMARY_TEXT_FIELDS: &[&str] = &["session_key", "reason"];
+const OBSERVER_NUMBER_FIELDS: &[&str] = &[
+    "api_call_count",
+    "message_count",
+    "tool_count",
+    "approx_input_tokens",
+    "request_char_count",
+    "max_tokens",
+    "duration_ms",
+    "api_duration",
+    "assistant_content_chars",
+    "assistant_tool_call_count",
+    "response_chars",
+    "message_chars",
+    "history_count",
+    "arg_key_count",
+    "arg_chars",
+    "result_chars",
+    "session_key_chars",
+    "reason_chars",
+    "status_chars",
+    "child_status_chars",
+    "error_type_chars",
+    "pattern_key_count",
+    "description_chars",
+    "command_chars",
+    "child_goal_chars",
+    "child_summary_chars",
+    "input_tokens",
+    "output_tokens",
+    "total_tokens",
+    "prompt_tokens",
+    "completion_tokens",
+];
+
+const OBSERVER_BOOL_FIELDS: &[&str] = &[
+    "completed",
+    "interrupted",
+    "is_first_turn",
+    "has_session_key",
+    "has_reason",
+    "has_status",
+    "has_child_status",
+    "has_error_type",
+];
+
+const OBSERVER_STRING_LIST_FIELDS: &[&str] = &["arg_keys", "pattern_keys"];
+const MAX_OBSERVER_TEXT_CHARS: usize = 240;
+const MAX_OBSERVER_CODE_CHARS: usize = 64;
+const MAX_OBSERVER_LIST_VALUES: usize = 16;
+const MAX_OBSERVER_LIST_VALUE_CHARS: usize = 64;
+
+fn observer_category_action(kind: &str) -> (String, String) {
+    let mut parts = kind
+        .strip_prefix("hermes.observer.")
+        .unwrap_or(kind)
+        .split('.')
+        .filter(|part| !part.is_empty());
+    let category = parts.next().unwrap_or("unknown").to_string();
+    let action = parts.collect::<Vec<_>>().join(".");
+    let action = if action.is_empty() {
+        "unknown".to_string()
+    } else {
+        action
+    };
+    (category, action)
+}
+
 fn priority_for(kind: &str) -> EventPriority {
     match kind {
         "hermes.agent.failed" => EventPriority::Critical,
@@ -470,6 +629,115 @@ fn bool_field(payload: &Value, key: &str) -> Option<bool> {
     value_field(payload, key).and_then(Value::as_bool)
 }
 
+fn observer_string_field(payload: &Value, key: &str) -> Option<String> {
+    string_field(payload, key).map(|value| observer_bounded_text(&value, MAX_OBSERVER_TEXT_CHARS))
+}
+
+fn insert_observer_code_or_summary(
+    fields: &mut std::collections::BTreeMap<String, ObserverFieldValue>,
+    payload: &Value,
+    key: &str,
+) {
+    let Some(value) = string_field(payload, key) else {
+        return;
+    };
+    if let Some(code) = observer_code_value(&value) {
+        fields.insert(key.to_string(), ObserverFieldValue::String(code));
+    } else {
+        insert_observer_text_summary_value(fields, key, &value);
+    }
+}
+
+fn insert_observer_status_or_summary(
+    fields: &mut std::collections::BTreeMap<String, ObserverFieldValue>,
+    payload: &Value,
+    key: &str,
+) {
+    let Some(value) = string_field(payload, key) else {
+        return;
+    };
+    if let Some(status) = observer_status_value(&value) {
+        fields.insert(key.to_string(), ObserverFieldValue::String(status));
+    } else {
+        insert_observer_text_summary_value(fields, key, &value);
+    }
+}
+
+fn insert_observer_text_summary(
+    fields: &mut std::collections::BTreeMap<String, ObserverFieldValue>,
+    payload: &Value,
+    key: &str,
+) {
+    if let Some(value) = string_field(payload, key) {
+        insert_observer_text_summary_value(fields, key, &value);
+    }
+}
+
+fn insert_observer_text_summary_value(
+    fields: &mut std::collections::BTreeMap<String, ObserverFieldValue>,
+    key: &str,
+    value: &str,
+) {
+    fields.insert(
+        format!("{key}_chars"),
+        ObserverFieldValue::Number(value.chars().count() as u64),
+    );
+    fields.insert(
+        format!("has_{key}"),
+        ObserverFieldValue::Bool(!value.trim().is_empty()),
+    );
+}
+
+fn observer_code_value(value: &str) -> Option<String> {
+    let bounded = observer_bounded_text(value, MAX_OBSERVER_CODE_CHARS);
+    let valid = bounded == value
+        && bounded.chars().any(|ch| ch.is_ascii_alphanumeric())
+        && bounded.ends_with("Error")
+        && bounded
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || ch == '_')
+        && bounded
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_ascii_alphabetic() || ch == '_');
+    valid.then_some(bounded)
+}
+
+fn observer_status_value(value: &str) -> Option<String> {
+    let normalized = value.trim().to_ascii_lowercase().replace('_', "-");
+    let canonical = match normalized.as_str() {
+        "ok" | "success" | "succeeded" => "ok",
+        "done" | "completed" | "complete" => "done",
+        "failed" | "failure" | "error" => "failed",
+        "interrupted" | "cancelled" | "canceled" => "interrupted",
+        "timeout" | "timed-out" => "timeout",
+        "running" | "started" | "pending" | "skipped" => normalized.as_str(),
+        _ => return None,
+    };
+    Some(canonical.to_string())
+}
+
+fn observer_bounded_text(value: &str, limit: usize) -> String {
+    value
+        .replace(['\n', '\r'], " ")
+        .chars()
+        .take(limit)
+        .collect()
+}
+
+fn string_list_field(payload: &Value, key: &str) -> Option<Vec<String>> {
+    let values = value_field(payload, key)?.as_array()?;
+    let values = values
+        .iter()
+        .filter_map(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .take(MAX_OBSERVER_LIST_VALUES)
+        .map(|value| observer_bounded_text(value, MAX_OBSERVER_LIST_VALUE_CHARS))
+        .collect::<Vec<_>>();
+    (!values.is_empty()).then_some(values)
+}
+
 fn value_field<'a>(payload: &'a Value, key: &str) -> Option<&'a Value> {
     payload
         .get(key)
@@ -489,7 +757,7 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::event::{EventBody, EventPriority};
+    use crate::event::{EventBody, EventPriority, ObserverFieldValue};
     use crate::events::{IncomingEvent, MessageFormat};
 
     #[test]
@@ -1105,6 +1373,396 @@ mod tests {
     }
 
     #[test]
+    fn observer_events_convert_to_typed_body_with_safe_fields_only() {
+        let envelope = from_incoming_event(&IncomingEvent::new(
+            "hermes.observer.tool.started",
+            json!({
+                "provider": "hermes",
+                "source": "plugin",
+                "observer_schema_version": 1,
+                "session_id": "session-1",
+                "task_id": "task-1",
+                "turn_id": "turn-1",
+                "api_request_id": "api-1",
+                "tool_call_id": "tool-1",
+                "tool_name": "terminal",
+                "arg_keys": ["mode", "path"],
+                "arg_key_count": 2,
+                "arg_chars": 37,
+                "command": "RAW_COMMAND_DO_NOT_FORWARD",
+                "tool_result": "RAW_TOOL_RESULT_DO_NOT_FORWARD",
+                "request": {"body": "RAW_REQUEST_DO_NOT_FORWARD"}
+            }),
+        ))
+        .unwrap();
+
+        assert_eq!(envelope.source, "hermes");
+        assert_eq!(envelope.canonical_kind(), "hermes.observer.tool.started");
+        assert_eq!(envelope.metadata.provider.as_deref(), Some("hermes"));
+        assert_eq!(envelope.metadata.source.as_deref(), Some("plugin"));
+        assert_eq!(envelope.metadata.session_id.as_deref(), Some("session-1"));
+        assert_eq!(envelope.metadata.priority, EventPriority::Normal);
+
+        match envelope.body {
+            EventBody::HermesObserver(body) => {
+                assert_eq!(body.kind, "hermes.observer.tool.started");
+                assert_eq!(body.category, "tool");
+                assert_eq!(body.action, "started");
+                assert_eq!(
+                    body.fields.get("tool_name"),
+                    Some(&ObserverFieldValue::String("terminal".to_string()))
+                );
+                assert_eq!(
+                    body.fields.get("arg_keys"),
+                    Some(&ObserverFieldValue::StringList(vec![
+                        "mode".to_string(),
+                        "path".to_string()
+                    ]))
+                );
+                assert_eq!(
+                    body.fields.get("arg_chars"),
+                    Some(&ObserverFieldValue::Number(37))
+                );
+                assert!(!body.fields.contains_key("command"));
+                assert!(!body.fields.contains_key("tool_result"));
+                assert!(!body.fields.contains_key("request"));
+            }
+            other => panic!("expected HermesObserver, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn observer_error_and_subagent_events_store_summaries_not_raw_text() {
+        let api_failed = from_incoming_event(&IncomingEvent::new(
+            "hermes.observer.api.request.failed",
+            json!({
+                "provider": "hermes",
+                "source": "plugin",
+                "observer_schema_version": 1,
+                "session_id": "session-1",
+                "api_request_id": "api-1",
+                "model": "synthetic-model",
+                "api_mode": "chat",
+                "api_call_count": 3,
+                "error_type": "RuntimeError",
+                "error_message": "RAW_ERROR_MESSAGE_DO_NOT_FORWARD",
+                "error_summary": "bounded error summary",
+                "duration_ms": 7,
+                "response": "RAW_RESPONSE_DO_NOT_FORWARD"
+            }),
+        ))
+        .unwrap();
+
+        match api_failed.body {
+            EventBody::HermesObserver(body) => {
+                assert_eq!(body.category, "api");
+                assert_eq!(body.action, "request.failed");
+                assert_eq!(
+                    body.fields.get("error_message_chars"),
+                    Some(&ObserverFieldValue::Number(21))
+                );
+                assert_eq!(
+                    body.fields.get("has_error_message"),
+                    Some(&ObserverFieldValue::Bool(true))
+                );
+                assert!(!body.fields.values().any(|value| {
+                    match value {
+                        ObserverFieldValue::String(value) => {
+                            value.contains("RAW_ERROR") || value.contains("bounded error summary")
+                        }
+                        ObserverFieldValue::StringList(values) => values
+                            .iter()
+                            .any(|value| value.contains("RAW_ERROR") || value.contains("bounded")),
+                        _ => false,
+                    }
+                }));
+                assert!(!body.fields.contains_key("response"));
+            }
+            other => panic!("expected HermesObserver, got {other:?}"),
+        }
+
+        let subagent_finished = from_incoming_event(&IncomingEvent::new(
+            "hermes.observer.subagent.finished",
+            json!({
+                "provider": "hermes",
+                "source": "plugin",
+                "parent_session_id": "parent-session",
+                "child_session_id": "child-session",
+                "child_role": "reviewer",
+                "child_status": "done",
+                "child_summary": "RAW_CHILD_SUMMARY_DO_NOT_FORWARD",
+                "child_summary_chars": 33,
+                "duration_ms": 9
+            }),
+        ))
+        .unwrap();
+
+        match subagent_finished.body {
+            EventBody::HermesObserver(body) => {
+                assert_eq!(body.category, "subagent");
+                assert_eq!(body.action, "finished");
+                assert_eq!(
+                    body.fields.get("child_role"),
+                    Some(&ObserverFieldValue::String("reviewer".to_string()))
+                );
+                assert_eq!(
+                    body.fields.get("child_summary_chars"),
+                    Some(&ObserverFieldValue::Number(33))
+                );
+                assert!(!body.fields.contains_key("child_summary"));
+            }
+            other => panic!("expected HermesObserver, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn observer_sensitive_and_free_text_fields_store_only_summaries() {
+        let error_type = format!("RuntimeError\n{}", "raw exception text ".repeat(20));
+        let reason = format!(
+            "operator requested reset\n{}",
+            "raw reason text ".repeat(20)
+        );
+        let status = format!("failed\n{}", "raw status text ".repeat(20));
+        let session_key = "sk-secret-session-key-should-not-forward";
+        let envelope = from_incoming_event(&IncomingEvent::new(
+            "hermes.observer.approval.requested",
+            json!({
+                "provider": "hermes",
+                "source": "plugin",
+                "observer_schema_version": 1,
+                "session_key": session_key,
+                "surface": "terminal",
+                "pattern_key": "shell-command",
+                "turn_id": "turn-approval",
+                "tool_call_id": "tool-approval",
+                "error_type": error_type,
+                "reason": reason,
+                "status": status
+            }),
+        ))
+        .unwrap();
+
+        match envelope.body {
+            EventBody::HermesObserver(body) => {
+                assert!(!body.fields.contains_key("session_key"));
+                assert!(!body.fields.contains_key("error_type"));
+                assert!(!body.fields.contains_key("reason"));
+                assert!(!body.fields.contains_key("status"));
+                assert_eq!(
+                    body.fields.get("session_key_chars"),
+                    Some(&ObserverFieldValue::Number(
+                        session_key.chars().count() as u64
+                    ))
+                );
+                assert_eq!(
+                    body.fields.get("has_session_key"),
+                    Some(&ObserverFieldValue::Bool(true))
+                );
+                assert_eq!(
+                    body.fields.get("error_type_chars"),
+                    Some(&ObserverFieldValue::Number(
+                        error_type.trim().chars().count() as u64
+                    ))
+                );
+                assert_eq!(
+                    body.fields.get("reason_chars"),
+                    Some(&ObserverFieldValue::Number(
+                        reason.trim().chars().count() as u64
+                    ))
+                );
+                assert_eq!(
+                    body.fields.get("status_chars"),
+                    Some(&ObserverFieldValue::Number(
+                        status.trim().chars().count() as u64
+                    ))
+                );
+                assert!(!format!("{:?}", body.fields).contains("raw exception text"));
+                assert!(!format!("{:?}", body.fields).contains("raw reason text"));
+                assert!(!format!("{:?}", body.fields).contains("raw status text"));
+                assert!(!format!("{:?}", body.fields).contains(session_key));
+            }
+            other => panic!("expected HermesObserver, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn observer_secret_shaped_error_type_is_summarized() {
+        let secret_error_type = "sk-secret-session-key";
+        let envelope = from_incoming_event(&IncomingEvent::new(
+            "hermes.observer.api.request.failed",
+            json!({
+                "provider": "hermes",
+                "source": "plugin",
+                "session_id": "session-1",
+                "model": "synthetic-model",
+                "error_type": secret_error_type
+            }),
+        ))
+        .unwrap();
+
+        match envelope.body {
+            EventBody::HermesObserver(body) => {
+                assert!(!body.fields.contains_key("error_type"));
+                assert_eq!(
+                    body.fields.get("error_type_chars"),
+                    Some(&ObserverFieldValue::Number(secret_error_type.len() as u64))
+                );
+                assert_eq!(
+                    body.fields.get("has_error_type"),
+                    Some(&ObserverFieldValue::Bool(true))
+                );
+                assert!(!format!("{:?}", body.fields).contains(secret_error_type));
+            }
+            other => panic!("expected HermesObserver, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn observer_provider_metadata_is_hermes_even_when_body_provider_is_api_provider() {
+        let envelope = from_incoming_event(&IncomingEvent::new(
+            "hermes.observer.api.request.started",
+            json!({
+                "provider": "synthetic-api-provider",
+                "source": "plugin",
+                "session_id": "session-1",
+                "model": "synthetic-model",
+                "api_mode": "chat"
+            }),
+        ))
+        .unwrap();
+
+        assert_eq!(envelope.metadata.provider.as_deref(), Some("hermes"));
+        match envelope.body {
+            EventBody::HermesObserver(body) => {
+                assert_eq!(
+                    body.fields.get("provider"),
+                    Some(&ObserverFieldValue::String(
+                        "synthetic-api-provider".to_string()
+                    ))
+                );
+            }
+            other => panic!("expected HermesObserver, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn observer_preserves_plugin_generated_sensitive_field_summaries() {
+        let envelope = from_incoming_event(&IncomingEvent::new(
+            "hermes.observer.approval.requested",
+            json!({
+                "provider": "hermes",
+                "source": "plugin",
+                "session_key_chars": 39,
+                "has_session_key": true,
+                "reason_chars": 21,
+                "has_reason": true,
+                "status_chars": 17,
+                "has_status": true,
+                "error_type_chars": 29,
+                "has_error_type": true,
+                "surface": "terminal"
+            }),
+        ))
+        .unwrap();
+
+        match envelope.body {
+            EventBody::HermesObserver(body) => {
+                assert_eq!(
+                    body.fields.get("session_key_chars"),
+                    Some(&ObserverFieldValue::Number(39))
+                );
+                assert_eq!(
+                    body.fields.get("has_session_key"),
+                    Some(&ObserverFieldValue::Bool(true))
+                );
+                assert_eq!(
+                    body.fields.get("reason_chars"),
+                    Some(&ObserverFieldValue::Number(21))
+                );
+                assert_eq!(
+                    body.fields.get("has_reason"),
+                    Some(&ObserverFieldValue::Bool(true))
+                );
+                assert_eq!(
+                    body.fields.get("status_chars"),
+                    Some(&ObserverFieldValue::Number(17))
+                );
+                assert_eq!(
+                    body.fields.get("has_status"),
+                    Some(&ObserverFieldValue::Bool(true))
+                );
+                assert_eq!(
+                    body.fields.get("error_type_chars"),
+                    Some(&ObserverFieldValue::Number(29))
+                );
+                assert_eq!(
+                    body.fields.get("has_error_type"),
+                    Some(&ObserverFieldValue::Bool(true))
+                );
+                assert!(!body.fields.contains_key("session_key"));
+                assert!(!body.fields.contains_key("reason"));
+                assert!(!body.fields.contains_key("status"));
+                assert!(!body.fields.contains_key("error_type"));
+            }
+            other => panic!("expected HermesObserver, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn observer_string_fields_are_single_line_and_bounded() {
+        let long_tool_name = format!("terminal\n{}", "x".repeat(400));
+        let envelope = from_incoming_event(&IncomingEvent::new(
+            "hermes.observer.tool.started",
+            json!({
+                "provider": "hermes",
+                "source": "plugin",
+                "session_id": "session-1",
+                "tool_call_id": "tool-1",
+                "tool_name": long_tool_name,
+                "arg_keys": [
+                    "pattern-0-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-1-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-2-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-3-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-4-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-5-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-6-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-7-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-8-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-9-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-10-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-11-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-12-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-13-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-14-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-15-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "pattern-16-RAW_PATTERN_KEY_SHOULD_BE_BOUNDEDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                ]
+            }),
+        ))
+        .unwrap();
+
+        match envelope.body {
+            EventBody::HermesObserver(body) => {
+                let Some(ObserverFieldValue::String(tool_name)) = body.fields.get("tool_name")
+                else {
+                    panic!("missing bounded tool_name");
+                };
+                assert_eq!(tool_name.chars().count(), 240);
+                assert!(!tool_name.contains('\n'));
+
+                let Some(ObserverFieldValue::StringList(arg_keys)) = body.fields.get("arg_keys")
+                else {
+                    panic!("missing bounded arg_keys");
+                };
+                assert_eq!(arg_keys.len(), 16);
+                assert!(arg_keys.iter().all(|value| value.chars().count() <= 64));
+            }
+            other => panic!("expected HermesObserver, got {other:?}"),
+        }
+    }
+
+    #[test]
     fn unknown_event_becomes_custom_without_losing_payload() {
         let event = IncomingEvent::new(
             "plugin.custom",
@@ -1174,6 +1832,7 @@ mod tests {
             EventBody::HermesAgentStep(_) => "HermesAgentStep",
             EventBody::HermesAgentFinished(_) => "HermesAgentFinished",
             EventBody::HermesAgentFailed(_) => "HermesAgentFailed",
+            EventBody::HermesObserver(_) => "HermesObserver",
             EventBody::Custom(_) => "Custom",
         }
     }

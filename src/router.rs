@@ -4,7 +4,7 @@ use std::fmt;
 use serde::{Serialize, Serializer};
 
 use crate::config::{AppConfig, MessageFormat, RouteRule};
-use crate::event::{EventBody, EventEnvelope, EventMetadata};
+use crate::event::{EventBody, EventEnvelope, EventMetadata, ObserverFieldValue};
 
 #[derive(Debug, Clone)]
 pub struct Router {
@@ -406,7 +406,63 @@ fn insert_body_fields(context: &mut BTreeMap<String, String>, body: &EventBody) 
             insert_context(context, "cron_job_id", Some(body.job_id.as_str()));
             insert_context(context, "cron_schedule", Some(body.schedule.as_str()));
         }
+        EventBody::HermesObserver(body) => {
+            insert_context(context, "observer_category", Some(body.category.as_str()));
+            insert_context(context, "observer_action", Some(body.action.as_str()));
+            if let Some(version) = body.schema_version {
+                context.insert("observer_schema_version".to_string(), version.to_string());
+            }
+            for (key, value) in &body.fields {
+                let value = observer_field_value(value);
+                insert_observer_context(context, key, value.as_deref());
+            }
+        }
         _ => {}
+    }
+}
+
+fn insert_observer_context(context: &mut BTreeMap<String, String>, key: &str, value: Option<&str>) {
+    let Some(value) = normalize_text(value) else {
+        return;
+    };
+    context.insert(format!("observer_{key}"), value.clone());
+    if is_reserved_metadata_key(key) {
+        context.entry(key.to_string()).or_insert(value);
+    } else {
+        context.insert(key.to_string(), value);
+    }
+}
+
+fn is_reserved_metadata_key(key: &str) -> bool {
+    matches!(
+        key,
+        "tool"
+            | "provider"
+            | "source"
+            | "platform"
+            | "user_id"
+            | "chat_id"
+            | "thread_id"
+            | "chat_type"
+            | "session_id"
+            | "agent_name"
+            | "project"
+            | "repo_name"
+            | "repo_path"
+            | "worktree_path"
+            | "branch"
+            | "channel"
+            | "event"
+            | "canonical_kind"
+    )
+}
+
+fn observer_field_value(value: &ObserverFieldValue) -> Option<String> {
+    match value {
+        ObserverFieldValue::String(value) => normalize_text(Some(value.as_str())),
+        ObserverFieldValue::Number(value) => Some(value.to_string()),
+        ObserverFieldValue::Bool(value) => Some(value.to_string()),
+        ObserverFieldValue::StringList(values) => (!values.is_empty()).then(|| values.join(",")),
     }
 }
 
@@ -961,6 +1017,233 @@ mod tests {
     }
 
     #[test]
+    fn observer_route_filters_match_typed_safe_fields() {
+        let config = AppConfig {
+            routes: vec![
+                RouteRule {
+                    event: "hermes.observer.tool.*".to_string(),
+                    filter: BTreeMap::from([
+                        ("observer_category".to_string(), "tool".to_string()),
+                        ("observer_action".to_string(), "finished".to_string()),
+                        ("tool_name".to_string(), "terminal".to_string()),
+                        ("status".to_string(), "failed".to_string()),
+                        ("session_id".to_string(), "session-1".to_string()),
+                    ]),
+                    channel: Some("observer-alerts".to_string()),
+                    ..RouteRule::default()
+                },
+                RouteRule {
+                    event: "hermes.observer.*".to_string(),
+                    filter: BTreeMap::from([("tool_name".to_string(), "browser".to_string())]),
+                    channel: Some("wrong-tool".to_string()),
+                    ..RouteRule::default()
+                },
+            ],
+            ..AppConfig::default()
+        };
+        let envelope = envelope(
+            "hermes.observer.tool.finished",
+            json!({
+                "provider": "hermes",
+                "source": "plugin",
+                "session_id": "session-1",
+                "tool_call_id": "tool-1",
+                "tool_name": "terminal",
+                "status": "failed",
+                "duration_ms": 42,
+                "result_chars": 128,
+                "error_summary": "tool failed safely"
+            }),
+        );
+
+        let explanation = Router::new(config).explain(&envelope);
+
+        assert_eq!(explanation.canonical_kind, "hermes.observer.tool.finished");
+        assert_eq!(
+            explanation.route_candidates,
+            vec![
+                "hermes.observer.tool.finished",
+                "hermes.observer.tool.*",
+                "hermes.observer.*",
+                "hermes.*"
+            ]
+        );
+        assert_eq!(explanation.deliveries.len(), 1);
+        assert_eq!(
+            explanation.deliveries[0].target,
+            SinkTarget::DiscordChannel("observer-alerts".to_string())
+        );
+        assert!(explanation.routes[0].matched);
+        assert_eq!(
+            explanation.routes[0].filter_results[0].actual.as_deref(),
+            Some("finished")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[1].actual.as_deref(),
+            Some("tool")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[2].actual.as_deref(),
+            Some("session-1")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[3].actual.as_deref(),
+            Some("failed")
+        );
+        assert_eq!(
+            explanation.routes[0].filter_results[4].actual.as_deref(),
+            Some("terminal")
+        );
+        assert_eq!(
+            explanation.routes[1].skipped_reason.as_deref(),
+            Some("filter mismatch")
+        );
+    }
+
+    #[test]
+    fn observer_route_filters_match_api_model_provider_and_subagent_role() {
+        let api_config = AppConfig {
+            routes: vec![RouteRule {
+                event: "hermes.observer.api.*".to_string(),
+                filter: BTreeMap::from([
+                    ("observer_category".to_string(), "api".to_string()),
+                    ("model".to_string(), "synthetic-model".to_string()),
+                    ("provider".to_string(), "hermes".to_string()),
+                    ("api_mode".to_string(), "chat".to_string()),
+                ]),
+                channel: Some("api-alerts".to_string()),
+                ..RouteRule::default()
+            }],
+            ..AppConfig::default()
+        };
+        let api = envelope(
+            "hermes.observer.api.request.failed",
+            json!({
+                "provider": "hermes",
+                "source": "plugin",
+                "session_id": "session-1",
+                "model": "synthetic-model",
+                "api_mode": "chat",
+                "error_summary": "bounded error summary"
+            }),
+        );
+        let api_explanation = Router::new(api_config).explain(&api);
+
+        assert_eq!(api_explanation.deliveries.len(), 1);
+        assert_eq!(
+            api_explanation.deliveries[0].target,
+            SinkTarget::DiscordChannel("api-alerts".to_string())
+        );
+
+        let subagent_config = AppConfig {
+            routes: vec![RouteRule {
+                event: "hermes.observer.subagent.*".to_string(),
+                filter: BTreeMap::from([
+                    ("observer_category".to_string(), "subagent".to_string()),
+                    ("child_role".to_string(), "reviewer".to_string()),
+                    ("child_status".to_string(), "done".to_string()),
+                ]),
+                channel: Some("subagent-alerts".to_string()),
+                ..RouteRule::default()
+            }],
+            ..AppConfig::default()
+        };
+        let subagent = envelope(
+            "hermes.observer.subagent.finished",
+            json!({
+                "provider": "hermes",
+                "source": "plugin",
+                "parent_session_id": "parent-session",
+                "child_session_id": "child-session",
+                "child_role": "reviewer",
+                "child_status": "done",
+                "child_summary_chars": 33
+            }),
+        );
+        let subagent_explanation = Router::new(subagent_config).explain(&subagent);
+
+        assert_eq!(subagent_explanation.deliveries.len(), 1);
+        assert_eq!(
+            subagent_explanation.deliveries[0].target,
+            SinkTarget::DiscordChannel("subagent-alerts".to_string())
+        );
+    }
+
+    #[test]
+    fn observer_body_fields_do_not_shadow_metadata_context() {
+        let config = AppConfig {
+            routes: vec![
+                RouteRule {
+                    event: "hermes.observer.api.*".to_string(),
+                    filter: BTreeMap::from([
+                        ("provider".to_string(), "metadata-provider".to_string()),
+                        ("observer_provider".to_string(), "body-provider".to_string()),
+                        ("session_id".to_string(), "metadata-session".to_string()),
+                        (
+                            "observer_session_id".to_string(),
+                            "body-session".to_string(),
+                        ),
+                    ]),
+                    channel: Some("metadata-safe".to_string()),
+                    ..RouteRule::default()
+                },
+                RouteRule {
+                    event: "hermes.observer.api.*".to_string(),
+                    filter: BTreeMap::from([("provider".to_string(), "body-provider".to_string())]),
+                    channel: Some("poisoned".to_string()),
+                    ..RouteRule::default()
+                },
+            ],
+            ..AppConfig::default()
+        };
+        let mut envelope = envelope_with_hints(IncomingEvent::new(
+            "hermes.observer.api.request.failed",
+            json!({
+                "provider": "body-provider",
+                "source": "plugin",
+                "session_id": "body-session",
+                "model": "synthetic-model",
+                "error_summary": "bounded error summary"
+            }),
+        ));
+        envelope.metadata.provider = Some("metadata-provider".to_string());
+        envelope.metadata.session_id = Some("metadata-session".to_string());
+
+        let explanation = Router::new(config).explain(&envelope);
+
+        assert_eq!(explanation.deliveries.len(), 1);
+        assert_eq!(
+            explanation.deliveries[0].target,
+            SinkTarget::DiscordChannel("metadata-safe".to_string())
+        );
+        assert!(explanation.routes[0].matched);
+        assert_eq!(
+            filter_actual(&explanation.routes[0], "provider"),
+            Some("metadata-provider")
+        );
+        assert_eq!(
+            filter_actual(&explanation.routes[0], "observer_provider"),
+            Some("body-provider")
+        );
+        assert_eq!(
+            filter_actual(&explanation.routes[0], "session_id"),
+            Some("metadata-session")
+        );
+        assert_eq!(
+            filter_actual(&explanation.routes[0], "observer_session_id"),
+            Some("body-session")
+        );
+        assert_eq!(
+            filter_actual(&explanation.routes[1], "provider"),
+            Some("metadata-provider")
+        );
+        assert_eq!(
+            explanation.routes[1].skipped_reason.as_deref(),
+            Some("filter mismatch")
+        );
+    }
+
+    #[test]
     fn explain_redacts_webhook_targets_in_diagnostics() {
         let raw_webhook = "https://discord.com/api/webhooks/synthetic-id/synthetic-secret-token";
         let config = AppConfig {
@@ -1043,6 +1326,14 @@ mod tests {
 
     fn envelope(kind: &str, payload: serde_json::Value) -> crate::event::EventEnvelope {
         envelope_with_hints(IncomingEvent::new(kind, payload))
+    }
+
+    fn filter_actual<'a>(route: &'a RouteExplanation, key: &str) -> Option<&'a str> {
+        route
+            .filter_results
+            .iter()
+            .find(|filter| filter.key == key)
+            .and_then(|filter| filter.actual.as_deref())
     }
 
     fn envelope_with_hints(event: IncomingEvent) -> crate::event::EventEnvelope {

@@ -10,7 +10,7 @@ Hermeship 接收三类公开事件输入：
 - `POST /api/hermes/hook`：Hermes hook envelope。
 - `hermeship hermes hook --payload <json-or->`：CLI wrapper，最终 POST 到 daemon。
 
-`hermeship emit`、source CLI 和可选 Hermes observer plugin 也会构造 `IncomingEvent` 并投递 `/event`。Observer plugin payload 必须使用 `hermes.observer.*` namespace，并通过 unknown-event `Custom` fallback 保留已清洗 payload。
+`hermeship emit`、source CLI 和可选 Hermes observer plugin 也会构造 `IncomingEvent` 并投递 `/event`。Observer plugin payload 必须使用 `hermes.observer.*` namespace，并进入 typed observer body；真正未知的非 observer 事件才通过 `Custom` fallback 保留已清洗 payload。
 
 ## Hermes Hook Envelope
 
@@ -174,6 +174,40 @@ Agent failure detection is explicit. `agent:end` maps to `hermes.agent.failed` o
 - `error_message`, `error_summary`, or `error`
 - `status` equal to `failed`, `failure`, or `error` case-insensitively
 
+## Hermes Observer Events
+
+Optional Hermes observer plugin events keep their `hermes.observer.*` canonical kind and use `HermesObserverEvent`.
+
+Recognized observer namespace examples:
+
+| Event | Category | Action |
+| --- | --- | --- |
+| `hermes.observer.session.started` | `session` | `started` |
+| `hermes.observer.session.ended` | `session` | `ended` |
+| `hermes.observer.api.request.started` | `api` | `request.started` |
+| `hermes.observer.api.request.finished` | `api` | `request.finished` |
+| `hermes.observer.api.request.failed` | `api` | `request.failed` |
+| `hermes.observer.llm.started` | `llm` | `started` |
+| `hermes.observer.llm.finished` | `llm` | `finished` |
+| `hermes.observer.tool.started` | `tool` | `started` |
+| `hermes.observer.tool.finished` | `tool` | `finished` |
+| `hermes.observer.approval.requested` | `approval` | `requested` |
+| `hermes.observer.approval.responded` | `approval` | `responded` |
+| `hermes.observer.subagent.started` | `subagent` | `started` |
+| `hermes.observer.subagent.finished` | `subagent` | `finished` |
+
+Typed observer body stores only allowlisted safe scalar/list fields such as:
+
+- `observer_schema_version`
+- `session_id`, `task_id`, `turn_id`, `api_request_id`
+- `platform`, `model`, `provider`, `api_mode`
+- `tool_call_id`, `tool_name`, canonical `status`, bounded exception-class `error_type`
+- `duration_ms`, `api_duration`, `*_count`, `*_chars`, token count fields
+- `surface`, `pattern_key`, `pattern_keys`, `choice`, `session_key_chars`, `has_session_key`
+- `parent_session_id`, `parent_turn_id`, `parent_subagent_id`, `child_session_id`, `child_subagent_id`, `child_role`, canonical `child_status`
+
+The typed body does not store raw `request`, `response`, `messages`, `assistant_content`, `tool_result`, `result`, `output`, `arguments`, `args`, `command`, `description`, `child_goal`, `child_summary`, `summary`, `conversation_history`, `session_key`, `reason`, `error_message` or `error_summary`. Error text is represented only as `error_message_chars` and `has_error_message`. `error_type` is only stored when it is a bounded exception-class style code such as `RuntimeError`; secret-shaped or otherwise non-safe `error_type`, non-canonical `status`, `child_status` and `reason` values are represented as `*_chars` and `has_*` summaries.
+
 ## Other Canonical Events
 
 Hermeship also supports local deterministic source events:
@@ -215,12 +249,16 @@ Common route filter keys:
 - `worktree_path`
 - `branch`
 - `channel`
+- `observer_category`
+- `observer_action`
+- `observer_schema_version`
 
 Additional body-derived keys:
 
 - GitHub: `owner`, `repo`, `repo_name`, `number`, `branch`, `base_branch`, `workflow`, `status`, `tag`
 - tmux: `session`, `session_name`, `window`, `pane`, `keyword`, `minutes`
 - cron: `cron_job_id`, `cron_schedule`
+- Hermes observer: `tool_name`, canonical `status`, `model`, `api_mode`, `duration_ms`, `result_chars`, `child_role`, canonical `child_status` and other typed safe observer fields. Body fields that share names with core metadata also receive `observer_<field>` aliases, and core metadata keeps priority for keys such as `provider`, `source`, `platform` and `session_id`; for observer events, core `provider` remains `hermes`, while API provider names can be matched as `observer_provider`.
 
 Route event patterns support glob `*`, for example:
 

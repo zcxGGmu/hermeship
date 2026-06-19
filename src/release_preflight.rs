@@ -548,7 +548,7 @@ fn check_live_verification(repo_root: &Path) -> CheckResult {
     if missing.is_empty() {
         CheckResult::pass(
             "live verification",
-            "required live verification fields are present",
+            "live verification record fields are present; real live pass is not asserted",
         )
     } else {
         CheckResult::pending(
@@ -625,6 +625,35 @@ version = "0.1.0"
             check.name == "live verification" && check.status == CheckStatus::Pending
         }));
         assert!(report.render().contains("[pending] live verification"));
+        assert!(
+            !report
+                .render()
+                .contains("[ok] live verification: required live verification fields are present")
+        );
+
+        remove_temp_dir(&root);
+    }
+
+    #[test]
+    fn preflight_live_verification_ok_says_record_fields_only() {
+        let root = temp_dir("preflight-live-record-fields");
+        write_project_fixture(&root, None);
+        write(
+            root.join("docs/live-verification.md"),
+            "# Live Verification\n\n日期: 2026-06-19\ncommit: synthetic\nDiscord: not_run\nHermes: not_run\n回滚: not_run\n",
+        );
+
+        let report = run_preflight(&root, "v0.1.0").unwrap();
+        let rendered = report.render();
+
+        assert!(report.ok(), "{rendered}");
+        assert!(rendered.contains(
+            "[ok] live verification: live verification record fields are present; real live pass is not asserted"
+        ));
+        assert!(
+            !rendered
+                .contains("[ok] live verification: required live verification fields are present")
+        );
 
         remove_temp_dir(&root);
     }
@@ -895,6 +924,15 @@ class FakeContext:
     def register_hook(self, name, callback):
         self.hooks[name] = callback
 
+class ApprovalContext:
+    session_key = "object-secret-session-key-do-not-forward"
+    surface = "terminal"
+    pattern_key = "object-pattern"
+    turn_id = "object-turn"
+    tool_call_id = "object-tool"
+    description = "RAW_OBJECT_APPROVAL_DESCRIPTION_DO_NOT_FORWARD"
+    command = "RAW_OBJECT_APPROVAL_COMMAND_DO_NOT_FORWARD"
+
 ctx = FakeContext()
 assert module.register(ctx) is None
 expected_hooks = {{
@@ -952,6 +990,7 @@ assert ctx.hooks["api_request_error"]({{
     "model": "synthetic-model",
     "api_mode": "chat",
     "api_call_count": 3,
+    "error_type": "RuntimeError: RAW_ERROR_TYPE_DO_NOT_FORWARD",
     "error_message": "RAW_ERROR_MESSAGE_DO_NOT_FORWARD",
     "error_summary": "bounded error summary",
     "error": RuntimeError("RAW_ERROR_BODY_DO_NOT_FORWARD"),
@@ -961,7 +1000,7 @@ assert ctx.hooks["post_tool_call"]({{
     "session_id": "session-1",
     "tool_call_id": "tool-2",
     "tool_name": "terminal",
-    "status": "failed",
+    "status": "failed with RAW_STATUS_TEXT_DO_NOT_FORWARD",
     "error_message": "RAW_TOOL_ERROR_MESSAGE_DO_NOT_FORWARD",
     "error_summary": "tool failed safely",
     "result": "RAW_FAILED_TOOL_RESULT_DO_NOT_FORWARD",
@@ -976,7 +1015,7 @@ assert ctx.hooks["subagent_start"]({{
     "child_goal": "RAW_CHILD_GOAL_DO_NOT_FORWARD",
 }}) is None
 assert ctx.hooks["pre_approval_request"]({{
-    "session_key": "approval-session",
+    "session_key": "sk-secret-session-key-do-not-forward",
     "surface": "terminal",
     "pattern_key": "shell-command",
     "pattern_keys": [
@@ -988,12 +1027,13 @@ assert ctx.hooks["pre_approval_request"]({{
     "turn_id": "turn-approval",
     "tool_call_id": "tool-approval",
 }}) is None
+assert ctx.hooks["pre_approval_request"](ApprovalContext()) is None
 assert ctx.hooks["subagent_stop"]({{
     "parent_session_id": "parent-session",
     "parent_turn_id": "parent-turn",
     "child_session_id": "child-session",
     "child_role": "reviewer",
-    "child_status": "done",
+    "child_status": "done with RAW_CHILD_STATUS_DO_NOT_FORWARD",
     "child_summary": "RAW_CHILD_SUMMARY_DO_NOT_FORWARD",
     "duration_ms": 9,
 }}) is None
@@ -1023,12 +1063,19 @@ for forbidden in [
     "RAW_RESPONSE_DO_NOT_FORWARD",
     "RAW_ERROR_MESSAGE_DO_NOT_FORWARD",
     "RAW_ERROR_BODY_DO_NOT_FORWARD",
+    "RAW_ERROR_TYPE_DO_NOT_FORWARD",
     "RAW_TOOL_ERROR_MESSAGE_DO_NOT_FORWARD",
     "RAW_FAILED_TOOL_RESULT_DO_NOT_FORWARD",
     "RAW_CHILD_GOAL_DO_NOT_FORWARD",
     "RAW_APPROVAL_DESCRIPTION_DO_NOT_FORWARD",
     "RAW_APPROVAL_COMMAND_DO_NOT_FORWARD",
+    "RAW_OBJECT_APPROVAL_DESCRIPTION_DO_NOT_FORWARD",
+    "RAW_OBJECT_APPROVAL_COMMAND_DO_NOT_FORWARD",
     "RAW_CHILD_SUMMARY_DO_NOT_FORWARD",
+    "RAW_STATUS_TEXT_DO_NOT_FORWARD",
+    "RAW_CHILD_STATUS_DO_NOT_FORWARD",
+    "sk-secret-session-key-do-not-forward",
+    "object-secret-session-key-do-not-forward",
 ]:
     assert forbidden not in encoded, forbidden
 
@@ -1041,18 +1088,38 @@ assert tool_started["payload"]["arg_key_count"] == 2
 assert isinstance(tool_started["payload"]["arg_chars"], int)
 api_failed = next(payload for payload in payloads if payload["type"] == "hermes.observer.api.request.failed")
 assert api_failed["payload"]["error_message"] == "bounded error summary"
+assert api_failed["payload"]["error_type"] == "RuntimeError"
+assert api_failed["payload"]["error_type_chars"] == len("RuntimeError: RAW_ERROR_TYPE_DO_NOT_FORWARD")
 tool_failed = [
     payload for payload in payloads
     if payload["type"] == "hermes.observer.tool.finished"
     and payload["payload"].get("tool_call_id") == "tool-2"
 ][0]
 assert tool_failed["payload"]["error_message"] == "tool failed safely"
+assert "status" not in tool_failed["payload"]
+assert tool_failed["payload"]["status_chars"] == len("failed with RAW_STATUS_TEXT_DO_NOT_FORWARD")
 approval_requested = next(payload for payload in payloads if payload["type"] == "hermes.observer.approval.requested")
+assert "session_key" not in approval_requested["payload"]
+assert approval_requested["payload"]["session_key_chars"] == len("sk-secret-session-key-do-not-forward")
+assert approval_requested["payload"]["has_session_key"] is True
 assert approval_requested["payload"]["description_chars"] == len("RAW_APPROVAL_DESCRIPTION_DO_NOT_FORWARD")
 assert approval_requested["payload"]["command_chars"] == len("RAW_APPROVAL_COMMAND_DO_NOT_FORWARD")
 assert approval_requested["payload"]["pattern_key_count"] == 20
 assert len(approval_requested["payload"]["pattern_keys"]) == 16
 assert all(len(value) <= 64 for value in approval_requested["payload"]["pattern_keys"])
+object_approval_requested = [
+    payload for payload in payloads
+    if payload["type"] == "hermes.observer.approval.requested"
+    and payload["payload"].get("turn_id") == "object-turn"
+][0]
+assert "session_key" not in object_approval_requested["payload"]
+assert object_approval_requested["payload"]["session_key_chars"] == len("object-secret-session-key-do-not-forward")
+assert object_approval_requested["payload"]["has_session_key"] is True
+assert object_approval_requested["payload"]["description_chars"] == len("RAW_OBJECT_APPROVAL_DESCRIPTION_DO_NOT_FORWARD")
+assert object_approval_requested["payload"]["command_chars"] == len("RAW_OBJECT_APPROVAL_COMMAND_DO_NOT_FORWARD")
+subagent_finished = next(payload for payload in payloads if payload["type"] == "hermes.observer.subagent.finished")
+assert "child_status" not in subagent_finished["payload"]
+assert subagent_finished["payload"]["child_status_chars"] == len("done with RAW_CHILD_STATUS_DO_NOT_FORWARD")
 
 count_before_disabled = len(events)
 os.environ["HERMESHIP_OBSERVER_DISABLED"] = "1"

@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -133,6 +135,23 @@ pub struct HermesAgentEvent {
     pub elapsed_secs: Option<u64>,
     pub success: Option<bool>,
     pub error_message: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HermesObserverEvent {
+    pub kind: String,
+    pub category: String,
+    pub action: String,
+    pub schema_version: Option<u64>,
+    pub fields: BTreeMap<String, ObserverFieldValue>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ObserverFieldValue {
+    String(String),
+    Number(u64),
+    Bool(bool),
+    StringList(Vec<String>),
 }
 
 #[derive(Debug, Clone, PartialEq)]

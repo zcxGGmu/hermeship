@@ -4,7 +4,8 @@ pub mod compat;
 pub use body::{
     CronRunEvent, CustomEvent, GitBranchChangedEvent, GitCommitEvent, GithubCheckEvent,
     GithubIssueEvent, GithubPullRequestEvent, GithubReleaseEvent, HermesAgentEvent,
-    HermesGatewayEvent, HermesSessionEvent, TmuxKeywordEvent, TmuxStaleEvent,
+    HermesGatewayEvent, HermesObserverEvent, HermesSessionEvent, ObserverFieldValue,
+    TmuxKeywordEvent, TmuxStaleEvent,
 };
 
 use time::OffsetDateTime;
@@ -46,6 +47,7 @@ pub enum EventBody {
     HermesAgentStep(HermesAgentEvent),
     HermesAgentFinished(HermesAgentEvent),
     HermesAgentFailed(HermesAgentEvent),
+    HermesObserver(HermesObserverEvent),
     Custom(CustomEvent),
 }
 
@@ -69,6 +71,7 @@ impl EventBody {
             Self::HermesAgentStep(_) => "hermes.agent.step",
             Self::HermesAgentFinished(_) => "hermes.agent.finished",
             Self::HermesAgentFailed(_) => "hermes.agent.failed",
+            Self::HermesObserver(event) => event.kind.as_str(),
             Self::Custom(event) => event.kind.as_str(),
         }
     }

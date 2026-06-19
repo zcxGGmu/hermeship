@@ -232,7 +232,7 @@ hermes plugins enable hermeship-observer
 - `HERMESHIP_OBSERVER_TIMEOUT_SECS`：默认 `2`。
 - `HERMESHIP_OBSERVER_DISABLED`：truthy value 会跳过投递。
 
-observer plugin 只注册观察类 hook，callback 返回 `None`，并向 Hermeship daemon `POST /event` 发送 `hermes.observer.*` summary event。它不使用 `/api/hermes/hook`，不注册 middleware，不返回 block/action 指令，不转发 raw prompt、conversation history、request/response body、shell command、tool output、child goal 或 child summary。
+observer plugin 只注册观察类 hook，callback 返回 `None`，并向 Hermeship daemon `POST /event` 发送 `hermes.observer.*` summary event。这些事件进入 typed Rust observer body，可用于结构化 route filter 和安全渲染。它不使用 `/api/hermes/hook`，不注册 middleware，不返回 block/action 指令，不转发 raw prompt、conversation history、request/response body、shell command、tool output、child goal、child summary、raw approval `session_key` 或任意错误/原因原文。与 core metadata 同名的 observer body 字段通过 `observer_<field>` 路由键访问，不覆盖 core metadata。
 
 本地检查：
 

@@ -1,12 +1,13 @@
 # Hermeship Observer Plugin Contract
 
-本文记录 Milestone 10.1 的 Hermes plugin / observer 研究结论。当前阶段只定义契约、安装启用方式、事件映射、隐私边界和验证策略；不实现 plugin 模板，不新增 Hermeship canonical event 代码。
+本文记录 Hermes plugin / observer 的契约、安装启用方式、事件映射、隐私边界和验证策略。Milestone 10.1 先完成研究，Milestone 10.2 增加可选 plugin scaffold，Milestone 10.3 增加 install/enable CLI；本轮后续开发已为 `hermes.observer.*` 增加 Rust typed observer body。
 
 ## Decision
 
 - Milestone 9.3 真实 Discord/Hermes live pass 已被用户豁免，用于解除 Milestone 10 门禁。
 - 该豁免不代表真实 live verification 已通过；`docs/live-verification.md` 的 `blocked`/`not_run` 记录仍然成立。
 - Milestone 10.1 先做 observer 契约研究；Milestone 10.2 再实现可选 Hermes observer plugin scaffold。
+- Milestone 10 后续已新增 typed Rust observer body；`hermes.observer.*` 不再依赖 `Custom` fallback。
 - Slack sink 仍不在当前默认范围内。
 
 ## Hermes Plugin Surface
@@ -49,9 +50,9 @@ The first Hermeship observer plugin should register only observational hooks. It
 | Hermes hook | Hermeship event | Required safe fields |
 | --- | --- | --- |
 | `on_session_start` | `hermes.observer.session.started` | `session_id`, `platform`, `model` |
-| `on_session_end` | `hermes.observer.session.ended` | `session_id`, `platform`, `model`, `completed`, `interrupted`, `reason`, `task_id`, `turn_id`, `api_request_id` |
-| `on_session_finalize` | `hermes.observer.session.finalized` | `session_id`, `platform`, `reason` |
-| `on_session_reset` | `hermes.observer.session.reset` | `session_id`, `platform`, `reason` when present |
+| `on_session_end` | `hermes.observer.session.ended` | `session_id`, `platform`, `model`, `completed`, `interrupted`, `reason_chars`, `has_reason`, `task_id`, `turn_id`, `api_request_id` |
+| `on_session_finalize` | `hermes.observer.session.finalized` | `session_id`, `platform`, `reason_chars`, `has_reason` |
+| `on_session_reset` | `hermes.observer.session.reset` | `session_id`, `platform`, `reason_chars`, `has_reason` when present |
 
 Notes:
 
@@ -64,7 +65,7 @@ Notes:
 | --- | --- | --- |
 | `pre_api_request` | `hermes.observer.api.request.started` | `session_id`, `task_id`, `turn_id`, `api_request_id`, `platform`, `model`, `provider`, `api_mode`, `api_call_count`, `message_count`, `tool_count`, `approx_input_tokens`, `request_char_count`, `max_tokens` |
 | `post_api_request` | `hermes.observer.api.request.finished` | `session_id`, `task_id`, `turn_id`, `api_request_id`, `platform`, `model`, `provider`, `api_mode`, `api_call_count`, `api_duration`, `finish_reason`, `message_count`, `response_model`, `assistant_content_chars`, `assistant_tool_call_count`, safe token usage summary |
-| `api_request_error` | `hermes.observer.api.request.failed` | `session_id`, `task_id`, `turn_id`, `api_request_id`, `platform`, `model`, `provider`, `api_mode`, `api_call_count`, `error_type`, `error_message`, `duration_ms` when present |
+| `api_request_error` | `hermes.observer.api.request.failed` | `session_id`, `task_id`, `turn_id`, `api_request_id`, `platform`, `model`, API `provider`, `api_mode`, `api_call_count`, bounded exception-class `error_type` or `error_type_chars`, `has_error_type`, `error_message_chars`, `has_error_message`, `duration_ms` when present |
 | `pre_llm_call` | `hermes.observer.llm.started` | `session_id`, `platform`, `model`, `is_first_turn`, `message_chars`, `history_count` |
 | `post_llm_call` | `hermes.observer.llm.finished` | `session_id`, `platform`, `model`, `response_chars` when present |
 
@@ -81,7 +82,7 @@ Privacy requirements:
 | Hermes hook | Hermeship event | Required safe fields |
 | --- | --- | --- |
 | `pre_tool_call` | `hermes.observer.tool.started` | `session_id`, `task_id`, `turn_id`, `api_request_id`, `tool_call_id`, `tool_name`, `arg_keys`, `arg_chars` |
-| `post_tool_call` | `hermes.observer.tool.finished` | `session_id`, `task_id`, `turn_id`, `api_request_id`, `tool_call_id`, `tool_name`, `status`, `duration_ms`, `result_chars`, `error_type`, `error_message` |
+| `post_tool_call` | `hermes.observer.tool.finished` | `session_id`, `task_id`, `turn_id`, `api_request_id`, `tool_call_id`, `tool_name`, canonical `status` or `status_chars`, `duration_ms`, `result_chars`, bounded exception-class `error_type` or `error_type_chars`, `has_error_type`, `error_message_chars`, `has_error_message` |
 
 Behavior requirements:
 
@@ -94,13 +95,14 @@ Behavior requirements:
 
 | Hermes hook | Hermeship event | Required safe fields |
 | --- | --- | --- |
-| `pre_approval_request` | `hermes.observer.approval.requested` | `session_key`, `surface`, `pattern_key`, `pattern_keys`, `description_chars`, `command_chars`, `turn_id`, `tool_call_id` |
+| `pre_approval_request` | `hermes.observer.approval.requested` | `session_key_chars`, `has_session_key`, `surface`, `pattern_key`, `pattern_keys`, `description_chars`, `command_chars`, `turn_id`, `tool_call_id` |
 | `post_approval_response` | `hermes.observer.approval.responded` | same fields plus `choice` |
 
 Privacy requirements:
 
 - Do not forward full shell command text.
 - Do not forward full approval description.
+- Do not forward raw `session_key`; keep only length and presence metadata.
 - Keep only lengths and policy keys.
 
 ### Subagent Hooks
@@ -141,18 +143,22 @@ Rationale:
 
 - `/api/hermes/hook` is gateway-hook-specific and normalizes Hermes gateway envelopes.
 - Observer plugin payloads are already Hermeship-shaped events.
-- Unknown `hermes.observer.*` events currently degrade to `Custom`, preserving sanitized payload while avoiding premature Rust event model expansion.
+- `hermes.observer.*` events now enter a typed Rust observer body, preserving the canonical kind while storing only allowlisted safe fields.
 
 ## Rendering And Routing Strategy
 
-Milestone 10.1 should not add typed Rust observer bodies. For Milestone 10.2 MVP:
+Milestone 10.1 intentionally did not add typed Rust observer bodies. Milestone 10.2 first shipped the plugin scaffold with `Custom` fallback. After Milestone 10.3, Hermeship now has a typed observer body:
 
-- Use `hermes.observer.*` event names with `Custom` body fallback.
+- Use `hermes.observer.*` event names with `EventBody::HermesObserver`.
+- Keep canonical kind unchanged, for example `hermes.observer.tool.finished`.
+- Derive `observer_category` and `observer_action` from the namespace, for example `tool` and `finished`, or `api` and `request.failed`.
 - Route examples can match `hermes.observer.tool.*`, `hermes.observer.api.*`, `hermes.observer.subagent.*`.
-- Default renderer will render custom events generically until typed renderer support is added.
-- A later milestone may add `EventBody::HermesObserver*` variants if real usage shows stable fields and routing needs.
+- Router filters can match `observer_category`, `observer_action`, `tool_name`, canonical `status`, `model`, `api_mode`, `child_role`, canonical `child_status` and other typed safe observer fields.
+- Observer body fields that share names with core metadata are also exposed as `observer_<field>` route keys, for example `observer_provider` and `observer_session_id`; the core metadata keys keep metadata priority.
+- For `hermes.observer.*`, core metadata `provider` remains `hermes`; API provider names from observer hooks are body fields and can be matched as `observer_provider`.
+- Default renderer emits compact/inline observer summaries and raw JSON from typed allowlisted fields only.
 
-This keeps the first observer plugin low-risk and avoids expanding Rust canonical contracts before the plugin payload shape is proven.
+The typed body remains intentionally generic instead of adding one Rust variant per hook. This keeps the Rust contract stable while making observer events routeable and renderable.
 
 ## Plugin Configuration
 
@@ -218,9 +224,17 @@ cargo test cli
 
 `hermeship hermes install-plugin` installs the template into `$HERMES_HOME/plugins/hermeship-observer/` and writes a Hermeship marker. The installer rejects symlinked plugin directories, template files and marker files before writing. `hermeship hermes enable-plugin` only prints manual enable instructions; it does not call `hermes`, edit `config.yaml`, or auto-enable the plugin.
 
+Typed observer body verification adds:
+
+```bash
+cargo test observer
+```
+
+This covers observer body conversion, route filters, compact/inline/raw rendering, and the existing Python plugin smoke checks.
+
 ## Open Follow-ups After Milestone 10.3
 
 - Decided for 10.2: `templates/hermes-plugin/__init__.py` POSTs directly with Python standard library `urllib.request` to keep Hermes plugin delivery independent from the Hermeship CLI binary path.
 - Decided for 10.3: `hermeship hermes install-plugin` installs the optional observer plugin template, while `hermeship hermes enable-plugin` remains instruction-only to preserve explicit operator opt-in.
-- Decide whether typed Rust observer bodies are needed after plugin payloads stabilize.
+- Decided after 10.3: `hermes.observer.*` uses a typed Rust observer body with generic safe fields, structured route filters and safe renderer support.
 - Decided for 10.2: release preflight requires observer plugin template files and contract keywords once the scaffold lands.

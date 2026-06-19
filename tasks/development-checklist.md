@@ -791,9 +791,54 @@
   - 命令：`cargo clippy --all-targets -- -D warnings`
   - 命令：`cargo test`
 
+### 任务 10.4：Typed Rust Observer Body
+
+- [x] 新增 typed observer body。
+  - 文件：`src/event/body.rs`
+  - 文件：`src/event/mod.rs`
+  - 覆盖：`EventBody::HermesObserver`、`HermesObserverEvent`、`ObserverFieldValue`。
+  - 边界：使用一个通用 observer body，不为每个 hook 创建独立 variant。
+- [x] 实现 `hermes.observer.*` compat mapping。
+  - 文件：`src/event/compat.rs`
+  - 覆盖：保留 canonical kind，派生 `observer_category`、`observer_action` 和 `observer_schema_version`。
+  - 边界：只保存 allowlisted safe fields、计数、长度、canonical 状态、bounded exception-class `error_type` 和布尔摘要；不保存 raw request、response、messages、tool result、command、description、child goal、child summary、session_key、reason、error_message 或 error_summary。
+- [x] 接入 router filter。
+  - 文件：`src/router.rs`
+  - 覆盖：`observer_category`、`observer_action`、`observer_schema_version`、`tool_name`、canonical `status`、`model`、`api_mode`、`child_role`、canonical `child_status` 等 typed safe observer fields。
+  - 边界：observer body 中与 core metadata 同名的字段通过 `observer_<field>` alias 暴露，不覆盖 `provider`、`source`、`platform`、`session_id` 等 core metadata。
+- [x] 接入 renderer。
+  - 文件：`src/render/default.rs`
+  - 覆盖：observer compact/inline 摘要和 raw JSON 安全输出。
+  - 边界：raw JSON 只输出 typed allowlist，不回退到完整 payload。
+- [x] 验证任务 10.4。
+  - 命令：`cargo test observer`
+  - 命令：`python3 -m py_compile templates/hermes-plugin/__init__.py`
+  - 命令：`cargo test observer_plugin`
+  - 命令：`cargo test release_preflight`
+  - 命令：`cargo run -- release preflight 0.1.0`
+  - 命令：`cargo fmt --all -- --check`
+  - 命令：`cargo clippy --all-targets -- -D warnings`
+  - 命令：`cargo test`
+
 ## 运行状态日志
 
 最新记录放在最上方。
+
+### 2026-06-19 - Typed Rust observer body
+
+- [x] 已复习 `tasks/lessons.md`，确认阶段完成后必须验证并提交，且不能把未验证、未完成或无关工作混入阶段提交。
+- [x] 已确认当前分支为 `codex/milestone-1-cli`；启动时 `git status --short --branch` 显示当前分支，最近提交为 `4714fc9 docs: 更新 Hermeship 最新开发状态`、`803aefa feat: 增加 Hermes observer plugin 安装启用 CLI`、`5d4c534 docs: 更新 Hermeship 最新开发状态`、`f352222 feat: 增加可选 Hermes observer plugin scaffold`、`eb64408 docs: 更新 Hermeship 最新开发状态`。
+- [x] 已阅读本轮指定上下文：`docs/development-status.md`、方案文档、开发清单、当前 todo、`docs/live-verification.md`、README、架构、运维、事件契约、observer contract 和 `src/release_preflight.rs`。
+- [x] 已将 `tasks/todo.md` 切换为本轮“Milestone 10 后续 - Typed Rust Observer Body”工作台。
+- [x] 已新增 typed observer body：`hermes.observer.*` 进入 `EventBody::HermesObserver`，保留 canonical kind，派生 `observer_category` / `observer_action`，只保存 safe fields、计数、长度、状态和布尔摘要。
+- [x] 已新增 Red/Green 证据：新增 observer event/router/render 测试在实现前失败于缺少 `ObserverFieldValue` 和 `EventBody::HermesObserver`；实现后 `cargo test observer` 通过。
+- [x] 已接入 observer route filter 和 renderer：支持按 `observer_category`、`observer_action`、`tool_name`、`status`、`model`、`api_mode`、`child_role`、`child_status` 等字段过滤；compact/inline/raw 均不输出 raw command、tool result、request/response、child goal 或 child summary。
+- [x] 已处理 typed observer body 安全审查反馈：`session_key` 只保留 `session_key_chars`/`has_session_key`，secret-shaped 或非 safe `error_type`、`reason`、非 canonical `status`、`child_status` 只保留长度/存在性摘要，observer body 同名字段不再覆盖 route core metadata。
+- [x] 已新增审查回归 Red/Green 证据：`session_key`、自由文本和 metadata shadowing 测试先失败于当前实现，修复后 `cargo test observer`、`cargo test router`、`cargo test render`、`cargo test release_preflight` 均通过。
+- [x] 已处理最终代码审查反馈：object-style approval hook context 可收集 `session_key` 并生成安全摘要但不转发 raw 值；`hermes.observer.*` core `provider` 固定为 `hermes`，API provider 只作为 observer body 字段并通过 `observer_provider` 匹配；`error_type` 只允许 bounded exception-class code，否则转为 `error_type_chars`/`has_error_type`；release preflight 输出改为只声明 live verification 记录字段存在，不断言真实 live pass。
+- [x] 已新增最终审查回归 Red/Green 证据：`cargo test observer --lib` 在修复前失败于 secret-shaped `error_type` 原样保存、observer API provider 覆盖 core metadata、object-style approval 缺少 `session_key_chars`；`cargo test preflight_live_verification_ok_says_record_fields_only --lib` 在修复前失败于旧 preflight 文案；修复后 `cargo test observer --lib`（26 passed）、`cargo test release_preflight --lib`（16 passed）、`cargo test router --lib`（18 passed）、`cargo test render --lib`（26 passed）通过。
+- [x] 本轮未执行真实 Discord/Hermes live check，未新增 `docs/live-verification.md` 真实 pass 结果，未实现 Slack sink，未自动启用 Hermes observer plugin。
+- [x] 已运行最终验证：`python3 -m py_compile templates/hermes-plugin/__init__.py`、`cargo test observer_plugin`（13 passed）、`cargo test release_preflight`（16 passed）、`cargo run -- release preflight 0.1.0`（9 checks ok，`live verification` 输出为记录字段存在且不声明真实 pass）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（221 lib tests + 15 bin tests + doctests passed）。
 
 ### 2026-06-19 - 最新开发状态与下次启动提示词更新
 
@@ -1554,6 +1599,6 @@
 - [x] 主实现采用 Rust daemon-first 架构。
 - [x] Python 当前用于 Hermes gateway hook bridge 模板和 Milestone 10.2 已新增的可选 observer plugin 模板。
 - [x] MVP 不修改 Hermes 核心。
-- [x] MVP 首选 Hermes gateway hooks；observer plugin scaffold 和 install/enable CLI 已完成，后续只在明确需求下推进 typed Rust observer body、真实使用反馈或 live verification。
+- [x] MVP 首选 Hermes gateway hooks；observer plugin scaffold、install/enable CLI 和 typed Rust observer body 已完成，后续只在明确需求下推进真实使用反馈或 live verification。
 - [x] 默认不转发完整 message/response/request/response/tool body。
 - [x] 方案文档和进度清单分离维护。

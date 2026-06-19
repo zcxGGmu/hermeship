@@ -13,6 +13,26 @@ MAX_ARG_KEY_CHARS = 64
 MAX_PATTERN_KEYS = 16
 MAX_PATTERN_KEY_CHARS = 64
 TRUTHY_VALUES = {"1", "true", "yes", "on", "y", "enabled"}
+CANONICAL_STATUS = {
+    "ok": "ok",
+    "success": "ok",
+    "succeeded": "ok",
+    "done": "done",
+    "completed": "done",
+    "complete": "done",
+    "failed": "failed",
+    "failure": "failed",
+    "error": "failed",
+    "interrupted": "interrupted",
+    "cancelled": "interrupted",
+    "canceled": "interrupted",
+    "timeout": "timeout",
+    "timed-out": "timeout",
+    "running": "running",
+    "started": "started",
+    "pending": "pending",
+    "skipped": "skipped",
+}
 
 
 def register(ctx):
@@ -132,12 +152,12 @@ def register(ctx):
     ))
     ctx.register_hook("pre_approval_request", _callback(
         "hermes.observer.approval.requested",
-        ("session_key", "surface", "pattern_key", "turn_id", "tool_call_id"),
+        ("surface", "pattern_key", "turn_id", "tool_call_id"),
         _add_approval_summary,
     ))
     ctx.register_hook("post_approval_response", _callback(
         "hermes.observer.approval.responded",
-        ("session_key", "surface", "pattern_key", "turn_id", "tool_call_id", "choice"),
+        ("surface", "pattern_key", "turn_id", "tool_call_id", "choice"),
         _add_approval_summary,
     ))
     ctx.register_hook("subagent_start", _callback(
@@ -329,7 +349,56 @@ def _known_source_keys():
 
 def _copy_fields(payload, context, fields):
     for key in fields:
-        _put(payload, key, _get(context, key))
+        _put_observer_field(payload, key, _get(context, key))
+
+
+def _put_observer_field(payload, key, value):
+    if key in {"reason", "session_key"}:
+        _put_text_summary(payload, key, value)
+        return
+    if key in {"status", "child_status"}:
+        status = _canonical_status(value)
+        if status is None:
+            _put_text_summary(payload, key, value)
+        else:
+            payload[key] = status
+        return
+    if key == "error_type":
+        code = _safe_code(value)
+        if code is None:
+            _put_text_summary(payload, key, value)
+        else:
+            payload[key] = code
+        return
+    _put(payload, key, value)
+
+
+def _put_text_summary(payload, key, value):
+    chars = _count_chars(value)
+    if chars is not None:
+        payload[f"{key}_chars"] = chars
+        payload[f"has_{key}"] = chars > 0
+
+
+def _safe_code(value):
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text or len(text) > 64:
+        return None
+    if (
+        text.isidentifier()
+        and text.endswith("Error")
+        and any(ch.isalpha() for ch in text)
+    ):
+        return text
+    return None
+
+
+def _canonical_status(value):
+    if not isinstance(value, str):
+        return None
+    return CANONICAL_STATUS.get(value.strip().lower().replace("_", "-"))
 
 
 def _put(payload, key, value):
@@ -475,6 +544,10 @@ def _add_tool_result_summary(payload, context):
 
 
 def _add_approval_summary(payload, context):
+    session_key = _get(context, "session_key")
+    if session_key is not None:
+        payload["session_key_chars"] = _count_chars(session_key)
+        payload["has_session_key"] = True
     pattern_keys = _get(context, "pattern_keys")
     if isinstance(pattern_keys, (list, tuple)):
         keys = [_bounded(value, MAX_PATTERN_KEY_CHARS) for value in pattern_keys]
