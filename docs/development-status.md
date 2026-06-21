@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-21 README 独立叙述优化
+最后更新：2026-06-21 README 项目图标接入
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -24,7 +24,10 @@
 - 最新功能阶段提交：`6053cdf feat: 增加 typed observer body 并收紧安全边界`；上一功能阶段提交为 `803aefa feat: 增加 Hermes observer plugin 安装启用 CLI`。
 - 当前最新功能阶段：Milestone 10 后续 Typed Rust Observer Body 本地 deterministic parity 与安全 hardening 已完成并由 `6053cdf` 提交。
 - 当前最新文档阶段：Milestone 10.1 Hermes Observer 契约研究由 `93aa9ec` 完成。
-- 当前工作台：`tasks/todo.md` 已切换为“2026-06-21 README 独立叙述优化”。
+- 当前工作台：`tasks/todo.md` 已切换为“2026-06-21 README 项目图标接入”。
+- 本轮根据用户指定图片接入 README 项目图标：新增仓库内资产 `docs/assets/branding/hermeship-icon.png`，由原始 1254 x 1254 PNG 压缩为 512 x 512 PNG，并在 `README.md` 与 `README.en.md` 顶部标题下方展示。
+- 本轮 README 图标接入只更新公开文档、静态图片资产和状态记录，不改变功能代码、不新增真实 live pass、不实现 Slack sink、不自动启用 Hermes observer plugin。
+- 本轮 README 图标接入已验证：`rg -n -i "clawhip|template/clawhip|thin adapter|runtime adapter" README.md README.en.md` 无匹配，README 图标引用和关键边界声明检查通过，图标资产确认为 512 x 512 PNG，`python3 -m py_compile templates/hermes-plugin/__init__.py`，`cargo fmt --all -- --check`，`cargo test observer_plugin`（13 passed），`cargo test release_preflight`（16 passed），`cargo run -- release preflight 0.1.0`（9 checks ok，`live verification` 只证明记录字段存在），`cargo clippy --all-targets -- -D warnings`，`cargo test`（221 lib tests + 15 bin tests + doctests passed），`git diff --check`。
 - 本轮根据用户反馈优化 README 公开项目定位：`README.md` 与 `README.en.md` 不再出现 `clawhip`、`template/clawhip`、thin adapter 或 runtime adapter 相关表述，对外只呈现 Hermeship 作为独立 Hermes-native daemon-first 事件通知路由器。
 - 本轮已更新 `tasks/lessons.md`，记录“公开 README 必须是 Hermeship 独立叙述”的规则；内部开发历史可以保留参考来源，公开 README 不写内部参考来源。
 - 本轮 README 独立叙述优化只更新公开文档和状态记录，不改变功能代码、不新增真实 live pass、不实现 Slack sink、不自动启用 Hermes observer plugin。

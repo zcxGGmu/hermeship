@@ -824,6 +824,15 @@
 
 最新记录放在最上方。
 
+### 2026-06-21 - README 项目图标接入
+
+- [x] 已将用户提供的正方形 PNG 压缩为 512 x 512 的仓库内图标资产：`docs/assets/branding/hermeship-icon.png`。
+- [x] 已在 `README.md` 和 `README.en.md` 顶部标题下方、语言切换按钮上方加入居中项目图标，展示宽度为 180px。
+- [x] README 不引用用户桌面上的外部路径，远程仓库可直接加载仓库内资产。
+- [x] 已保留中英文切换按钮、Hermeship 独立项目叙述和关键能力边界声明。
+- [x] 本轮只修改 README、静态图片资产和状态记录，不修改功能代码，不执行真实 Discord/Hermes live check，不实现 Slack sink，不自动启用 Hermes observer plugin。
+- [x] 已运行验证：`rg -n -i "clawhip|template/clawhip|thin adapter|runtime adapter" README.md README.en.md` 无匹配，README 图标引用和关键边界声明检查通过，图标资产确认为 512 x 512 PNG，`python3 -m py_compile templates/hermes-plugin/__init__.py`，`cargo fmt --all -- --check`，`cargo test observer_plugin`（13 passed），`cargo test release_preflight`（16 passed），`cargo run -- release preflight 0.1.0`（9 checks ok，`live verification` 只证明记录字段存在），`cargo clippy --all-targets -- -D warnings`，`cargo test`（221 lib tests + 15 bin tests + doctests passed），`git diff --check`。
+
 ### 2026-06-21 - README 独立叙述优化
 
 - [x] 已按用户反馈优化公开 README 定位：`README.md` 和 `README.en.md` 不再出现 `clawhip`、`template/clawhip`、thin adapter 或 runtime adapter 相关表述。
