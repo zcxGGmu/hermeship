@@ -32,6 +32,10 @@ Operational boundaries:
 
 ![Hermes observer framework](docs/assets/diagrams/hermeship-observer-framework.png)
 
+![Hermeship GitHub Discord Codex OpenCode joint workflow](docs/assets/diagrams/hermeship-github-discord-codex-workflow.png)
+
+The joint workflow diagram shows the loop between GitHub issue/PR/check signals, Codex/OpenCode agent work, Hermeship sanitization/routing, and Discord coordination. GitHub API polling remains future scope; the current source path stays local deterministic.
+
 Diagram sources live in `docs/assets/diagrams/*.json`; each diagram is exported as `.svg` and `.png` with `fireworks-tech-graph` Style 6, Claude Official.
 
 ## Current Capability Boundary

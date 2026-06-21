@@ -824,6 +824,15 @@
 
 最新记录放在最上方。
 
+### 2026-06-21 - README 联合工作流图补充
+
+- [x] 已按用户要求为 README 新增 `Hermeship + GitHub + Discord + Codex/OpenCode` 联合工作流图。
+- [x] 已新增图表资产：`docs/assets/diagrams/hermeship-github-discord-codex-workflow.json`、`.svg`、`.png`。
+- [x] 已使用 `ui-ux-pro-max` 生成设计系统建议，并延续 `fireworks-tech-graph` Style 6（Claude Official）暖色图表风格。
+- [x] 已在图中使用轨道流线、脉冲环、步骤编号和反馈弧线增强动态感；同时明确真实 GitHub API polling 仍是后续范围，当前 source 路径保持 local deterministic。
+- [x] 本轮只修改 README、静态图表资产和状态记录，不修改功能代码，不执行真实 Discord/Hermes live check，不实现 Slack sink，不自动启用 Hermes observer plugin。
+- [x] 已运行验证：新增 JSON 解析通过，新增 SVG XML 解析通过，新增 PNG 确认为 1280 x 760，README 引用检查通过，公开 README 相关项目残留关键词检查无匹配，`git diff --check`，`python3 -m py_compile templates/hermes-plugin/__init__.py`，`cargo fmt --all -- --check`，`cargo test observer_plugin`（13 passed），`cargo test release_preflight`（16 passed），`cargo run -- release preflight 0.1.0`（9 checks ok，`live verification` 只证明记录字段存在），`cargo clippy --all-targets -- -D warnings`，`cargo test`（221 lib tests + 15 bin tests + doctests passed）。
+
 ### 2026-06-21 - README 顶部去重标题
 
 - [x] 已按用户反馈删除 `README.md` 和 `README.en.md` 顶部 banner 下方重复的可见 `Hermeship` 标题行。

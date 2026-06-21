@@ -1,0 +1,94 @@
+{
+  "template_type": "workflow-loop",
+  "style": 6,
+  "width": 1280,
+  "height": 760,
+  "title": "Hermeship Joint Workflow",
+  "subtitle": "GitHub signals, Codex/OpenCode work, Hermeship routing, and Discord coordination",
+  "design_notes": [
+    "ui-ux-pro-max: minimal documentation layout, strong contrast, warm Style 6 palette",
+    "dynamicity: orbital flow, pulse rings, numbered stages, curved feedback loop",
+    "boundary: real GitHub API polling is future scope; current source path remains local deterministic"
+  ],
+  "nodes": [
+    {
+      "id": "github",
+      "label": "GitHub",
+      "detail": "Issues / PRs / checks / releases",
+      "boundary": "current: local source events"
+    },
+    {
+      "id": "agents",
+      "label": "Codex / OpenCode",
+      "detail": "agent work, tool signals, commits",
+      "boundary": "writes back through repo workflow"
+    },
+    {
+      "id": "hermeship",
+      "label": "Hermeship Daemon",
+      "detail": "sanitize -> typed envelope -> route -> render",
+      "boundary": "does not modify Hermes core"
+    },
+    {
+      "id": "discord",
+      "label": "Discord",
+      "detail": "ops channels, mentions, webhooks",
+      "boundary": "best-effort delivery"
+    },
+    {
+      "id": "operator",
+      "label": "Team / Operator",
+      "detail": "triage, approve, follow up",
+      "boundary": "manual control"
+    },
+    {
+      "id": "feedback",
+      "label": "Repo Feedback",
+      "detail": "commit, PR update, release note",
+      "boundary": "closes loop"
+    }
+  ],
+  "flows": [
+    {
+      "from": "github",
+      "to": "agents",
+      "label": "issue / PR / check"
+    },
+    {
+      "from": "agents",
+      "to": "hermeship",
+      "label": "agent event"
+    },
+    {
+      "from": "github",
+      "to": "hermeship",
+      "label": "source event"
+    },
+    {
+      "from": "hermeship",
+      "to": "discord",
+      "label": "safe alert"
+    },
+    {
+      "from": "discord",
+      "to": "operator",
+      "label": "triage"
+    },
+    {
+      "from": "operator",
+      "to": "feedback",
+      "label": "next action"
+    },
+    {
+      "from": "feedback",
+      "to": "github",
+      "label": "commit / PR"
+    },
+    {
+      "from": "github",
+      "to": "hermeship",
+      "label": "future API polling",
+      "style": "dashed_boundary"
+    }
+  ]
+}

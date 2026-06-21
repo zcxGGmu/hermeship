@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-21 README 顶部去重标题
+最后更新：2026-06-21 README 联合工作流图补充
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -24,7 +24,11 @@
 - 最新功能阶段提交：`6053cdf feat: 增加 typed observer body 并收紧安全边界`；上一功能阶段提交为 `803aefa feat: 增加 Hermes observer plugin 安装启用 CLI`。
 - 当前最新功能阶段：Milestone 10 后续 Typed Rust Observer Body 本地 deterministic parity 与安全 hardening 已完成并由 `6053cdf` 提交。
 - 当前最新文档阶段：Milestone 10.1 Hermes Observer 契约研究由 `93aa9ec` 完成。
-- 当前工作台：`tasks/todo.md` 已切换为“2026-06-21 README 顶部去重标题”。
+- 当前工作台：`tasks/todo.md` 已切换为“2026-06-21 README 联合工作流图补充”。
+- 本轮根据用户要求为 README 新增 `Hermeship + GitHub + Discord + Codex/OpenCode` 联合工作流图：`docs/assets/diagrams/hermeship-github-discord-codex-workflow.{json,svg,png}`。
+- 本轮图表设计使用 `ui-ux-pro-max` 文档型开发者工具设计建议，并延续 `fireworks-tech-graph` Style 6（Claude Official）；图中用轨道流线、脉冲环、步骤编号和反馈弧线表现更强动态性。
+- 本轮 README 联合工作流图明确标注真实 GitHub API polling 仍是后续范围，当前 GitHub source 路径保持 local deterministic；未新增真实 GitHub polling、未执行真实 Discord/Hermes live check、未实现 Slack sink、未自动启用 Hermes observer plugin。
+- 本轮 README 联合工作流图补充已验证：新增 JSON 解析通过，新增 SVG XML 解析通过，新增 PNG 确认为 1280 x 760，README 引用检查通过，公开 README 相关项目残留关键词检查无匹配，`git diff --check` 通过，`python3 -m py_compile templates/hermes-plugin/__init__.py`，`cargo fmt --all -- --check`，`cargo test observer_plugin`（13 passed），`cargo test release_preflight`（16 passed），`cargo run -- release preflight 0.1.0`（9 checks ok，`live verification` 只证明记录字段存在），`cargo clippy --all-targets -- -D warnings`，`cargo test`（221 lib tests + 15 bin tests + doctests passed）。
 - 本轮根据用户反馈删除 `README.md` 与 `README.en.md` 顶部 banner 下方重复的可见 `Hermeship` 标题行；banner 继续展示项目名，副标题和语言切换保留。
 - 本轮将 README 顶部 banner 的 `alt` 改为 `Hermeship`，因为移除可见标题后 banner 不再是纯装饰图，需要保留读屏入口识别。
 - 本轮 README 顶部品牌区改为统一仓库内 banner：`docs/assets/branding/hermeship-lockup.png`，由 `HERMES-HIP` wordmark 与项目图标合成，替代了表格拼接的双图布局。

@@ -32,6 +32,10 @@ Hermeship 的公开运行边界：
 
 ![Hermes observer framework](docs/assets/diagrams/hermeship-observer-framework.png)
 
+![Hermeship GitHub Discord Codex OpenCode 联合工作流](docs/assets/diagrams/hermeship-github-discord-codex-workflow.png)
+
+联合工作流图展示 GitHub issue/PR/check 信号、Codex/OpenCode agent work、Hermeship 清洗/路由与 Discord 协作通知之间的闭环。GitHub API polling 仍是后续范围；当前 source 路径保持 local deterministic。
+
 图表源文件位于 `docs/assets/diagrams/*.json`，对应导出为 `.svg` 和 `.png`。它们使用 `fireworks-tech-graph` Style 6（Claude Official）生成。
 
 ## 当前状态

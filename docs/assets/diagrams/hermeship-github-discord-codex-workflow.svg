@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 760" width="1280" height="760" role="img" aria-labelledby="title desc">
+  <title id="title">Hermeship joint workflow</title>
+  <desc id="desc">Workflow diagram showing GitHub signals, Codex and OpenCode agent work, Hermeship routing, Discord delivery, and feedback back into GitHub.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="11" markerHeight="8" refX="10" refY="4" orient="auto"><polygon points="0 0, 11 4, 0 8" fill="#5a5a5a"/></marker>
+    <marker id="arrow-orange" markerWidth="11" markerHeight="8" refX="10" refY="4" orient="auto"><polygon points="0 0, 11 4, 0 8" fill="#d97757"/></marker>
+    <marker id="arrow-purple" markerWidth="11" markerHeight="8" refX="10" refY="4" orient="auto"><polygon points="0 0, 11 4, 0 8" fill="#8c6f5a"/></marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', 'Microsoft JhengHei', 'SimHei', sans-serif; }
+      .title { font-size: 25px; font-weight: 800; fill: #1a1a1a; }
+      .subtitle { font-size: 13px; font-weight: 600; fill: #6a6a6a; }
+      .node-title { font-size: 18px; font-weight: 800; fill: #1a1a1a; }
+      .node-sub { font-size: 13px; font-weight: 650; fill: #4f4a43; }
+      .node-foot { font-size: 12px; font-weight: 550; fill: #6a6a6a; }
+      .mini { font-size: 12px; font-weight: 750; fill: #1a1a1a; }
+      .arrow-label { font-size: 12px; font-weight: 750; fill: #5a5a5a; }
+      .callout-title { font-size: 14px; font-weight: 800; fill: #1a1a1a; }
+      .callout-body { font-size: 12px; font-weight: 550; fill: #6a6a6a; }
+      .legend { font-size: 12px; font-weight: 650; fill: #6a6a6a; }
+    </style>
+  </defs>
+  <rect width="1280" height="760" fill="#f8f6f3"/>
+  <rect x="40" y="104" width="1200" height="590" rx="26" fill="none" stroke="#ded8cf" stroke-width="1.4" stroke-dasharray="7 6"/>
+  <path d="M 78 410 C 180 96, 478 78, 640 150 C 845 40, 1130 110, 1154 320 C 1230 548, 1000 682, 776 626 C 546 732, 182 650, 112 448" fill="none" stroke="#d0c3b3" stroke-width="12" opacity="0.16" stroke-linecap="round"/>
+  <path d="M 92 408 C 190 128, 468 106, 636 174 C 835 70, 1105 136, 1130 326 C 1192 526, 990 646, 774 604 C 554 700, 218 626, 140 452" fill="none" stroke="#d97757" stroke-width="3" opacity="0.25" stroke-dasharray="12 14" stroke-linecap="round"/>
+  <text x="48" y="46" text-anchor="start" class="title">Hermeship Joint Workflow</text>
+  <text x="48" y="72" text-anchor="start" class="subtitle">GitHub signals, Codex/OpenCode work, Hermeship routing, and Discord coordination</text>
+  <rect x="1014" y="34" width="210" height="42" rx="21" fill="#fffaf2" stroke="#ded8cf" stroke-width="1.2"/>
+  <text x="1119" y="61" text-anchor="middle" class="subtitle">local deterministic first</text>
+  <line x1="48" y1="96" x2="1232" y2="96" stroke="#ded8cf" stroke-width="1"/>
+  <rect x="92" y="166" width="246" height="112" rx="16" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="2.4"/>
+  <rect x="97" y="171" width="236" height="102" rx="13" fill="none" stroke="#ffffff" stroke-width="1.1" opacity="0.45"/>
+  <circle cx="128" cy="204" r="23" fill="#24292f" stroke="#4a4a4a" stroke-width="1.6"/>
+  <text x="128" y="209" text-anchor="middle" font-size="11" font-weight="800" fill="white">GH</text>
+  <circle cx="310" cy="194" r="17" fill="#ffffff" stroke="#4a4a4a" stroke-width="1.4"/>
+  <text x="310" y="199" text-anchor="middle" font-size="13" font-weight="800" fill="#4a4a4a">1</text>
+  <text x="231.0" y="201" text-anchor="middle" class="node-title">GitHub</text>
+  <text x="231.0" y="228" text-anchor="middle" class="node-sub">issues / PRs / checks</text>
+  <text x="231.0" y="251" text-anchor="middle" class="node-foot">local source events</text>
+  <rect x="516" y="120" width="262" height="116" rx="16" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="2.4"/>
+  <rect x="521" y="125" width="252" height="106" rx="13" fill="none" stroke="#ffffff" stroke-width="1.1" opacity="0.45"/>
+  <circle cx="552" cy="158" r="23" fill="#10A37F" stroke="#4a4a4a" stroke-width="1.6"/>
+  <text x="552" y="163" text-anchor="middle" font-size="11" font-weight="800" fill="white">AI</text>
+  <circle cx="796" cy="134" r="17" fill="#ffffff" stroke="#4a4a4a" stroke-width="1.4"/>
+  <text x="796" y="139" text-anchor="middle" font-size="13" font-weight="800" fill="#4a4a4a">2</text>
+  <text x="663.0" y="155" text-anchor="middle" class="node-title">Codex / OpenCode</text>
+  <text x="663.0" y="182" text-anchor="middle" class="node-sub">agent work + tool signals</text>
+  <text x="663.0" y="205" text-anchor="middle" class="node-foot">commit / PR feedback</text>
+  <rect x="438" y="322" width="406" height="152" rx="16" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="2.4"/>
+  <rect x="443" y="327" width="396" height="142" rx="13" fill="none" stroke="#ffffff" stroke-width="1.1" opacity="0.45"/>
+  <circle cx="474" cy="360" r="23" fill="#d97757" stroke="#4a4a4a" stroke-width="1.6"/>
+  <text x="474" y="365" text-anchor="middle" font-size="11" font-weight="800" fill="white">HS</text>
+  <circle cx="816" cy="350" r="17" fill="#ffffff" stroke="#4a4a4a" stroke-width="1.4"/>
+  <text x="816" y="355" text-anchor="middle" font-size="13" font-weight="800" fill="#4a4a4a">3</text>
+  <text x="657.0" y="357" text-anchor="middle" class="node-title">Hermeship Daemon</text>
+  <text x="657.0" y="384" text-anchor="middle" class="node-sub">sanitize -&gt; envelope -&gt; route</text>
+  <text x="657.0" y="407" text-anchor="middle" class="node-foot">render safe Discord message</text>
+  <rect x="948" y="166" width="246" height="112" rx="16" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="2.4"/>
+  <rect x="953" y="171" width="236" height="102" rx="13" fill="none" stroke="#ffffff" stroke-width="1.1" opacity="0.45"/>
+  <circle cx="984" cy="204" r="23" fill="#5865F2" stroke="#4a4a4a" stroke-width="1.6"/>
+  <text x="984" y="209" text-anchor="middle" font-size="11" font-weight="800" fill="white">DC</text>
+  <circle cx="1166" cy="194" r="17" fill="#ffffff" stroke="#4a4a4a" stroke-width="1.4"/>
+  <text x="1166" y="199" text-anchor="middle" font-size="13" font-weight="800" fill="#4a4a4a">4</text>
+  <text x="1087.0" y="201" text-anchor="middle" class="node-title">Discord</text>
+  <text x="1087.0" y="228" text-anchor="middle" class="node-sub">ops channel / mentions</text>
+  <text x="1087.0" y="251" text-anchor="middle" class="node-foot">webhook or bot sink</text>
+  <rect x="930" y="552" width="260" height="104" rx="16" fill="#e8e6e3" stroke="#4a4a4a" stroke-width="2.4"/>
+  <rect x="935" y="557" width="250" height="94" rx="13" fill="none" stroke="#ffffff" stroke-width="1.1" opacity="0.45"/>
+  <circle cx="966" cy="590" r="23" fill="#8c6f5a" stroke="#4a4a4a" stroke-width="1.6"/>
+  <text x="966" y="595" text-anchor="middle" font-size="11" font-weight="800" fill="white">OPS</text>
+  <circle cx="1162" cy="580" r="17" fill="#ffffff" stroke="#4a4a4a" stroke-width="1.4"/>
+  <text x="1162" y="585" text-anchor="middle" font-size="13" font-weight="800" fill="#4a4a4a">5</text>
+  <text x="1076.0" y="587" text-anchor="middle" class="node-title">Team / Operator</text>
+  <text x="1076.0" y="614" text-anchor="middle" class="node-sub">triage + next action</text>
+  <text x="1076.0" y="637" text-anchor="middle" class="node-foot">manual control point</text>
+  <rect x="498" y="576" width="282" height="100" rx="16" fill="#e8e6e3" stroke="#4a4a4a" stroke-width="2.4"/>
+  <rect x="503" y="581" width="272" height="90" rx="13" fill="none" stroke="#ffffff" stroke-width="1.1" opacity="0.45"/>
+  <circle cx="534" cy="614" r="23" fill="#4a4a4a" stroke="#4a4a4a" stroke-width="1.6"/>
+  <text x="534" y="619" text-anchor="middle" font-size="11" font-weight="800" fill="white">GIT</text>
+  <circle cx="752" cy="604" r="17" fill="#ffffff" stroke="#4a4a4a" stroke-width="1.4"/>
+  <text x="752" y="609" text-anchor="middle" font-size="13" font-weight="800" fill="#4a4a4a">6</text>
+  <text x="655.0" y="611" text-anchor="middle" class="node-title">Repo Feedback</text>
+  <text x="655.0" y="638" text-anchor="middle" class="node-sub">commit / PR update</text>
+  <text x="655.0" y="661" text-anchor="middle" class="node-foot">release note / follow-up</text>
+  <rect x="472" y="414" width="78" height="34" rx="14" fill="#fffaf2" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="511.0" y="434" text-anchor="middle" class="mini">sanitize</text>
+  <rect x="564" y="414" width="80" height="34" rx="14" fill="#fffaf2" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="604.0" y="434" text-anchor="middle" class="mini">typed</text>
+  <rect x="658" y="414" width="70" height="34" rx="14" fill="#fffaf2" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="693.0" y="434" text-anchor="middle" class="mini">route</text>
+  <rect x="742" y="414" width="72" height="34" rx="14" fill="#fffaf2" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="778.0" y="434" text-anchor="middle" class="mini">render</text>
+  <line x1="550" y1="431" x2="564" y2="431" stroke="#4a4a4a" stroke-width="1.4"/>
+  <line x1="644" y1="431" x2="658" y2="431" stroke="#4a4a4a" stroke-width="1.4"/>
+  <line x1="728" y1="431" x2="742" y2="431" stroke="#4a4a4a" stroke-width="1.4"/>
+  <rect x="424" y="308" width="434" height="180" rx="26" fill="none" stroke="#d97757" stroke-width="2" opacity="0.18"/>
+  <rect x="410" y="294" width="462" height="208" rx="32" fill="none" stroke="#d97757" stroke-width="2" opacity="0.10"/>
+  <rect x="396" y="280" width="490" height="236" rx="38" fill="none" stroke="#d97757" stroke-width="2" opacity="0.06"/>
+  <path d="M 338 196 C 404 126, 468 116, 516 150" fill="none" stroke="#d97757" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-orange)"/>
+  <rect x="355.0" y="110" width="138" height="24" rx="8" fill="#f8f6f3" opacity="0.96"/>
+  <text x="424" y="127" text-anchor="middle" class="arrow-label">issue / PR / check</text>
+  <path d="M 647 236 C 642 276, 636 298, 632 322" fill="none" stroke="#d97757" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-orange)"/>
+  <rect x="614.0" y="270" width="104" height="24" rx="8" fill="#f8f6f3" opacity="0.96"/>
+  <text x="666" y="287" text-anchor="middle" class="arrow-label">agent event</text>
+  <path d="M 338 242 C 386 284, 414 320, 438 365" fill="none" stroke="#d97757" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-orange)"/>
+  <rect x="336.0" y="290" width="108" height="24" rx="8" fill="#f8f6f3" opacity="0.96"/>
+  <text x="390" y="307" text-anchor="middle" class="arrow-label">source event</text>
+  <path d="M 844 382 C 902 360, 934 298, 948 244" fill="none" stroke="#d97757" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-orange)"/>
+  <rect x="864.0" y="322" width="92" height="24" rx="8" fill="#f8f6f3" opacity="0.96"/>
+  <text x="910" y="339" text-anchor="middle" class="arrow-label">safe alert</text>
+  <path d="M 1076 278 C 1120 370, 1112 494, 1058 552" fill="none" stroke="#5a5a5a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+  <rect x="1095.0" y="416" width="74" height="24" rx="8" fill="#f8f6f3" opacity="0.96"/>
+  <text x="1132" y="433" text-anchor="middle" class="arrow-label">triage</text>
+  <path d="M 930 612 C 872 638, 832 642, 780 626" fill="none" stroke="#8c6f5a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-purple)"/>
+  <rect x="804.0" y="640" width="104" height="24" rx="8" fill="#f8f6f3" opacity="0.96"/>
+  <text x="856" y="657" text-anchor="middle" class="arrow-label">next action</text>
+  <path d="M 498 624 C 332 696, 138 620, 132 278" fill="none" stroke="#8c6f5a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-purple)"/>
+  <rect x="308.0" y="660" width="104" height="24" rx="8" fill="#f8f6f3" opacity="0.96"/>
+  <text x="360" y="677" text-anchor="middle" class="arrow-label">commit / PR</text>
+  <path d="M 338 220 C 470 252, 642 250, 845 330" fill="none" stroke="#5a5a5a" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+  <rect x="529.0" y="236" width="100" height="24" rx="8" fill="#f8f6f3" opacity="0.96"/>
+  <text x="579" y="253" text-anchor="middle" class="arrow-label">future API</text>
+  <path d="M 778 160 C 844 112, 926 122, 948 170" fill="none" stroke="#5a5a5a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="6 7"/>
+  <rect x="818.0" y="102" width="104" height="24" rx="8" fill="#f8f6f3" opacity="0.96"/>
+  <text x="870" y="119" text-anchor="middle" class="arrow-label">status signal</text>
+  <circle cx="372" cy="152" r="15" fill="#d97757" stroke="#ffffff" stroke-width="3"/>
+  <text x="372" y="157" text-anchor="middle" font-size="12" font-weight="800" fill="white">A</text>
+  <circle cx="646" cy="276" r="15" fill="#d97757" stroke="#ffffff" stroke-width="3"/>
+  <text x="646" y="281" text-anchor="middle" font-size="12" font-weight="800" fill="white">B</text>
+  <circle cx="900" cy="304" r="15" fill="#d97757" stroke="#ffffff" stroke-width="3"/>
+  <text x="900" y="309" text-anchor="middle" font-size="12" font-weight="800" fill="white">C</text>
+  <circle cx="1124" cy="386" r="15" fill="#5a5a5a" stroke="#ffffff" stroke-width="3"/>
+  <text x="1124" y="391" text-anchor="middle" font-size="12" font-weight="800" fill="white">D</text>
+  <circle cx="856" cy="642" r="15" fill="#8c6f5a" stroke="#ffffff" stroke-width="3"/>
+  <text x="856" y="647" text-anchor="middle" font-size="12" font-weight="800" fill="white">E</text>
+  <circle cx="254" cy="650" r="15" fill="#8c6f5a" stroke="#ffffff" stroke-width="3"/>
+  <text x="254" y="655" text-anchor="middle" font-size="12" font-weight="800" fill="white">F</text>
+  <circle cx="184" cy="146" r="5" fill="#d97757" opacity="0.55"/>
+  <circle cx="224" cy="130" r="4" fill="#d97757" opacity="0.42"/>
+  <circle cx="264" cy="120" r="3" fill="#d97757" opacity="0.3"/>
+  <circle cx="1000" cy="142" r="5" fill="#d97757" opacity="0.45"/>
+  <circle cx="1040" cy="154" r="4" fill="#d97757" opacity="0.35"/>
+  <circle cx="1080" cy="174" r="3" fill="#d97757" opacity="0.25"/>
+  <circle cx="314" cy="686" r="5" fill="#8c6f5a" opacity="0.48"/>
+  <circle cx="274" cy="672" r="4" fill="#8c6f5a" opacity="0.34"/>
+  <circle cx="232" cy="650" r="3" fill="#8c6f5a" opacity="0.24"/>
+  <rect x="72" y="548" width="336" height="104" rx="16" fill="#fffaf2" stroke="#ded8cf" stroke-width="1.4"/>
+  <text x="92" y="580" text-anchor="start" class="callout-title">Boundary note</text>
+  <text x="92" y="606" text-anchor="start" class="callout-body">Real GitHub API polling is future scope.</text>
+  <text x="92" y="628" text-anchor="start" class="callout-body">Current source path stays local deterministic.</text>
+  <rect x="938" y="672" width="286" height="56" rx="14" fill="#fffaf2" stroke="#ded8cf" stroke-width="1.2"/>
+  <line x1="958" y1="692" x2="1000" y2="692" stroke="#d97757" stroke-width="3" marker-end="url(#arrow-orange)"/>
+  <text x="1012" y="697" text-anchor="start" class="legend">implemented event path</text>
+  <line x1="958" y1="714" x2="1000" y2="714" stroke="#5a5a5a" stroke-width="2" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+  <text x="1012" y="719" text-anchor="start" class="legend">future / boundary</text>
+  <text x="48" y="728" text-anchor="start" class="subtitle">Default verification remains local and deterministic; real Discord/Hermes live checks require explicit credentials and confirmation.</text>
+</svg>
