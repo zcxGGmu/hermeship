@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-21 README 顶部品牌区视觉优化
+最后更新：2026-06-21 README 顶部去重标题
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -24,9 +24,11 @@
 - 最新功能阶段提交：`6053cdf feat: 增加 typed observer body 并收紧安全边界`；上一功能阶段提交为 `803aefa feat: 增加 Hermes observer plugin 安装启用 CLI`。
 - 当前最新功能阶段：Milestone 10 后续 Typed Rust Observer Body 本地 deterministic parity 与安全 hardening 已完成并由 `6053cdf` 提交。
 - 当前最新文档阶段：Milestone 10.1 Hermes Observer 契约研究由 `93aa9ec` 完成。
-- 当前工作台：`tasks/todo.md` 已切换为“2026-06-21 README 顶部品牌区视觉优化”。
+- 当前工作台：`tasks/todo.md` 已切换为“2026-06-21 README 顶部去重标题”。
+- 本轮根据用户反馈删除 `README.md` 与 `README.en.md` 顶部 banner 下方重复的可见 `Hermeship` 标题行；banner 继续展示项目名，副标题和语言切换保留。
+- 本轮将 README 顶部 banner 的 `alt` 改为 `Hermeship`，因为移除可见标题后 banner 不再是纯装饰图，需要保留读屏入口识别。
 - 本轮 README 顶部品牌区改为统一仓库内 banner：`docs/assets/branding/hermeship-lockup.png`，由 `HERMES-HIP` wordmark 与项目图标合成，替代了表格拼接的双图布局。
-- 本轮 README 顶部语义层级改为：装饰性 banner、`h1` 项目名、简短副标题和对称语言切换；banner 在读屏中使用空 `alt`，避免与标题重复。
+- 本轮 README 顶部语义层级改为：brand banner 承载项目名，下面只保留简短副标题和对称语言切换；不再显示重复的 `h1` 项目名。
 - 本轮参考 `hermes-agent` 顶部 `assets/banner.png` 的黑底、黄橙高对比、像素块风格，为 README 新增仓库内 `HERMES-HIP` wordmark：`docs/assets/branding/hermeship-wordmark.svg`。
 - 本轮已将 `README.md` 与 `README.en.md` 顶部改为统一品牌 lockup：左侧 `HERMES-HIP` 艺术字与右侧项目图标合成为 `docs/assets/branding/hermeship-lockup.png`，再由单一居中图片展示；语言切换按钮保留在标题下方。
 - 本轮 README HERMES-HIP 艺术字接入只更新公开文档、静态品牌资产和状态记录，不改变功能代码、不新增真实 live pass、不实现 Slack sink、不自动启用 Hermes observer plugin。

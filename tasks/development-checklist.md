@@ -824,6 +824,14 @@
 
 最新记录放在最上方。
 
+### 2026-06-21 - README 顶部去重标题
+
+- [x] 已按用户反馈删除 `README.md` 和 `README.en.md` 顶部 banner 下方重复的可见 `Hermeship` 标题行。
+- [x] 已保留统一 banner、副标题和语言切换；banner 的 `alt` 改为 `Hermeship`，避免移除可见标题后读屏丢失项目名入口。
+- [x] 已更新 `tasks/lessons.md`，记录“README banner 已含项目名时不要重复标题”的规则。
+- [x] 本轮只修改 README、状态记录和 lessons，不修改功能代码，不执行真实 Discord/Hermes live check，不实现 Slack sink，不自动启用 Hermes observer plugin。
+- [x] 已运行验证：README 顶部检查、公开 README 相关项目残留关键词检查无匹配、`git diff --check`、`python3 -m py_compile templates/hermes-plugin/__init__.py`、`cargo fmt --all -- --check`、`cargo test observer_plugin`（13 passed）、`cargo test release_preflight`（16 passed）、`cargo run -- release preflight 0.1.0`（9 checks ok，`live verification` 只证明记录字段存在）、`cargo clippy --all-targets -- -D warnings`、`cargo test`（221 lib tests + 15 bin tests + doctests passed）。
+
 ### 2026-06-21 - README 顶部品牌区视觉优化
 
 - [x] 已按用户反馈移除 README 顶部 HTML table 拼图布局，避免 GitHub 渲染出现表格边框、竖向分割线和响应式脆弱问题。

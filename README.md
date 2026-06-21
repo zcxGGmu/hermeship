@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="docs/assets/branding/hermeship-lockup.png" alt="" width="760">
+  <img src="docs/assets/branding/hermeship-lockup.png" alt="Hermeship" width="760">
 </p>
-
-<h1 align="center">Hermeship</h1>
 
 <p align="center">
   <strong>面向 Hermes 的 daemon-first 事件通知路由器</strong>
