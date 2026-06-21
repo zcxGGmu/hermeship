@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 190" role="img" aria-labelledby="title desc">
+  <title id="title">HERMES-HIP</title>
+  <desc id="desc">Pixel block style HERMES-HIP wordmark with yellow and orange layers on a black background.</desc>
+  <defs>
+    <linearGradient id="hermeshipFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffdf15"/>
+      <stop offset="0.52" stop-color="#ffd000"/>
+      <stop offset="0.53" stop-color="#e79a2d"/>
+      <stop offset="1" stop-color="#c97924"/>
+    </linearGradient>
+    <filter id="hardShadow" color-interpolation-filters="sRGB">
+      <feDropShadow dx="7" dy="7" stdDeviation="0" flood-color="#d68522" flood-opacity="1"/>
+      <feDropShadow dx="13" dy="13" stdDeviation="0" flood-color="#151515" flood-opacity="1"/>
+    </filter>
+    <pattern id="scanline" width="12" height="12" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="12" height="8" fill="transparent"/>
+      <rect x="0" y="8" width="12" height="4" fill="#111111" opacity="0.18"/>
+    </pattern>
+  </defs>
+  <rect width="760" height="190" rx="0" fill="#141414"/>
+  <g transform="translate(26 22)">
+    <text
+      x="0"
+      y="104"
+      fill="none"
+      stroke="#f4a12b"
+      stroke-width="4"
+      font-family="'Arial Black', Impact, sans-serif"
+      font-size="92"
+      font-weight="900"
+      letter-spacing="1"
+      transform="translate(12 12)">HERMES-HIP</text>
+    <text
+      x="0"
+      y="104"
+      fill="none"
+      stroke="#0a0a0a"
+      stroke-width="12"
+      font-family="'Arial Black', Impact, sans-serif"
+      font-size="92"
+      font-weight="900"
+      letter-spacing="1"
+      paint-order="stroke">HERMES-HIP</text>
+    <text
+      x="0"
+      y="104"
+      fill="url(#hermeshipFill)"
+      stroke="#ffdf15"
+      stroke-width="2"
+      font-family="'Arial Black', Impact, sans-serif"
+      font-size="92"
+      font-weight="900"
+      letter-spacing="1"
+      filter="url(#hardShadow)"
+      paint-order="stroke">HERMES-HIP</text>
+    <text
+      x="0"
+      y="104"
+      fill="url(#scanline)"
+      font-family="'Arial Black', Impact, sans-serif"
+      font-size="92"
+      font-weight="900"
+      letter-spacing="1">HERMES-HIP</text>
+    <g fill="#ffdf15">
+      <rect x="8" y="18" width="8" height="34"/>
+      <rect x="78" y="18" width="8" height="34"/>
+      <rect x="238" y="18" width="8" height="34"/>
+      <rect x="327" y="18" width="8" height="34"/>
+      <rect x="650" y="18" width="8" height="34"/>
+    </g>
+  </g>
+</svg>

@@ -824,6 +824,16 @@
 
 最新记录放在最上方。
 
+### 2026-06-21 - README HERMES-HIP 艺术字接入
+
+- [x] 已参考 `hermes-agent` 顶部 `assets/banner.png` 的黑底、黄橙高对比、像素块风格，为 Hermeship 新增 `HERMES-HIP` wordmark：`docs/assets/branding/hermeship-wordmark.svg`。
+- [x] 已用仓库内自包含 SVG 实现 wordmark，不引用外部图片、远程字体或远程资源。
+- [x] 已在 `README.md` 和 `README.en.md` 顶部改为横向品牌头部：左侧 `HERMES-HIP` 艺术字，右侧现有 `docs/assets/branding/hermeship-icon.png` 项目图标。
+- [x] 已保留语言切换按钮、Hermeship 独立项目叙述和关键能力边界声明；公开 README 仍未出现 `clawhip`、`template/clawhip`、thin adapter 或 runtime adapter 关联表述。
+- [x] 已使用 bundled Node `sharp` 将 `docs/assets/branding/hermeship-wordmark.svg` 渲染为 `/tmp/hermeship-wordmark-preview.png` 并完成视觉抽查；清理了首版 SVG 右侧多余黄色块。
+- [x] 本轮只修改 README、静态品牌资产和状态记录，不修改功能代码，不执行真实 Discord/Hermes live check，不实现 Slack sink，不自动启用 Hermes observer plugin。
+- [x] 已运行验证：SVG XML 解析通过，README wordmark/icon/语言切换引用检查通过，公开 README 相关项目残留关键词检查无匹配，关键能力边界声明检查通过，`python3 -m py_compile templates/hermes-plugin/__init__.py`，`cargo fmt --all -- --check`，`cargo test observer_plugin`（13 passed），`cargo test release_preflight`（16 passed），`cargo run -- release preflight 0.1.0`（9 checks ok，`live verification` 只证明记录字段存在），`cargo clippy --all-targets -- -D warnings`，`cargo test`（221 lib tests + 15 bin tests + doctests passed），`git diff --check`。
+
 ### 2026-06-21 - README 项目图标接入
 
 - [x] 已将用户提供的正方形 PNG 压缩为 512 x 512 的仓库内图标资产：`docs/assets/branding/hermeship-icon.png`。

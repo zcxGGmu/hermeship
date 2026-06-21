@@ -1,8 +1,15 @@
-# Hermeship
+<table align="center">
+  <tr>
+    <td align="right" valign="middle" width="72%">
+      <img src="docs/assets/branding/hermeship-wordmark.svg" alt="HERMES-HIP" width="620">
+    </td>
+    <td align="left" valign="middle" width="28%">
+      <img src="docs/assets/branding/hermeship-icon.png" alt="Hermeship 项目图标" width="156">
+    </td>
+  </tr>
+</table>
 
-<p align="center">
-  <img src="docs/assets/branding/hermeship-icon.png" alt="Hermeship 项目图标" width="180">
-</p>
+# Hermeship
 
 <p align="right">
   <a href="./README.md"><img alt="中文" src="https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-d97757?style=for-the-badge"></a>
