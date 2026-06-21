@@ -1,12 +1,13 @@
 # Hermeship
 
+<p align="right">
+  <a href="./README.md"><img alt="中文" src="https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-d97757?style=for-the-badge"></a>
+  <a href="./README.en.md"><img alt="English" src="https://img.shields.io/badge/Language-English-8c6f5a?style=for-the-badge"></a>
+</p>
+
 Hermeship 是一个 Hermes-native、daemon-first 的事件通知路由器。它参考 `/Users/zq/Desktop/ai-projs/posp/template/clawhip` 的工程形态和运行架构，但拥有自己的 Hermes 事件契约、Rust daemon、路由、渲染和投递实现。
 
-Hermeship is a Hermes-native, daemon-first event notification router. It follows the architecture shape of `template/clawhip`, but owns its own Hermes contracts, Rust daemon, routing, rendering, and delivery runtime.
-
-## 中文
-
-### 项目定位
+## 项目定位
 
 Hermeship 从 Hermes gateway hooks、可选 Hermes observer plugin、CLI 和本地 deterministic source 命令接收事件，将它们规范化为 typed event envelope，经隐私清洗、队列、dispatcher、router、renderer 和 sink 投递到 Discord 等通知渠道。
 
@@ -18,7 +19,7 @@ Hermeship 不是 `clawhip` 的 thin adapter：
 - 不把通知消息写回 Hermes 对话上下文。
 - 默认不启用 observer plugin，必须由 operator 显式安装并在 Hermes 中手动启用。
 
-### 图表
+## 图表
 
 ![Hermeship architecture](docs/assets/diagrams/hermeship-architecture.png)
 
@@ -28,7 +29,7 @@ Hermeship 不是 `clawhip` 的 thin adapter：
 
 图表源文件位于 `docs/assets/diagrams/*.json`，对应导出为 `.svg` 和 `.png`。它们使用 `fireworks-tech-graph` Style 6（Claude Official）生成。
 
-### 当前状态
+## 当前状态
 
 已完成：
 
@@ -52,7 +53,7 @@ Hermeship 不是 `clawhip` 的 thin adapter：
 - 真实 GitHub API source、真实 tmux watch、真实 scheduler、真实 service manager 自动安装尚未实现。
 - observer plugin 不会自动启用，也不会自动修改 Hermes 配置。
 
-### 快速开始
+## 快速开始
 
 开发期安装：
 
@@ -97,7 +98,7 @@ http://127.0.0.1:25295
 | `POST` | `/event` | 接收通用 `IncomingEvent` JSON |
 | `POST` | `/api/hermes/hook` | 接收 Hermes gateway hook envelope |
 
-### 配置
+## 配置
 
 常用命令：
 
@@ -136,7 +137,7 @@ format = "compact"
 filter = { platform = "telegram", project = "Hermeship" }
 ```
 
-### Hermes Gateway Hooks
+## Hermes Gateway Hooks
 
 安装 Hermes gateway hook bridge：
 
@@ -169,7 +170,7 @@ hermeship hermes uninstall-hooks --home ~/.hermes
 
 Hermeship 只删除 `.hermeship-managed.json` marker 记录且 checksum 未变化的文件。用户修改过的 hook 文件会保留。
 
-### Hermes Observer Plugin
+## Hermes Observer Plugin
 
 可选 observer plugin 模板位于：
 
@@ -208,7 +209,7 @@ python3 -m py_compile templates/hermes-plugin/__init__.py
 cargo test observer_plugin
 ```
 
-### 发送、事件和路由解释
+## 发送、事件和路由解释
 
 发送 custom message：
 
@@ -237,7 +238,7 @@ printf '%s' '{"event":"agent:start","context":{"session_id":"demo","agent_name":
 
 事件契约见 `docs/hermes-event-contract.md`。
 
-### 本地 Source 命令
+## 本地 Source 命令
 
 这些命令当前是本地 deterministic source path。它们构造 Hermeship 事件并 POST 到 daemon，不访问真实 GitHub API、不读取真实 tmux session、不运行真实 scheduler。
 
@@ -265,7 +266,7 @@ hermeship memory init --root /tmp/hermeship-memory --project Hermeship --channel
 hermeship memory status --root /tmp/hermeship-memory --project Hermeship --channel ops --agent codex --date 2026-06-17
 ```
 
-### 路由、渲染和投递语义
+## 路由、渲染和投递语义
 
 Router 行为：
 
@@ -309,7 +310,7 @@ Format resolution 顺序：
 
 当前生产 sink 是 Discord bot token/channel 与 Discord webhook；测试 sink 是 `FakeSink`。
 
-### 隐私与安全
+## 隐私与安全
 
 Hermeship 路由摘要和结构化 metadata，不路由完整对话。
 
@@ -322,7 +323,7 @@ Hermeship 路由摘要和结构化 metadata，不路由完整对话。
 
 `raw` rendering 仍然是安全 JSON：它输出 typed controlled fields 和 sanitized payload summaries，而不是任意原始 payload。
 
-### 回滚
+## 回滚
 
 只回滚 Hermes hook：
 
@@ -344,7 +345,7 @@ hermeship uninstall --remove-state --remove-config --remove-hooks --hermes-home 
 
 destructive uninstall 要求 Hermeship home 中存在 `.hermeship-managed.json`，避免误删非 Hermeship 目录。
 
-### Live Verification
+## Live Verification
 
 Live verification 与默认本地测试分离。真实 Discord/Hermes 检查需要：
 
@@ -355,7 +356,7 @@ Live verification 与默认本地测试分离。真实 Discord/Hermes 检查需�
 
 当前真实 Discord/Hermes live verification 尚未获得 `pass`。已有 `blocked` / `not_run` 记录见 `docs/live-verification.md`。默认开发和验证不执行真实 Discord/Hermes live check。
 
-### Release Preflight 和开发门禁
+## Release Preflight 和开发门禁
 
 发布预检：
 
@@ -377,7 +378,7 @@ cargo test
 
 默认测试必须保持本地 deterministic，不要求真实 Discord、真实 Hermes gateway、真实 GitHub state、真实 tmux session、外部 credentials 或非本地网络状态。
 
-### 进一步阅读
+## 进一步阅读
 
 - `ARCHITECTURE.md`
 - `docs/operations.md`
@@ -386,173 +387,3 @@ cargo test
 - `docs/live-verification.md`
 - `docs/development-status.md`
 - `tasks/development-checklist.md`
-
-## English
-
-### What Hermeship Is
-
-Hermeship is a Hermes-native event-to-notification router. It receives events from Hermes gateway hooks, an optional Hermes observer plugin, CLI commands, and local deterministic source commands. It normalizes those events into typed envelopes, sanitizes payloads, routes deliveries, renders safe summaries, and sends them through sinks such as Discord.
-
-It is not a `clawhip` runtime adapter:
-
-- It does not call the `clawhip` binary.
-- It does not depend on a running `clawhip` daemon.
-- It does not modify Hermes core.
-- It does not write notification messages back into Hermes conversations.
-- It does not auto-enable the observer plugin.
-
-`template/clawhip` is used as an architecture and documentation reference only.
-
-### Current Capability Boundary
-
-Implemented:
-
-- Rust CLI, config model, install/setup/uninstall lifecycle, and release preflight.
-- daemon endpoints: `GET /health`, `POST /event`, `POST /api/hermes/hook`.
-- typed `IncomingEvent -> EventEnvelope` conversion.
-- privacy sanitizer, bounded queue, dispatcher, multi-delivery router, renderer, Discord sink, and fake sink.
-- Hermes gateway hook bridge install/uninstall.
-- optional Hermes observer plugin template plus install/enable guidance.
-- typed Rust observer body for `hermes.observer.*`.
-- local deterministic Git/GitHub/tmux/cron source commands.
-- local filesystem memory scaffold.
-
-Not implemented or not enabled by default:
-
-- Real Discord/Hermes live verification has not passed yet.
-- `release preflight` only checks that live verification record fields exist; it does not prove real live delivery.
-- Slack sink is not part of the default scope.
-- Real GitHub API polling, real tmux watching, real scheduling, and automatic service-manager installation are not implemented.
-- The observer plugin is installed only on explicit command and still requires manual enablement in Hermes.
-
-### Architecture
-
-The runtime pipeline is:
-
-```text
-Hermes gateway hooks / optional observer plugin / CLI / local source commands
-  -> daemon ingress
-  -> privacy sanitizer
-  -> typed EventEnvelope
-  -> bounded queue
-  -> Dispatcher
-  -> Router
-  -> Renderer
-  -> Sink
-  -> Discord
-```
-
-See the diagrams near the top of this README and `ARCHITECTURE.md` for module boundaries.
-
-### Install And Configure
-
-```bash
-cargo install --path .
-hermeship install
-```
-
-Configure Discord without putting the token in shell history:
-
-```bash
-printf '%s' "$DISCORD_TOKEN" | hermeship setup \
-  --discord-token-stdin \
-  --default-channel <discord-channel-id> \
-  --daemon-url http://127.0.0.1:25295
-```
-
-Inspect configuration:
-
-```bash
-hermeship config path
-hermeship config show
-hermeship config verify
-```
-
-Start and check the daemon:
-
-```bash
-hermeship start
-hermeship status
-```
-
-### Hermes Integration
-
-Install the gateway hook bridge:
-
-```bash
-hermeship hermes install-hooks --scope global --force
-```
-
-Uninstall it safely:
-
-```bash
-hermeship hermes uninstall-hooks --home ~/.hermes
-```
-
-Install the optional observer plugin template:
-
-```bash
-hermeship hermes install-plugin --home ~/.hermes --force
-hermeship hermes enable-plugin --home ~/.hermes --dry-run
-```
-
-Then enable it manually from Hermes:
-
-```bash
-hermes plugins enable hermeship-observer
-```
-
-The hook bridge and observer plugin are fail-open. Hermeship failures should not stop Hermes gateway or agent execution.
-
-### Sending Events
-
-```bash
-hermeship send --channel <discord-channel-id> --message "hermeship smoke"
-hermeship emit hermes.agent.started --payload '{"session_id":"demo","platform":"telegram","project":"Hermeship"}'
-hermeship explain hermes.agent.started --payload '{"session_id":"demo","platform":"telegram"}'
-```
-
-Simulate a Hermes hook payload:
-
-```bash
-printf '%s' '{"event":"agent:start","context":{"session_id":"demo","agent_name":"codex"}}' \
-  | hermeship hermes hook --payload -
-```
-
-Local deterministic source commands include:
-
-```bash
-hermeship git commit --repo hermeship --branch main --commit 1234567890abcdef1234567890abcdef12345678 --summary "ship git source"
-hermeship git branch-changed --repo hermeship --old-branch main --new-branch codex/milestone-8-git
-hermeship github issue-opened --owner posp --repo hermeship --number 42 --title "Add deterministic GitHub source"
-hermeship github pr-opened --owner posp --repo hermeship --number 17 --title "Ship GitHub source" --branch codex/milestone-8-github
-hermeship github check-failed --owner posp --repo hermeship --workflow ci --status failure --branch main
-hermeship github release-published --owner posp --repo hermeship --tag v0.1.0
-hermeship tmux keyword --session hermes-agent --keyword FAILED --line "build FAILED at deterministic fixture"
-hermeship tmux stale --session hermes-agent --pane %2 --minutes 15 --last-line "waiting for agent output"
-hermeship tmux watch --session hermes-agent --keywords FAILED,complete --stale-minutes 10 --tmux-output $'hermes-agent\tmain\t%1\t0\tbash\tready'
-hermeship tmux list --tmux-output $'hermes-agent\tmain\t%1\t0\tbash\tready'
-hermeship cron run dev-followup
-hermeship memory init --root /tmp/hermeship-memory --project Hermeship --channel ops --agent codex --date 2026-06-17
-hermeship memory status --root /tmp/hermeship-memory --project Hermeship --channel ops --agent codex --date 2026-06-17
-```
-
-These source commands do not currently poll real GitHub, read real tmux sessions, or run a real scheduler.
-
-### Privacy And Verification
-
-Hermeship routes summaries and structured metadata, not full conversations. Tokens, cookies, secrets, full prompts, full conversations, provider request/response bodies, and tool result bodies must not appear in fixtures, logs, live records, or docs.
-
-Run local gates before a stage commit:
-
-```bash
-python3 -m py_compile templates/hermes-plugin/__init__.py
-cargo test observer_plugin
-cargo test release_preflight
-cargo run -- release preflight 0.1.0
-cargo fmt --all -- --check
-cargo clippy --all-targets -- -D warnings
-cargo test
-```
-
-Real live verification is explicit opt-in only. Do not run the real Discord/Hermes live check unless credentials, a test channel, a Hermes gateway test environment, and explicit execution confirmation are available.

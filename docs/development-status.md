@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-21 README 双语入口与 Claude Official 图表阶段
+最后更新：2026-06-21 README 语言切换修正
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -24,9 +24,12 @@
 - 最新功能阶段提交：`6053cdf feat: 增加 typed observer body 并收紧安全边界`；上一功能阶段提交为 `803aefa feat: 增加 Hermes observer plugin 安装启用 CLI`。
 - 当前最新功能阶段：Milestone 10 后续 Typed Rust Observer Body 本地 deterministic parity 与安全 hardening 已完成并由 `6053cdf` 提交。
 - 当前最新文档阶段：Milestone 10.1 Hermes Observer 契约研究由 `93aa9ec` 完成。
-- 当前工作台：`tasks/todo.md` 已切换为“2026-06-21 README 双语入口与 Claude Official 架构图”。
-- 本轮文档阶段已重写根 `README.md` 为中英文双语 operational spec，并新增 `docs/assets/diagrams/` 下 3 组 Style 6（Claude Official）图表资产：`hermeship-architecture`、`hermeship-event-flow`、`hermeship-observer-framework`，每组包含 `.json` 数据源、`.svg` 和 `.png`。
-- 本轮 README 和图表只更新项目说明与可视化，不改变功能代码、不新增真实 live pass、不实现 Slack sink、不自动启用 Hermes observer plugin。
+- 当前工作台：`tasks/todo.md` 已切换为“2026-06-21 README 语言切换修正”。
+- 本轮根据用户反馈修正 README 多语言结构：根 `README.md` 保留中文入口，新增 `README.en.md` 作为英文入口，并在两个文件顶部添加语言切换按钮；根 README 已移除多余的 `## 中文` 包装层。
+- 本轮已更新 `tasks/lessons.md`，记录“README 多语言不要混排”的规则。
+- 当前 README 文档入口为分文件双语结构：`README.md` 是中文入口，`README.en.md` 是英文入口；上一轮新增的 `docs/assets/diagrams/` 3 组 Style 6（Claude Official）图表资产仍作为两个 README 的共享图表。
+- 本轮 README 语言切换修正只更新项目说明结构，不改变功能代码、不新增真实 live pass、不实现 Slack sink、不自动启用 Hermes observer plugin。
+- 本轮 README 语言切换修正已验证：README 语言链接/混排检查通过，关键边界声明检查通过，`python3 -m py_compile templates/hermes-plugin/__init__.py`，`cargo fmt --all -- --check`，`cargo test observer_plugin`（13 passed），`cargo test release_preflight`（16 passed），`cargo run -- release preflight 0.1.0`（9 checks ok，`live verification` 只证明记录字段存在），`cargo clippy --all-targets -- -D warnings`，`cargo test`（221 lib tests + 15 bin tests + doctests passed），`git diff --check`。
 - 本轮已验证图表资产：3 个 JSON 解析通过、3 个 SVG XML 解析通过、3 个 PNG 均为 1280x760，并完成视觉抽查。
 - 本轮已重新运行默认本地验证：`python3 -m py_compile templates/hermes-plugin/__init__.py`、`cargo test observer_plugin`（13 passed）、`cargo test release_preflight`（16 passed）、`cargo run -- release preflight 0.1.0`（9 checks ok）、`cargo fmt --all -- --check`、`cargo clippy --all-targets -- -D warnings`、`cargo test`（221 lib tests + 15 bin tests + doctests passed）。
 - `cargo run -- release preflight 0.1.0` 的 `live verification` check 只证明 `docs/live-verification.md` 记录字段存在，不断言真实 Discord/Hermes live pass。

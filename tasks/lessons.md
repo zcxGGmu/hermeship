@@ -21,3 +21,10 @@
 - 后续不能把目标误解为“调用现有 clawhip 的轻量 adapter”。
 - 正确理解：Hermeship 应是 Hermes-native 的事件到通知渠道路由项目，参考 clawhip 的 daemon-first 架构、事件模型、路由、渲染、sink、CLI、安装、配置和 live verification。
 - 评估和计划应围绕“复刻/移植 clawhip 能力并替换 OpenClaw/Codex/Claude 耦合为 Hermes 耦合”展开。
+
+## 2026-06-21: README 多语言不要混排
+
+- 用户纠正：中英文 README 混在同一个长文件里阅读体验不好。
+- 后续新增或重写多语言 README 时，默认采用分文件入口：根 `README.md` 放中文，`README.en.md` 放英文。
+- 两个 README 顶部都应提供清晰语言切换按钮或链接，避免用户需要在同一文件里上下滚动查找另一种语言。
+- 更新 README 语言结构时，要保留真实能力边界声明，不能因为拆分语言而丢失 live verification、Slack sink、observer plugin 手动启用等限制。
