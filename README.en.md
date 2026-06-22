@@ -24,6 +24,16 @@ Operational boundaries:
 - It does not auto-enable the observer plugin.
 - Default tests and source commands use local deterministic paths; real Discord/Hermes verification is tracked separately.
 
+## Design Principles
+
+Hermeship is a coordination control plane, not a prompt-side status formatter. It turns execution signals from Hermes, Codex/OpenCode, GitHub, local source commands, and Discord into observable, routable, and verifiable event loops.
+
+- Keep notification logic outside the agent context: agents emit structured events; the Hermeship daemon owns sanitization, queueing, routing, rendering, and delivery, so channel formatting and retry details do not consume limited context.
+- Let people set direction while the system runs the feedback loop: operators define goals, constraints, confirmation points, and escalation paths; Hermeship moves planning, execution, review, failure, completion, and follow-up signals to the right channel.
+- Make every hop typed, explainable, and failure-aware: events enter typed envelopes, routes can be explained, renderers emit safe summaries, and sink failures become delivery results without writing back to Hermes or blocking Hermes runtime.
+- Default to replayable local paths: GitHub, tmux, cron, and memory sources stay deterministic first; real external credentials, real live checks, and observer plugin enablement remain explicit operator actions.
+- Preserve human engineering judgment: Hermeship provides collaboration infrastructure, but it does not decide what is noise, what is important, when to pause, retry, release, or roll back.
+
 ## Diagrams
 
 ![Hermeship architecture](docs/assets/diagrams/hermeship-architecture.png)

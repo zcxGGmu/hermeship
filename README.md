@@ -24,6 +24,16 @@ Hermeship 的公开运行边界：
 - 默认不启用 observer plugin，必须由 operator 显式安装并在 Hermes 中手动启用。
 - 默认测试和 source 命令走本地 deterministic 路径；真实 Discord/Hermes 验证独立记录。
 
+## 设计原则
+
+Hermeship 是协作控制面，不是 agent prompt 里的状态格式化脚本。它把 Hermes、Codex/OpenCode、GitHub、本地 source 命令和 Discord 之间的执行信号整理成可观察、可路由、可验证的事件闭环。
+
+- 通知逻辑离开 agent 上下文：agent 只需要产生结构化事件，Hermeship daemon 负责清洗、入队、路由、渲染和投递，避免把格式化、频道选择和重试细节塞进有限上下文。
+- 人负责方向，系统负责反馈循环：operator 定义目标、约束、确认点和异常处理路径；Hermeship 负责把计划、执行、审查、失败、完成和后续行动送到正确频道。
+- 每一跳都要 typed、可解释、可失败：事件先进入 typed envelope，路由可以 explain，renderer 只输出安全摘要，sink 失败被记录为 delivery 结果，不回写 Hermes，也不阻塞 Hermes runtime。
+- 默认走可重放的本地路径：GitHub、tmux、cron 和 memory source 先保持 deterministic；真实外部凭据、真实 live check 和 observer plugin 启用都由 operator 显式控制。
+- 保留人的工程判断：Hermeship 只承担协作基础设施，不替代 operator 判断什么是噪音、什么是关键、什么时候需要暂停、重试、发布或回滚。
+
 ## 图表
 
 ![Hermeship architecture](docs/assets/diagrams/hermeship-architecture.png)

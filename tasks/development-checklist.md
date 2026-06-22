@@ -824,6 +824,15 @@
 
 最新记录放在最上方。
 
+### 2026-06-22 - README 设计原则补充
+
+- [x] 已按用户要求基于指定文章的核心设计思想补充 README，但没有写成外部文章转述口吻。
+- [x] 已在 `README.md` 新增 `设计原则`，在 `README.en.md` 新增 `Design Principles`，保持中英文分文件维护。
+- [x] 新增原则聚焦 Hermeship 自身：独立协作控制面、通知逻辑离开 agent 上下文、人负责方向和工程判断、typed/explainable/failure-aware 事件闭环、真实外部集成显式启用。
+- [x] 已更新 `tasks/lessons.md`，记录“README 吸收外部思想时必须项目原生化”的规则。
+- [x] 本轮只修改公开 README、状态记录和 lessons，不修改功能代码，不执行真实 Discord/Hermes live check，不实现 Slack sink，不自动启用 Hermes observer plugin。
+- [x] 已运行验证：公开 README 外部转述/关联词检查无匹配，设计原则与关键边界声明检查通过，`git diff --check`，`python3 -m py_compile templates/hermes-plugin/__init__.py`，`cargo fmt --all -- --check`，`cargo test observer_plugin`（13 passed），`cargo test release_preflight`（16 passed），`cargo run -- release preflight 0.1.0`（9 checks ok，`live verification` 只证明记录字段存在），`cargo clippy --all-targets -- -D warnings`，`cargo test`（221 lib tests + 15 bin tests + doctests passed）。
+
 ### 2026-06-21 - README 联合工作流图补充
 
 - [x] 已按用户要求为 README 新增 `Hermeship + GitHub + Discord + Codex/OpenCode` 联合工作流图。
