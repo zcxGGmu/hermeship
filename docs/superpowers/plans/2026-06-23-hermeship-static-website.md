@@ -299,7 +299,7 @@
   未引入前端构建系统，未修改 Rust 功能代码。
   ```
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
   Run:
 
