@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="Hermeship 是面向 Hermes 的 daemon-first 事件通知路由器，接收 hooks、CLI 和本地 deterministic source 事件，并通过 typed envelope、privacy scrub、route、render 和 sink delivery 送达通知渠道。"
+  />
+  <meta name="theme-color" content="#090b10" />
+  <title>Hermeship — daemon-first 事件通知路由器</title>
+  <link rel="icon" href="./assets/branding/hermeship-icon.png" />
+  <link rel="apple-touch-icon" href="./assets/branding/hermeship-icon.png" />
+  <link rel="stylesheet" href="./css/styles.css?v=20260623-2" />
+  <script src="./js/main.js?v=20260623-2" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到内容</a>
+
+  <header class="site-header" id="top">
+    <nav class="nav" aria-label="主要导航">
+      <div class="container nav__inner">
+        <a class="brand" href="#top" aria-label="Hermeship 首页">
+          <img class="brand__icon" src="./assets/branding/hermeship-icon.png" alt="" width="64" height="64" />
+          <span class="brand__text">
+            <span class="brand__name">Hermeship</span>
+            <span class="brand__meta">daemon-first router</span>
+          </span>
+        </a>
+
+        <button class="nav__toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="打开导航">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <div class="nav__panel" id="primary-nav">
+          <a href="#quickstart" data-nav-link>试跑</a>
+          <a href="#workflow" data-nav-link>工作流</a>
+          <a href="#capabilities" data-nav-link>能力</a>
+          <a href="#architecture" data-nav-link>架构</a>
+          <a href="#boundaries" data-nav-link>边界</a>
+          <a class="nav__button" href="https://github.com/zcxGGmu/hermes-hip/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
+          <a class="nav__button nav__button--ghost" href="https://github.com/zcxGGmu/hermes-hip" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
+      </div>
+      <div class="nav__scrim" hidden></div>
+    </nav>
+
+    <section class="hero">
+      <div class="container hero__grid">
+        <div class="hero__copy">
+          <p class="eyebrow">Hermes-native / daemon-first / deterministic</p>
+          <img
+            class="hero__lockup"
+            src="./assets/branding/hermeship-lockup.png"
+            alt="Hermeship"
+            width="1280"
+            height="360"
+            loading="eager"
+            decoding="async"
+          />
+          <h1>Hermeship</h1>
+          <p class="hero__lede">
+            面向 Hermes 的 daemon-first 事件通知路由器。它接收 Hermes gateway hooks、可选 observer plugin、CLI 和本地 deterministic source 事件，
+            经过 typed envelope、privacy scrub、route、render 和 sink delivery，把结果送进通知渠道而不是把噪音留在 agent 上下文里。
+          </p>
+
+          <div class="hero__actions">
+            <a class="button button--primary" href="#quickstart">查看本地试跑</a>
+            <a class="button button--secondary" href="https://github.com/zcxGGmu/hermes-hip/blob/main/README.md" target="_blank" rel="noreferrer">查看 README</a>
+            <a class="button button--secondary" href="https://github.com/zcxGGmu/hermes-hip/blob/main/ARCHITECTURE.md" target="_blank" rel="noreferrer">架构文档</a>
+          </div>
+
+          <div class="hero__chips" aria-label="核心特征">
+            <span class="chip">typed envelope</span>
+            <span class="chip">privacy scrub</span>
+            <span class="chip">Discord sink</span>
+            <span class="chip">release preflight</span>
+          </div>
+        </div>
+
+        <aside class="hero__panel panel" aria-label="快速状态面板">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">当前路径</p>
+              <h2 class="panel__title">local deterministic smoke</h2>
+            </div>
+            <span class="status status--run">ready</span>
+          </div>
+
+          <pre class="terminal" id="hero-terminal"><code>cargo run -- start
+cargo run -- status
+cargo run -- emit hermes.agent.started --payload '{"session_id":"demo","platform":"telegram","project":"Hermeship"}'
+cargo run -- release preflight 0.1.0</code></pre>
+
+          <div class="panel__facts">
+            <div class="fact">
+              <span class="fact__label">ingress</span>
+              <span class="fact__value">hooks / CLI / local source</span>
+            </div>
+            <div class="fact">
+              <span class="fact__label">delivery</span>
+              <span class="fact__value">route → render → sink</span>
+            </div>
+            <div class="fact">
+              <span class="fact__label">boundary</span>
+              <span class="fact__value">live pass not claimed</span>
+            </div>
+          </div>
+
+          <figure class="panel__figure">
+            <img
+              src="./assets/diagrams/hermeship-event-flow.png"
+              alt="Hermeship 事件流图"
+              width="1280"
+              height="760"
+              loading="eager"
+              decoding="async"
+            />
+            <figcaption>ingest → normalize → scrub → route → render → deliver</figcaption>
+          </figure>
+        </aside>
+      </div>
+    </section>
+  </header>
+
+  <main id="main">
+    <section class="section" id="quickstart">
+      <div class="container section__grid">
+        <div class="section__intro">
+          <p class="eyebrow">30 秒本地试跑</p>
+          <h2>先看见管道，再决定接入什么</h2>
+          <p>
+            第一次运行会先编译，不需要 Discord 凭据。这个入口只是证明 Hermeship 的基础命令、事件流和 preflight 记录都能在本地跑通。
+          </p>
+        </div>
+
+        <div class="panel">
+          <div class="panel__header panel__header--tight">
+            <div>
+              <p class="panel__eyebrow">Quickstart</p>
+              <h3 class="panel__title">copy & run</h3>
+            </div>
+            <button class="button button--small" type="button" data-copy-target="#quickstart-code">复制命令</button>
+          </div>
+
+          <pre class="terminal" id="quickstart-code"><code>cargo run -- start
+cargo run -- status
+cargo run -- explain hermes.agent.started --payload '{"session_id":"demo","platform":"telegram","project":"Hermeship"}'
+cargo run -- emit hermes.agent.started --payload '{"session_id":"demo","platform":"telegram","project":"Hermeship"}'
+cargo run -- release preflight 0.1.0</code></pre>
+
+          <div class="panel__note">
+            <p>如果你只想确认边界，先看 <a href="#boundaries">运行边界</a>；如果你只想确认结构，先看 <a href="#workflow">工作流</a>。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--alt" id="workflow">
+      <div class="container">
+        <div class="section__intro section__intro--center">
+          <p class="eyebrow">工作流路径</p>
+          <h2>ingest → normalize → scrub → route → render → deliver</h2>
+          <p>每一跳都独立、可解释、可失败。Hermeship 先把事件变成 typed envelope，再决定投递到哪里，以及是否需要裁剪敏感内容。</p>
+        </div>
+
+        <ol class="flow">
+          <li class="flow__step">
+            <span class="flow__index">01</span>
+            <h3>Ingest</h3>
+            <p>接入 gateway hooks、CLI、observer plugin 和本地 source 命令。</p>
+          </li>
+          <li class="flow__step">
+            <span class="flow__index">02</span>
+            <h3>Normalize</h3>
+            <p>统一 event envelope、body 和 metadata，避免上游格式飘移。</p>
+          </li>
+          <li class="flow__step">
+            <span class="flow__index">03</span>
+            <h3>Scrub</h3>
+            <p>先做隐私清洗，再进入路由与渲染，避免原始噪音外泄。</p>
+          </li>
+          <li class="flow__step">
+            <span class="flow__index">04</span>
+            <h3>Route</h3>
+            <p>按事件、平台、项目和 route filter 选择目标 sink。</p>
+          </li>
+          <li class="flow__step">
+            <span class="flow__index">05</span>
+            <h3>Render</h3>
+            <p>把事件变成适合通知渠道的 compact、inline 或 alert 形式。</p>
+          </li>
+          <li class="flow__step">
+            <span class="flow__index">06</span>
+            <h3>Deliver</h3>
+            <p>交给 sink 执行投递，失败也要回传明确的边界信号。</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section" id="capabilities">
+      <div class="container section__grid section__grid--stack">
+        <div class="section__intro">
+          <p class="eyebrow">能力矩阵</p>
+          <h2>说清楚默认可用、显式启用和边界之外</h2>
+          <p>这个矩阵只列真实可用的能力，不把后续范围包装成现成能力。</p>
+        </div>
+
+        <div class="panel">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th scope="col">能力</th>
+                <th scope="col">状态</th>
+                <th scope="col">说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">daemon + HTTP ingress</th>
+                <td><span class="status status--run">默认</span></td>
+                <td>提供 health、event 和 Hermes hook 接口。</td>
+              </tr>
+              <tr>
+                <th scope="row">typed event envelope</th>
+                <td><span class="status status--run">默认</span></td>
+                <td>统一 canonical event body、metadata 和路由所需字段。</td>
+              </tr>
+              <tr>
+                <th scope="row">Discord sink</th>
+                <td><span class="status status--warn">需配置</span></td>
+                <td>配置 Discord bot token/channel 或 webhook 后可投递。</td>
+              </tr>
+              <tr>
+                <th scope="row">Observer plugin</th>
+                <td><span class="status status--warn">显式启用</span></td>
+                <td>需要 operator 安装并在 Hermes 中手动启用。</td>
+              </tr>
+              <tr>
+                <th scope="row">Slack sink</th>
+                <td><span class="status status--off">边界外</span></td>
+                <td>不在默认范围，不对外宣称已支持。</td>
+              </tr>
+              <tr>
+                <th scope="row">GitHub API polling</th>
+                <td><span class="status status--off">后续</span></td>
+                <td>仍是后续范围，当前只保留本地 deterministic source。</td>
+              </tr>
+              <tr>
+                <th scope="row">release preflight</th>
+                <td><span class="status status--warn">记录</span></td>
+                <td>证明记录字段存在，不等于真实 live pass。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--alt" id="architecture">
+      <div class="container">
+        <div class="section__intro section__intro--center">
+          <p class="eyebrow">架构与图表</p>
+          <h2>把流程、边界和联合工作流拆开看</h2>
+          <p>图表来自仓库现有资产，优先展示真实架构，不做新的宣传插画。</p>
+        </div>
+
+        <div class="diagram-grid">
+          <figure class="diagram">
+            <img
+              src="./assets/diagrams/hermeship-architecture.png"
+              alt="Hermeship 总体架构图"
+              width="1280"
+              height="760"
+              loading="eager"
+              decoding="async"
+            />
+            <figcaption>总体管道：daemon、router、renderer 和 sink。</figcaption>
+          </figure>
+          <figure class="diagram">
+            <img
+              src="./assets/diagrams/hermeship-observer-framework.png"
+              alt="Hermeship observer framework 图"
+              width="1280"
+              height="760"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>observer 只暴露安全摘要，不扩大 Hermes 上下文。</figcaption>
+          </figure>
+          <figure class="diagram">
+            <img
+              src="./assets/diagrams/hermeship-github-discord-codex-workflow.png"
+              alt="Hermeship GitHub Discord Codex 联合工作流图"
+              width="1280"
+              height="760"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>联合工作流只展示协作路径，不暗示 GitHub polling 已上线。</figcaption>
+          </figure>
+          <figure class="diagram">
+            <img
+              src="./assets/diagrams/hermeship-event-flow.png"
+              alt="Hermeship 事件流图"
+              width="1280"
+              height="760"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>事件流从 ingest 到 delivery 的每一跳都可解释。</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="boundaries">
+      <div class="container section__grid">
+        <div class="section__intro">
+          <p class="eyebrow">运行边界与验证</p>
+          <h2>哪些能说，哪些必须说清楚不能说成已完成</h2>
+          <p>
+            Hermeship 的价值在于明确边界。这个页面不把后续范围写成现成能力，也不把本地 preflight 讲成线上 live pass。
+          </p>
+        </div>
+
+        <div class="panel">
+          <ul class="boundary-list">
+            <li>Hermeship 不修改 Hermes core，也不把通知消息写回 Hermes 对话上下文。</li>
+            <li>Observer plugin 需要 operator 显式安装并手动启用。</li>
+            <li>Slack sink 不在默认范围，页面不能暗示已经支持。</li>
+            <li>GitHub API polling 仍是后续范围，页面不能暗示已上线。</li>
+            <li>Real Discord/Hermes live verification pass 未获得，页面不能写成已完成。</li>
+            <li>release preflight 只证明记录字段存在，不证明线上环境已经通过。</li>
+            <li>页面中不出现 raw prompt、conversation history、request/response body、secret 或 session_key 的外发暗示。</li>
+          </ul>
+
+          <div class="panel__note panel__note--strong">
+            <p>如果某个叙述不能被 README、spec 或 development-status 直接支撑，就不要放到首页里。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container site-footer__inner">
+      <p>Hermeship 静态官网</p>
+      <div class="site-footer__links">
+        <a href="https://github.com/zcxGGmu/hermes-hip/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
+        <a href="https://github.com/zcxGGmu/hermes-hip/blob/main/README.en.md" target="_blank" rel="noreferrer">English README</a>
+        <a href="https://github.com/zcxGGmu/hermes-hip/blob/main/ARCHITECTURE.md" target="_blank" rel="noreferrer">ARCHITECTURE</a>
+        <a href="https://github.com/zcxGGmu/hermes-hip" target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
