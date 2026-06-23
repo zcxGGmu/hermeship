@@ -824,6 +824,15 @@
 
 最新记录放在最上方。
 
+### 2026-06-23 - README 信息架构优化
+
+- [x] 已按用户要求对标 `gajae-code` 与 `Kocoro` 优化 README 信息架构。
+- [x] 已在 `README.md` 与 `README.en.md` 新增目录、30 秒本地试跑、能力矩阵、工作流入口、已知限制和 Troubleshooting。
+- [x] 已将图表分组为架构总览、事件与路由、Observer 边界和联合工作流，并保留真实能力边界说明。
+- [x] 已遵守 `tasks/lessons.md` 中 README 独立叙述、多语言分文件和默认推送 main 的规则。
+- [x] 本轮只修改公开 README、状态记录和任务文档，不修改功能代码，不执行真实 Discord/Hermes live check，不实现 Slack sink，不自动启用 Hermes observer plugin。
+- [x] 已运行验证：README 目录和关键章节检查通过，关键能力边界声明检查通过，公开 README 相关项目残留关键词检查无匹配，`git diff --check`，`python3 -m py_compile templates/hermes-plugin/__init__.py`，`cargo fmt --all -- --check`，`cargo test observer_plugin`（13 passed），`cargo test release_preflight`（16 passed），`cargo run -- release preflight 0.1.0`（9 checks ok，`live verification` 只证明记录字段存在），`cargo clippy --all-targets -- -D warnings`，`cargo test`（221 lib tests + 15 bin tests + doctests passed）。
+
 ### 2026-06-22 - README 设计原则补充
 
 - [x] 已按用户要求基于指定文章的核心设计思想补充 README，但没有写成外部文章转述口吻。

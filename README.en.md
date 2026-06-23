@@ -13,6 +13,13 @@
 
 Hermeship is an independent, Hermes-native, daemon-first event notification router. It owns its Hermes event contracts, Rust daemon, routing, rendering, delivery runtime, and release verification flow.
 
+## Contents
+
+- [What Hermeship Is](#what-hermeship-is) · [30-Second Local Smoke](#30-second-local-smoke) · [Capability Matrix](#capability-matrix) · [Workflow Surface](#workflow-surface) · [Design Principles](#design-principles)
+- [Diagrams](#diagrams) · [Architecture](#architecture) · [Install And Configure](#install-and-configure) · [Hermes Integration](#hermes-integration) · [Sending Events](#sending-events)
+- [Routing, Rendering, And Privacy](#routing-rendering-and-privacy) · [Known Limitations](#known-limitations) · [Rollback](#rollback) · [Live Verification](#live-verification) · [Release Preflight And Development Gates](#release-preflight-and-development-gates)
+- [Troubleshooting](#troubleshooting)
+
 ## What Hermeship Is
 
 Hermeship receives events from Hermes gateway hooks, an optional Hermes observer plugin, CLI commands, and local deterministic source commands. It normalizes those events into typed envelopes, sanitizes payloads, routes deliveries, renders safe summaries, and sends them through sinks such as Discord.
@@ -24,51 +31,89 @@ Operational boundaries:
 - It does not auto-enable the observer plugin.
 - Default tests and source commands use local deterministic paths; real Discord/Hermes verification is tracked separately.
 
+## 30-Second Local Smoke
+
+The first `cargo run` will compile the project. This path does not require Discord credentials.
+
+```bash
+# Terminal 1
+cargo run -- start
+
+# Terminal 2
+cargo run -- status
+cargo run -- explain hermes.agent.started --payload '{"session_id":"demo","platform":"telegram","project":"Hermeship"}'
+cargo run -- emit hermes.agent.started --payload '{"session_id":"demo","platform":"telegram","project":"Hermeship"}'
+cargo run -- release preflight 0.1.0
+```
+
+## Capability Matrix
+
+### Implemented
+
+| Capability | Default | Verification / boundary |
+| --- | --- | --- |
+| Rust daemon + HTTP ingress | Yes | `GET /health`, `POST /event`, `POST /api/hermes/hook` |
+| Gateway hook bridge | Explicit install | fail-open; bridge failures do not block Hermes |
+| Discord sink | Requires config | bot token/channel and webhook are supported |
+| Observer plugin | Explicit install | manual enablement required; Python smoke + preflight covered |
+| Deterministic source commands | Yes | local Git / GitHub / tmux / cron / memory paths |
+| Release preflight | Yes | checks docs, templates, and record fields; does not assert real live pass |
+
+### Disabled By Default Or Not Implemented
+
+| Capability | Status | Boundary |
+| --- | --- | --- |
+| Slack sink | Out of default scope | Not implemented by default |
+| Real GitHub API polling | Not implemented | Future scope |
+| Real tmux watch / scheduler / service-manager install | Not implemented | Stays local deterministic |
+| Real Discord/Hermes live verification pass | Not obtained | Results live in `docs/live-verification.md` |
+
+## Workflow Surface
+
+| Surface | Command | Purpose | Boundary |
+| --- | --- | --- | --- |
+| Daemon health | `hermeship status` / `GET /health` | Check daemon, queue, and sink health | No real external system required |
+| Event ingress | `hermeship send` / `emit` / `hermes hook` | Enter the typed event flow | `explain` explains only; it does not enqueue |
+| Hermes bridge | `hermeship hermes install-hooks` / `uninstall-hooks` | Manage hook bridge lifecycle | fail-open; does not modify Hermes core |
+| Observer plugin | `hermeship hermes install-plugin` / `enable-plugin` | Install template and print manual enablement guidance | Explicit operator enablement required |
+| Local source | `hermeship git/github/tmux/cron/memory ...` | Generate deterministic events | No real GitHub/tmux/scheduler access |
+| Release preflight | `hermeship release preflight 0.1.0` | Run release checks | Record fields only; not a real live pass proof |
+
 ## Design Principles
 
-Hermeship is a coordination control plane, not a prompt-side status formatter. It turns execution signals from Hermes, Codex/OpenCode, GitHub, local source commands, and Discord into observable, routable, and verifiable event loops.
+Hermeship is a coordination control plane, not a prompt-side status formatter.
 
-- Keep notification logic outside the agent context: agents emit structured events; the Hermeship daemon owns sanitization, queueing, routing, rendering, and delivery, so channel formatting and retry details do not consume limited context.
-- Let people set direction while the system runs the feedback loop: operators define goals, constraints, confirmation points, and escalation paths; Hermeship moves planning, execution, review, failure, completion, and follow-up signals to the right channel.
-- Make every hop typed, explainable, and failure-aware: events enter typed envelopes, routes can be explained, renderers emit safe summaries, and sink failures become delivery results without writing back to Hermes or blocking Hermes runtime.
-- Default to replayable local paths: GitHub, tmux, cron, and memory sources stay deterministic first; real external credentials, real live checks, and observer plugin enablement remain explicit operator actions.
-- Preserve human engineering judgment: Hermeship provides collaboration infrastructure, but it does not decide what is noise, what is important, when to pause, retry, release, or roll back.
+- Notification logic stays outside the agent context; the daemon owns sanitization, queueing, routing, rendering, and delivery.
+- People set direction and make engineering judgments; the system runs the feedback loop and reports results.
+- Every hop should be typed, explainable, failure-aware, and deterministic-first by default.
 
 ## Diagrams
 
+### Architecture Overview
+
 ![Hermeship architecture](docs/assets/diagrams/hermeship-architecture.png)
+
+Hermeship runtime pipeline from ingress to Discord.
+
+### Event And Routing Lifecycle
 
 ![Hermeship event flow](docs/assets/diagrams/hermeship-event-flow.png)
 
+Events enter typed envelopes, then pass through routing, rendering, and delivery.
+
+### Observer Boundary
+
 ![Hermes observer framework](docs/assets/diagrams/hermeship-observer-framework.png)
+
+The observer path sends safe summaries without expanding Hermes context.
+
+### Joint Workflow
 
 ![Hermeship GitHub Discord Codex OpenCode joint workflow](docs/assets/diagrams/hermeship-github-discord-codex-workflow.png)
 
 The joint workflow diagram shows the loop between GitHub issue/PR/check signals, Codex/OpenCode agent work, Hermeship sanitization/routing, and Discord coordination. GitHub API polling remains future scope; the current source path stays local deterministic.
 
 Diagram sources live in `docs/assets/diagrams/*.json`; each diagram is exported as `.svg` and `.png` with `fireworks-tech-graph` Style 6, Claude Official.
-
-## Current Capability Boundary
-
-Implemented:
-
-- Rust CLI, config model, install/setup/uninstall lifecycle, and release preflight.
-- daemon endpoints: `GET /health`, `POST /event`, `POST /api/hermes/hook`.
-- typed `IncomingEvent -> EventEnvelope` conversion.
-- privacy sanitizer, bounded queue, dispatcher, multi-delivery router, renderer, Discord sink, and fake sink.
-- Hermes gateway hook bridge install/uninstall.
-- optional Hermes observer plugin template plus install/enable guidance.
-- typed Rust observer body for `hermes.observer.*`.
-- local deterministic Git/GitHub/tmux/cron source commands.
-- local filesystem memory scaffold.
-
-Not implemented or not enabled by default:
-
-- Real Discord/Hermes live verification has not passed yet.
-- `release preflight` only checks that live verification record fields exist; it does not prove real live delivery.
-- Slack sink is not part of the default scope.
-- Real GitHub API polling, real tmux watching, real scheduling, and automatic service-manager installation are not implemented.
-- The observer plugin is installed only on explicit command and still requires manual enablement in Hermes.
 
 ## Architecture
 
@@ -224,6 +269,13 @@ Hermeship routes summaries and structured metadata, not full conversations. Toke
 
 `raw` rendering is still safe JSON: it emits typed controlled fields and sanitized payload summaries, not arbitrary original payload.
 
+## Known Limitations
+
+- Real Discord/Hermes live verification has not passed yet.
+- Real GitHub API polling, real tmux watching, real scheduling, and automatic service-manager installation are not implemented.
+- Slack sink is not part of the default scope.
+- The observer plugin still requires explicit installation and manual enablement.
+
 ## Rollback
 
 Rollback only the Hermes hook:
@@ -269,3 +321,10 @@ cargo test
 ```
 
 Default tests must stay local and deterministic. Do not run the real Discord/Hermes live check unless credentials, a test channel, a Hermes gateway test environment, and explicit execution confirmation are available.
+
+## Troubleshooting
+
+- `status` fails: confirm the daemon is running in another terminal, then check `HERMESHIP_DAEMON_URL`.
+- `emit` or `send` does not deliver: verify routes, channel, Discord token, and sink configuration.
+- Observer plugin is silent: run `python3 -m py_compile templates/hermes-plugin/__init__.py`, then confirm the template is installed and manually enabled.
+- `release preflight` shows live verification ok: that only means record fields exist; it is not proof of a real live pass.

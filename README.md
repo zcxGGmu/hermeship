@@ -13,6 +13,13 @@
 
 Hermeship 是一个面向 Hermes 运行环境的独立、daemon-first 事件通知路由器。它拥有自己的 Hermes 事件契约、Rust daemon、路由、渲染、投递和发布验证流程。
 
+## 目录
+
+- [项目定位](#项目定位) · [30 秒本地试跑](#30-秒本地试跑) · [能力矩阵](#能力矩阵) · [工作流入口](#工作流入口) · [设计原则](#设计原则)
+- [图表](#图表) · [快速开始](#快速开始) · [配置](#配置) · [Hermes Gateway Hooks](#hermes-gateway-hooks) · [Hermes Observer Plugin](#hermes-observer-plugin)
+- [发送、事件和路由解释](#发送事件和路由解释) · [本地 Source 命令](#本地-source-命令) · [路由、渲染和投递语义](#路由渲染和投递语义) · [隐私与安全](#隐私与安全) · [已知限制](#已知限制)
+- [回滚](#回滚) · [Live Verification](#live-verification) · [Release Preflight 和开发门禁](#release-preflight-和开发门禁) · [Troubleshooting](#troubleshooting) · [进一步阅读](#进一步阅读)
+
 ## 项目定位
 
 Hermeship 从 Hermes gateway hooks、可选 Hermes observer plugin、CLI 和本地 deterministic source 命令接收事件，将它们规范化为 typed event envelope，经隐私清洗、队列、dispatcher、router、renderer 和 sink 投递到 Discord 等通知渠道。
@@ -24,53 +31,89 @@ Hermeship 的公开运行边界：
 - 默认不启用 observer plugin，必须由 operator 显式安装并在 Hermes 中手动启用。
 - 默认测试和 source 命令走本地 deterministic 路径；真实 Discord/Hermes 验证独立记录。
 
+## 30 秒本地试跑
+
+第一次 `cargo run` 会先编译；这组命令不需要 Discord 凭据。
+
+```bash
+# 终端 1
+cargo run -- start
+
+# 终端 2
+cargo run -- status
+cargo run -- explain hermes.agent.started --payload '{"session_id":"demo","platform":"telegram","project":"Hermeship"}'
+cargo run -- emit hermes.agent.started --payload '{"session_id":"demo","platform":"telegram","project":"Hermeship"}'
+cargo run -- release preflight 0.1.0
+```
+
+## 能力矩阵
+
+### 已实现
+
+| 能力 | 默认 | 验证 / 边界 |
+| --- | --- | --- |
+| Rust daemon + HTTP ingress | 是 | `GET /health`、`POST /event`、`POST /api/hermes/hook` |
+| Gateway hook bridge | 显式安装 | fail-open，bridge 失败不阻塞 Hermes |
+| Discord sink | 需配置 | bot token/channel 与 webhook 都支持 |
+| Observer plugin | 显式安装 | 需要手动启用，Python smoke + preflight 覆盖 |
+| Deterministic source commands | 是 | Git / GitHub / tmux / cron / memory 本地化 |
+| Release preflight | 是 | 只验证文档、模板和记录字段，不断言真实 live pass |
+
+### 默认关闭或未完成
+
+| 能力 | 状态 | 说明 |
+| --- | --- | --- |
+| Slack sink | 不在默认范围 | 当前不做默认实现 |
+| Real GitHub API polling | 未实现 | 仍是后续范围 |
+| Real tmux watch / scheduler / service-manager install | 未实现 | 保持 local deterministic |
+| Real Discord/Hermes live verification pass | 未获得 | 结果写入 `docs/live-verification.md` |
+
+## 工作流入口
+
+| 入口 | 命令 | 用途 | 边界 |
+| --- | --- | --- | --- |
+| Daemon health | `hermeship status` / `GET /health` | 检查 daemon、队列和 sink 健康 | 不依赖真实外部系统 |
+| Event ingress | `hermeship send` / `emit` / `hermes hook` | 进入 typed event 流 | `explain` 只解释，不入队 |
+| Hermes bridge | `hermeship hermes install-hooks` / `uninstall-hooks` | 处理 hook bridge 生命周期 | fail-open，不改 Hermes core |
+| Observer plugin | `hermeship hermes install-plugin` / `enable-plugin` | 安装模板并输出手动启用指引 | 需要 operator 显式启用 |
+| Local source | `hermeship git/github/tmux/cron/memory ...` | 生成 deterministic 事件 | 不访问真实 GitHub/tmux/scheduler |
+| Release preflight | `hermeship release preflight 0.1.0` | 发布前检查 | 只证明记录字段存在，不证明真实 live pass |
+
 ## 设计原则
 
-Hermeship 是协作控制面，不是 agent prompt 里的状态格式化脚本。它把 Hermes、Codex/OpenCode、GitHub、本地 source 命令和 Discord 之间的执行信号整理成可观察、可路由、可验证的事件闭环。
+Hermeship 是协作控制面，不是 agent prompt 里的状态格式化脚本。
 
-- 通知逻辑离开 agent 上下文：agent 只需要产生结构化事件，Hermeship daemon 负责清洗、入队、路由、渲染和投递，避免把格式化、频道选择和重试细节塞进有限上下文。
-- 人负责方向，系统负责反馈循环：operator 定义目标、约束、确认点和异常处理路径；Hermeship 负责把计划、执行、审查、失败、完成和后续行动送到正确频道。
-- 每一跳都要 typed、可解释、可失败：事件先进入 typed envelope，路由可以 explain，renderer 只输出安全摘要，sink 失败被记录为 delivery 结果，不回写 Hermes，也不阻塞 Hermes runtime。
-- 默认走可重放的本地路径：GitHub、tmux、cron 和 memory source 先保持 deterministic；真实外部凭据、真实 live check 和 observer plugin 启用都由 operator 显式控制。
-- 保留人的工程判断：Hermeship 只承担协作基础设施，不替代 operator 判断什么是噪音、什么是关键、什么时候需要暂停、重试、发布或回滚。
+- 通知逻辑离开 agent 上下文，daemon 负责清洗、入队、路由、渲染和投递。
+- 人负责方向和判断，系统负责反馈循环和交付结果。
+- 每一跳都要 typed、可解释、可失败，且默认优先 deterministic 路径。
 
 ## 图表
 
+### 架构总览
+
 ![Hermeship architecture](docs/assets/diagrams/hermeship-architecture.png)
+
+Hermeship 的运行管道从 ingress 到 Discord。
+
+### 事件与路由
 
 ![Hermeship event flow](docs/assets/diagrams/hermeship-event-flow.png)
 
+事件先进入 typed envelope，再经过路由、渲染和投递。
+
+### Observer 边界
+
 ![Hermes observer framework](docs/assets/diagrams/hermeship-observer-framework.png)
+
+observer 只发安全摘要，不扩大 Hermes 上下文。
+
+### 联合工作流
 
 ![Hermeship GitHub Discord Codex OpenCode 联合工作流](docs/assets/diagrams/hermeship-github-discord-codex-workflow.png)
 
 联合工作流图展示 GitHub issue/PR/check 信号、Codex/OpenCode agent work、Hermeship 清洗/路由与 Discord 协作通知之间的闭环。GitHub API polling 仍是后续范围；当前 source 路径保持 local deterministic。
 
 图表源文件位于 `docs/assets/diagrams/*.json`，对应导出为 `.svg` 和 `.png`。它们使用 `fireworks-tech-graph` Style 6（Claude Official）生成。
-
-## 当前状态
-
-已完成：
-
-- Rust CLI、配置模型、安装/卸载 lifecycle 和 release preflight。
-- daemon `GET /health`、`POST /event`、`POST /api/hermes/hook`。
-- `IncomingEvent -> EventEnvelope` typed event 管道。
-- 默认隐私清洗、bounded queue、dispatcher、0..N multi-delivery router。
-- `compact`、`inline`、`alert`、`raw` 安全渲染。
-- Discord bot token/channel 和 Discord webhook sink。
-- fake sink、fake HTTP、fake Hermes home 等本地 deterministic 测试路径。
-- Hermes gateway hook bridge 安装/卸载。
-- 可选 Hermes observer plugin scaffold、install/enable CLI、typed Rust observer body。
-- Git/GitHub/tmux/cron 本地 deterministic source CLI 路径。
-- memory filesystem scaffold。
-
-仍未完成或不默认启用：
-
-- 真实 Discord/Hermes live verification pass 尚未获得。
-- `release preflight` 的 `live verification` ok 只证明 `docs/live-verification.md` 记录字段存在，不证明真实 live pass。
-- Slack sink 不在当前默认范围。
-- 真实 GitHub API source、真实 tmux watch、真实 scheduler、真实 service manager 自动安装尚未实现。
-- observer plugin 不会自动启用，也不会自动修改 Hermes 配置。
 
 ## 快速开始
 
@@ -342,6 +385,13 @@ Hermeship 路由摘要和结构化 metadata，不路由完整对话。
 
 `raw` rendering 仍然是安全 JSON：它输出 typed controlled fields 和 sanitized payload summaries，而不是任意原始 payload。
 
+## 已知限制
+
+- 真实 Discord/Hermes live verification 尚未通过。
+- 真实 GitHub API polling、tmux watch、scheduler 和 service-manager 自动安装尚未实现。
+- Slack sink 不在当前默认范围。
+- observer plugin 仍需显式安装和手动启用。
+
 ## 回滚
 
 只回滚 Hermes hook：
@@ -396,6 +446,13 @@ cargo test
 ```
 
 默认测试必须保持本地 deterministic，不要求真实 Discord、真实 Hermes gateway、真实 GitHub state、真实 tmux session、外部 credentials 或非本地网络状态。
+
+## Troubleshooting
+
+- `status` 失败：先确认 daemon 正在另一个终端里运行，再检查 `HERMESHIP_DAEMON_URL`。
+- `emit` 或 `send` 没有投递：检查 route、channel、Discord token 和 sink 配置。
+- observer plugin 没有事件：先跑 `python3 -m py_compile templates/hermes-plugin/__init__.py`，再确认模板已安装并手动启用。
+- `release preflight` 里 live verification 显示 ok：这只表示记录字段存在，不代表真实 live pass。
 
 ## 进一步阅读
 

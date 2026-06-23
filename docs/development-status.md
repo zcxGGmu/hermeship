@@ -1,6 +1,6 @@
 # Hermeship 开发状态
 
-最后更新：2026-06-22 README 设计原则补充
+最后更新：2026-06-23 README 信息架构优化
 
 本文是下次启动 Codex 会话时的状态入口。执行开发前仍以 `tasks/development-checklist.md` 的 checkbox 为准；当前阶段计划维护在 `tasks/todo.md`。
 
@@ -24,7 +24,11 @@
 - 最新功能阶段提交：`6053cdf feat: 增加 typed observer body 并收紧安全边界`；上一功能阶段提交为 `803aefa feat: 增加 Hermes observer plugin 安装启用 CLI`。
 - 当前最新功能阶段：Milestone 10 后续 Typed Rust Observer Body 本地 deterministic parity 与安全 hardening 已完成并由 `6053cdf` 提交。
 - 当前最新文档阶段：Milestone 10.1 Hermes Observer 契约研究由 `93aa9ec` 完成。
-- 当前工作台：`tasks/todo.md` 已切换为“2026-06-22 README 设计原则补充”。
+- 当前工作台：`tasks/todo.md` 已切换为“2026-06-23 README 信息架构优化”。
+- 本轮 README 重排为更强的开源项目入口：新增目录、30 秒本地试跑、能力矩阵、工作流入口、已知限制和 Troubleshooting，并将图表分组为架构、事件、Observer 边界和联合工作流。
+- 本轮 README 仍保持 Hermeship 独立叙述，不写 `clawhip`、`template/clawhip`、thin adapter、runtime adapter 等关联表述，也不把外部参考写成转述口吻。
+- 本轮仅更新公开 README、状态记录和任务清单，不修改 Rust 功能代码，不执行真实 Discord/Hermes live check，不实现 Slack sink，不自动启用 Hermes observer plugin。
+- 本轮 README 信息架构优化已验证：README 目录和关键章节检查通过，关键能力边界声明检查通过，公开 README 相关项目残留关键词检查无匹配，`git diff --check` 通过，`python3 -m py_compile templates/hermes-plugin/__init__.py`，`cargo fmt --all -- --check`，`cargo test observer_plugin`（13 passed），`cargo test release_preflight`（16 passed），`cargo run -- release preflight 0.1.0`（9 checks ok，`live verification` 只证明记录字段存在），`cargo clippy --all-targets -- -D warnings`，`cargo test`（221 lib tests + 15 bin tests + doctests passed）。
 - 本轮根据用户指定文章的核心设计思想补充公开 README，但 README 中不写外部文章或参考项目的转述口吻，而是转化为 Hermeship 自身的“设计原则 / Design Principles”。
 - 本轮 README 新增原则聚焦：Hermeship 是独立协作控制面，通知逻辑离开 agent 上下文，人负责方向和工程判断，系统负责 typed、可解释、可失败的事件反馈闭环；真实外部集成仍由 operator 显式控制。
 - 本轮已更新 `tasks/lessons.md`，记录“README 吸收外部思想时必须项目原生化”的规则；公开 README 仍不得出现 `clawhip`、`template/clawhip`、thin adapter 或 runtime adapter 关联表述。
