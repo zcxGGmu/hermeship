@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 让 `https://zcxggmu.github.io/hermeship/` 通过 GitHub Pages 正常访问 Hermeship 静态官网。
+**Goal:** 让 `https://zcxggmu.github.io/hermes-hip/` 通过 GitHub Pages 正常访问 Hermeship 静态官网。
 
-**Architecture:** 使用 GitHub Actions 将仓库内 `site/` 作为 Pages 发布根目录，保持站点仍是纯静态 HTML/CSS/JS。同步保留 `gh-pages` 兼容发布源，并修正站内 GitHub/README 链接到当前仓库名，避免上线后跳错地址。
+**Architecture:** 使用 GitHub Actions 将仓库内 `site/` 作为 Pages 发布根目录，保持站点仍是纯静态 HTML/CSS/JS。同步保留 `gh-pages` 兼容发布源，并修正站内 GitHub/README 链接到当前真实仓库名，避免上线后跳错地址。
 
 **Tech Stack:** GitHub Pages, GitHub Actions, static HTML/CSS/JS, shell validation.
 
@@ -86,8 +86,8 @@ jobs:
 - [ ] **Step 3: Fix public repo links**
 
 ```html
-<a class="nav__button" href="https://github.com/zcxGGmu/hermeship/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
-<a class="nav__button nav__button--ghost" href="https://github.com/zcxGGmu/hermeship" target="_blank" rel="noreferrer">GitHub</a>
+<a class="nav__button" href="https://github.com/zcxGGmu/hermes-hip/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
+<a class="nav__button nav__button--ghost" href="https://github.com/zcxGGmu/hermes-hip" target="_blank" rel="noreferrer">GitHub</a>
 ```
 
 ### Task 3: Verify and publish
@@ -116,8 +116,7 @@ Expected: remote `gh-pages` receives the site root.
 - [ ] **Step 3: Verify public URL**
 
 ```bash
-curl -I -L --max-time 30 https://zcxggmu.github.io/hermeship/
+curl -I -L --max-time 30 https://zcxggmu.github.io/hermes-hip/
 ```
 
 Expected: HTTP 200 after Pages propagation.
-

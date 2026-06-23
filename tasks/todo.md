@@ -121,38 +121,41 @@
 
 更新时间：2026-06-23
 
-用户要求配置线上发布，使 `https://zcxggmu.github.io/hermeship/` 可访问。本轮范围限定为 GitHub Pages 发布配置、站点公开链接修正、发布分支推送和公网可访问性验证；不修改 Rust 功能代码，不执行真实 Discord/Hermes live check，不实现 Slack sink，不自动启用 Hermes observer plugin。
+用户要求配置线上发布；经确认，当前真实仓库名为 `hermes-hip`，因此发布目标改为 `https://zcxggmu.github.io/hermes-hip/`。本轮范围限定为 GitHub Pages 发布配置、站点公开链接修正、发布分支推送和公网可访问性验证；不修改 Rust 功能代码，不执行真实 Discord/Hermes live check，不实现 Slack sink，不自动启用 Hermes observer plugin。
 
 ## 当前基线
 
 - 当前分支：`codex/milestone-1-cli`。
-- 当前远端：`git@github.com:zcxGGmu/hermeship.git`。
-- 当前目标 URL：`https://zcxggmu.github.io/hermeship/` 返回 GitHub Pages 404。
+- 当前远端：`git@github.com:zcxGGmu/hermeship.git`，GitHub 提示该仓库已 moved 到 `git@github.com:zcxGGmu/hermes-hip.git`。
+- 当前目标 URL：`https://zcxggmu.github.io/hermes-hip/`。
 - 本机没有 `gh` CLI，没有 `GITHUB_TOKEN` / `GH_TOKEN`，因此不能直接用 API 配置 Pages 设置。
 - 远端当前没有 `gh-pages` 分支。
 - 计划文档：`docs/superpowers/plans/2026-06-23-hermeship-github-pages-deployment.md`。
+- 决策：不重命名仓库，使用当前真实仓库名 `hermes-hip` 对应的 Pages URL。
 
 ## 本轮执行计划
 
 - [x] 读取输入和约束。
   - 阅读：`tasks/lessons.md`。
   - 阅读：`tasks/todo.md`。
-  - 确认：目标 URL 当前 404。
+  - 确认：原目标 URL `/hermeship/` 当前 404。
   - 确认：无 `gh` CLI 和可用 GitHub token。
+  - 确认：当前真实 GitHub 仓库名是 `zcxGGmu/hermes-hip`。
 
 - [x] 写入发布实施计划。
   - 新增：`docs/superpowers/plans/2026-06-23-hermeship-github-pages-deployment.md`。
   - 决策：保留 `site/` 作为静态站源目录。
   - 决策：新增 GitHub Actions Pages workflow，并同步推送 `gh-pages` 兼容发布源。
+  - 决策：发布 URL 使用 `https://zcxggmu.github.io/hermes-hip/`。
 
 - [ ] 配置 GitHub Pages 发布。
   - 新增：`.github/workflows/pages.yml`。
   - 新增：`site/.nojekyll`。
-  - 修改：`site/index.html` 内 GitHub/README/ARCHITECTURE 链接到当前 `zcxGGmu/hermeship` 仓库。
+  - 修改：`site/index.html` 内 GitHub/README/ARCHITECTURE 链接到当前 `zcxGGmu/hermes-hip` 仓库。
 
 - [ ] 运行本地验证。
-  - 命令：`rg -n "hermes-hip" site/index.html`，预期无匹配。
-  - 命令：`rg -n "zcxGGmu/hermeship" site/index.html .github/workflows/pages.yml`，预期匹配公开链接和 workflow。
+  - 命令：`rg -n "zcxGGmu/hermes-hip" site/index.html`，预期匹配公开链接。
+  - 命令：`rg -n "zcxGGmu/hermeship|github.io/hermeship" site/index.html docs/superpowers/plans/2026-06-23-hermeship-github-pages-deployment.md`，预期无匹配。
   - 命令：`git diff --check`。
   - 命令：本地静态服务检查 `site/` 首页状态。
 
@@ -162,7 +165,7 @@
   - 推送：`site/` subtree 到 `origin/gh-pages`。
 
 - [ ] 验证公网访问。
-  - 命令：`curl -I -L --max-time 30 https://zcxggmu.github.io/hermeship/`。
+  - 命令：`curl -I -L --max-time 30 https://zcxggmu.github.io/hermes-hip/`。
   - 目标：返回 HTTP 200，页面包含 Hermeship 静态官网内容。
 
 ## Review
