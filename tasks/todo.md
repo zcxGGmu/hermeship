@@ -96,7 +96,7 @@
 - [x] 使用纯 CSS 设计系统：深色背景、品牌金黄/琥珀、青绿运行态、冷蓝辅助和系统字体/等宽 fallback。
 - [x] 实现响应式与可访问性：移动端导航、可见 focus、减少动画支持、图像 alt、无横向滚动。
 - [x] 验证静态站点：本地打开或启动轻量静态服务器，使用浏览器检查桌面和移动端截图，运行 `git diff --check`。
-- [ ] 记录 Review：在本文件末尾追加实现结果、验证命令和边界说明。
+- [x] 记录 Review：在本文件末尾追加实现结果、验证命令和边界说明。
 
 ## 待确认
 
@@ -114,3 +114,57 @@
 - 已验证：本地静态服务 `http://127.0.0.1:4187/`，桌面 1440x1000、移动 390x844 渲染，移动端导航打开/关闭，复制按钮，当前章节高亮，图像加载，无横向溢出，边界声明可见。
 - 已运行静态检查：关键内容扫描、禁用公开关联表述扫描、CSS 圆角/装饰项扫描、JS hook 扫描和 `git diff --check`。
 - 未引入前端构建系统，未修改 Rust 功能代码。
+
+---
+
+# Task: 2026-06-23 Hermeship GitHub Pages 发布配置
+
+更新时间：2026-06-23
+
+用户要求配置线上发布，使 `https://zcxggmu.github.io/hermeship/` 可访问。本轮范围限定为 GitHub Pages 发布配置、站点公开链接修正、发布分支推送和公网可访问性验证；不修改 Rust 功能代码，不执行真实 Discord/Hermes live check，不实现 Slack sink，不自动启用 Hermes observer plugin。
+
+## 当前基线
+
+- 当前分支：`codex/milestone-1-cli`。
+- 当前远端：`git@github.com:zcxGGmu/hermeship.git`。
+- 当前目标 URL：`https://zcxggmu.github.io/hermeship/` 返回 GitHub Pages 404。
+- 本机没有 `gh` CLI，没有 `GITHUB_TOKEN` / `GH_TOKEN`，因此不能直接用 API 配置 Pages 设置。
+- 远端当前没有 `gh-pages` 分支。
+- 计划文档：`docs/superpowers/plans/2026-06-23-hermeship-github-pages-deployment.md`。
+
+## 本轮执行计划
+
+- [x] 读取输入和约束。
+  - 阅读：`tasks/lessons.md`。
+  - 阅读：`tasks/todo.md`。
+  - 确认：目标 URL 当前 404。
+  - 确认：无 `gh` CLI 和可用 GitHub token。
+
+- [x] 写入发布实施计划。
+  - 新增：`docs/superpowers/plans/2026-06-23-hermeship-github-pages-deployment.md`。
+  - 决策：保留 `site/` 作为静态站源目录。
+  - 决策：新增 GitHub Actions Pages workflow，并同步推送 `gh-pages` 兼容发布源。
+
+- [ ] 配置 GitHub Pages 发布。
+  - 新增：`.github/workflows/pages.yml`。
+  - 新增：`site/.nojekyll`。
+  - 修改：`site/index.html` 内 GitHub/README/ARCHITECTURE 链接到当前 `zcxGGmu/hermeship` 仓库。
+
+- [ ] 运行本地验证。
+  - 命令：`rg -n "hermes-hip" site/index.html`，预期无匹配。
+  - 命令：`rg -n "zcxGGmu/hermeship" site/index.html .github/workflows/pages.yml`，预期匹配公开链接和 workflow。
+  - 命令：`git diff --check`。
+  - 命令：本地静态服务检查 `site/` 首页状态。
+
+- [ ] 提交并推送。
+  - commit 信息：中文说明 GitHub Pages 发布配置、验证和影响。
+  - 推送：`origin/codex/milestone-1-cli` 与 `origin/main`。
+  - 推送：`site/` subtree 到 `origin/gh-pages`。
+
+- [ ] 验证公网访问。
+  - 命令：`curl -I -L --max-time 30 https://zcxggmu.github.io/hermeship/`。
+  - 目标：返回 HTTP 200，页面包含 Hermeship 静态官网内容。
+
+## Review
+
+- 待补：发布配置结果、推送结果、公网验证结果和剩余风险。
