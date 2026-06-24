@@ -11,7 +11,7 @@
   <title>Hermeship — daemon-first 事件通知路由器</title>
   <link rel="icon" href="./assets/branding/hermeship-icon.png" />
   <link rel="apple-touch-icon" href="./assets/branding/hermeship-icon.png" />
-  <link rel="stylesheet" href="./css/styles.css?v=20260623-2" />
+  <link rel="stylesheet" href="./css/styles.css?v=20260624-1" />
   <script src="./js/main.js?v=20260623-2" defer></script>
 </head>
 <body>
@@ -35,11 +35,12 @@
         </button>
 
         <div class="nav__panel" id="primary-nav">
+          <a href="#whats-new" data-nav-link>更新</a>
+          <a href="#method" data-nav-link>方法</a>
           <a href="#quickstart" data-nav-link>试跑</a>
-          <a href="#workflow" data-nav-link>工作流</a>
           <a href="#capabilities" data-nav-link>能力</a>
-          <a href="#architecture" data-nav-link>架构</a>
-          <a href="#boundaries" data-nav-link>边界</a>
+          <a href="#evidence" data-nav-link>证据</a>
+          <a href="./docs/">文档</a>
           <a class="nav__button" href="https://github.com/zcxGGmu/hermes-hip/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
           <a class="nav__button nav__button--ghost" href="https://github.com/zcxGGmu/hermes-hip" target="_blank" rel="noreferrer">GitHub</a>
         </div>
@@ -48,35 +49,69 @@
     </nav>
 
     <section class="hero">
-      <div class="container hero__grid">
-        <div class="hero__copy">
-          <p class="eyebrow">Hermes-native / daemon-first / deterministic</p>
+      <div class="container hero__identity">
+        <p class="eyebrow">Hermes-native / daemon-first / evidence-led</p>
+        <span class="hero__icon-frame" aria-hidden="true">
           <img
-            class="hero__lockup"
-            src="./assets/branding/hermeship-lockup.png"
-            alt="Hermeship"
-            width="1280"
-            height="360"
+            class="hero__icon"
+            src="./assets/branding/hermeship-icon.png"
+            alt=""
+            width="512"
+            height="512"
             loading="eager"
             decoding="async"
           />
-          <h1>Hermeship</h1>
-          <p class="hero__lede">
-            面向 Hermes 的 daemon-first 事件通知路由器。它接收 Hermes gateway hooks、可选 observer plugin、CLI 和本地 deterministic source 事件，
-            经过 typed envelope、privacy scrub、route、render 和 sink delivery，把结果送进通知渠道而不是把噪音留在 agent 上下文里。
+        </span>
+        <img
+          class="hero__lockup"
+          src="./assets/branding/hermeship-lockup.png"
+          alt="Hermeship"
+          width="1280"
+          height="360"
+          loading="eager"
+          decoding="async"
+        />
+        <h1>Hermeship</h1>
+        <p class="hero__lede">
+          面向 Hermes 的 daemon-first 事件通知路由器。它把 gateway hooks、可选 observer plugin、CLI 和本地 deterministic source 事件，
+          变成可清洗、可路由、可验证的通知交付路径。
+        </p>
+
+        <div class="hero__actions">
+          <a class="button button--primary" href="#quickstart">30 秒试跑</a>
+          <a class="button button--secondary" href="./docs/">浏览文档</a>
+          <a class="button button--secondary" href="#evidence">查看证据边界</a>
+        </div>
+      </div>
+
+      <div class="container hero__grid">
+        <div class="hero__copy proof-panel">
+          <p class="eyebrow">当前状态</p>
+          <h2>Observe · Scrub · Deliver</h2>
+          <p>
+            Hermeship 的公开叙事不把未完成项包装成能力：先观察事件，再清洗上下文，最后把可解释结果投递到配置好的 sink。
           </p>
-
-          <div class="hero__actions">
-            <a class="button button--primary" href="#quickstart">查看本地试跑</a>
-            <a class="button button--secondary" href="https://github.com/zcxGGmu/hermes-hip/blob/main/README.md" target="_blank" rel="noreferrer">查看 README</a>
-            <a class="button button--secondary" href="https://github.com/zcxGGmu/hermes-hip/blob/main/ARCHITECTURE.md" target="_blank" rel="noreferrer">架构文档</a>
-          </div>
-
-          <div class="hero__chips" aria-label="核心特征">
-            <span class="chip">typed envelope</span>
-            <span class="chip">privacy scrub</span>
-            <span class="chip">Discord sink</span>
-            <span class="chip">release preflight</span>
+          <div class="proof-grid" aria-label="当前证明点">
+            <div class="proof-card">
+              <span class="proof-card__label">Pages</span>
+              <strong>线上可访问</strong>
+              <p>GitHub Pages 已发布静态官网。</p>
+            </div>
+            <div class="proof-card">
+              <span class="proof-card__label">Smoke</span>
+              <strong>本地 deterministic</strong>
+              <p>Quickstart 不依赖 Discord 凭据。</p>
+            </div>
+            <div class="proof-card">
+              <span class="proof-card__label">Observer</span>
+              <strong>显式启用</strong>
+              <p>operator 手动安装和启用。</p>
+            </div>
+            <div class="proof-card">
+              <span class="proof-card__label">Live</span>
+              <strong>未宣称通过</strong>
+              <p>真实 Discord/Hermes pass 仍未获得。</p>
+            </div>
           </div>
         </div>
 
@@ -126,6 +161,67 @@ cargo run -- release preflight 0.1.0</code></pre>
   </header>
 
   <main id="main">
+    <section class="section" id="whats-new">
+      <div class="container">
+        <div class="section__intro section__intro--center">
+          <p class="eyebrow">What’s New</p>
+          <h2>从项目说明页推进到可审查的产品入口</h2>
+          <p>这不是新能力发布，而是把已经存在的运行路径、文档入口和验证边界整理成更容易判断的首页。</p>
+        </div>
+
+        <div class="status-grid">
+          <article class="status-card">
+            <span class="status status--run">live</span>
+            <h3>GitHub Pages 已上线</h3>
+            <p>官网通过 `site/` 静态根目录发布，当前路径是 `zcxggmu.github.io/hermes-hip/`。</p>
+          </article>
+          <article class="status-card">
+            <span class="status status--run">ready</span>
+            <h3>本地 smoke 可复制</h3>
+            <p>保留不依赖外部凭据的 start、status、emit 和 preflight 试跑路径。</p>
+          </article>
+          <article class="status-card">
+            <span class="status status--warn">opt-in</span>
+            <h3>Observer 保持显式启用</h3>
+            <p>页面只说明安装与启用边界，不暗示 Hermes observer plugin 自动开启。</p>
+          </article>
+          <article class="status-card">
+            <span class="status status--off">pending</span>
+            <h3>真实 live pass 未宣称</h3>
+            <p>Discord/Hermes live verification 仍按 runbook 记录，不在首页写成已完成。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--alt" id="method">
+      <div class="container">
+        <div class="section__intro section__intro--center">
+          <p class="eyebrow">Method</p>
+          <h2>Observe · Scrub · Deliver</h2>
+          <p>首页保留工程细节，但对外先给出更容易记住的三步方法论。</p>
+        </div>
+
+        <div class="method-grid">
+          <article class="method-card">
+            <span class="method-card__index">01</span>
+            <h3>Observe</h3>
+            <p>从 Hermes hook、CLI、本地 source 和可选 observer plugin 捕获事件，不把 agent 上下文当消息队列。</p>
+          </article>
+          <article class="method-card">
+            <span class="method-card__index">02</span>
+            <h3>Scrub</h3>
+            <p>先做 typed envelope 与 privacy scrub，只保留路由、渲染和审计需要的安全字段。</p>
+          </article>
+          <article class="method-card">
+            <span class="method-card__index">03</span>
+            <h3>Deliver</h3>
+            <p>按 route filter 选择目标 sink，输出 compact、inline 或 alert 形式，并保留清晰失败边界。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <section class="section" id="quickstart">
       <div class="container section__grid">
         <div class="section__intro">
@@ -152,7 +248,7 @@ cargo run -- emit hermes.agent.started --payload '{"session_id":"demo","platform
 cargo run -- release preflight 0.1.0</code></pre>
 
           <div class="panel__note">
-            <p>如果你只想确认边界，先看 <a href="#boundaries">运行边界</a>；如果你只想确认结构，先看 <a href="#workflow">工作流</a>。</p>
+            <p>如果你只想确认边界，先看 <a href="#evidence">证据边界</a>；如果你只想确认结构，先看 <a href="#workflow">工作流</a>。</p>
           </div>
         </div>
       </div>
@@ -317,17 +413,35 @@ cargo run -- release preflight 0.1.0</code></pre>
       </div>
     </section>
 
-    <section class="section" id="boundaries">
+    <section class="section" id="evidence">
       <div class="container section__grid">
         <div class="section__intro">
-          <p class="eyebrow">运行边界与验证</p>
-          <h2>哪些能说，哪些必须说清楚不能说成已完成</h2>
+          <p class="eyebrow">Evidence & Boundaries</p>
+          <h2>信任来自证据，而不是把后续范围写成现成能力</h2>
           <p>
-            Hermeship 的价值在于明确边界。这个页面不把后续范围写成现成能力，也不把本地 preflight 讲成线上 live pass。
+            Hermeship 的价值在于明确边界。页面中的每个状态都要能回到 README、spec、development-status 或 runbook，而不是只靠营销文案支撑。
           </p>
         </div>
 
         <div class="panel">
+          <div class="evidence-list">
+            <div class="evidence-item">
+              <span>Local proof</span>
+              <strong>deterministic smoke</strong>
+              <p>Quickstart 证明本地命令和 event pipeline 能跑通，不证明真实外部系统。</p>
+            </div>
+            <div class="evidence-item">
+              <span>Release proof</span>
+              <strong>preflight records</strong>
+              <p>preflight 证明记录字段存在，不等于 Discord/Hermes live pass。</p>
+            </div>
+            <div class="evidence-item">
+              <span>Operator proof</span>
+              <strong>manual observer enablement</strong>
+              <p>observer plugin 由 operator 显式安装和启用，不自动改 Hermes 配置。</p>
+            </div>
+          </div>
+
           <ul class="boundary-list">
             <li>Hermeship 不修改 Hermes core，也不把通知消息写回 Hermes 对话上下文。</li>
             <li>Observer plugin 需要 operator 显式安装并手动启用。</li>
@@ -344,6 +458,39 @@ cargo run -- release preflight 0.1.0</code></pre>
         </div>
       </div>
     </section>
+
+    <section class="section section--alt" id="docs">
+      <div class="container section__grid">
+        <div class="section__intro">
+          <p class="eyebrow">Docs Hub</p>
+          <h2>从首页进入可审查文档</h2>
+          <p>首页只负责判断方向；具体安装、架构、事件契约、运维和 live verification 由文档承接。</p>
+        </div>
+
+        <div class="docs-grid">
+          <a class="doc-card" href="./docs/">
+            <span>Start</span>
+            <strong>文档索引</strong>
+            <p>进入静态 docs hub，按使用路径浏览文档。</p>
+          </a>
+          <a class="doc-card" href="https://github.com/zcxGGmu/hermes-hip/blob/main/ARCHITECTURE.md" target="_blank" rel="noreferrer">
+            <span>Architecture</span>
+            <strong>架构文档</strong>
+            <p>查看 daemon、router、renderer 和 sink 的边界。</p>
+          </a>
+          <a class="doc-card" href="https://github.com/zcxGGmu/hermes-hip/blob/main/docs/live-verification.md" target="_blank" rel="noreferrer">
+            <span>Verification</span>
+            <strong>Live runbook</strong>
+            <p>查看真实 live check 的记录方式和剩余风险。</p>
+          </a>
+          <a class="doc-card" href="https://github.com/zcxGGmu/hermes-hip/blob/main/docs/observer-plugin.md" target="_blank" rel="noreferrer">
+            <span>Observer</span>
+            <strong>Plugin 边界</strong>
+            <p>查看 observer hook、safe fields 和 fail-open 策略。</p>
+          </a>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
@@ -352,6 +499,7 @@ cargo run -- release preflight 0.1.0</code></pre>
       <div class="site-footer__links">
         <a href="https://github.com/zcxGGmu/hermes-hip/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
         <a href="https://github.com/zcxGGmu/hermes-hip/blob/main/README.en.md" target="_blank" rel="noreferrer">English README</a>
+        <a href="./docs/">Docs Hub</a>
         <a href="https://github.com/zcxGGmu/hermes-hip/blob/main/ARCHITECTURE.md" target="_blank" rel="noreferrer">ARCHITECTURE</a>
         <a href="https://github.com/zcxGGmu/hermes-hip" target="_blank" rel="noreferrer">GitHub</a>
       </div>

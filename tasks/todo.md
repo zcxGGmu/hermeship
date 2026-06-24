@@ -178,3 +178,65 @@
 - 已验证公网：`https://zcxggmu.github.io/hermes-hip/` 第 3 次轮询返回 HTTP 200，页面内容包含 `Hermeship`、`daemon-first` 和 `zcxGGmu/hermes-hip`。
 - 已验证资源：`/assets/branding/hermeship-icon.png` 返回 HTTP 200，`/js/main.js?v=20260623-2` 返回 HTTP 200，`/css/styles.css?v=20260623-2` 通过 Python HTTP client 返回 HTTP 200 且 `content-type` 为 `text/css; charset=utf-8`。
 - 剩余风险：本地 `.git/config` 仍写着旧 remote `zcxGGmu/hermeship.git`，尝试 `git remote set-url` 被沙箱拒绝；实际 push 已由 GitHub moved redirect 成功写入 `zcxGGmu/hermes-hip`。后续可在本机手动运行 `git remote set-url origin git@github.com:zcxGGmu/hermes-hip.git` 消除提示。
+
+---
+
+# Task: 2026-06-24 Hermeship 官网成熟度优化
+
+更新时间：2026-06-24
+
+用户要求根据此前对 `https://gajae-code.com/` 的差距分析优化 Hermeship 官网，并明确要求项目图标整体居中。本轮范围限定为静态官网内容、布局、Docs hub 和发布验证；不修改 Rust 功能代码，不执行真实 Discord/Hermes live check，不实现 Slack sink，不自动启用 Hermes observer plugin，不宣称真实 GitHub API polling 已上线。
+
+## 当前基线
+
+- 当前分支：`codex/milestone-1-cli`。
+- 当前线上地址：`https://zcxggmu.github.io/hermes-hip/`。
+- 当前网站形态：纯静态 `site/`，无前端构建系统。
+- 已复习：`tasks/lessons.md`。
+- 已使用：`ui-ux-pro-max` 做开发者工具暗色 landing page 设计检查。
+- 设计 spec：`docs/superpowers/specs/2026-06-24-hermeship-website-maturity-refresh-design.md`。
+- 实施 plan：`docs/superpowers/plans/2026-06-24-hermeship-website-maturity-refresh.md`。
+
+## 本轮执行计划
+
+- [x] 写入设计与实施计划。
+  - 新增：官网成熟度优化 spec。
+  - 新增：官网成熟度优化 plan。
+  - 明确：图标在首屏作为独立品牌 mark 整体居中。
+
+- [x] 优化首页信息架构。
+  - 修改：`site/index.html`。
+  - 新增：What’s New。
+  - 新增：Observe / Scrub / Deliver 方法论。
+  - 新增：Evidence-oriented verification 区块。
+  - 新增：首页 Docs preview。
+  - 保留：Quickstart、Workflow、Capabilities、Architecture、真实边界声明。
+
+- [x] 新增 Docs hub。
+  - 新增：`site/docs/index.html`。
+  - 链接：README、README.en、ARCHITECTURE、docs/operations、docs/hermes-event-contract、docs/live-verification、docs/observer-plugin。
+
+- [x] 补齐 CSS 与响应式。
+  - 修改：`site/css/styles.css`。
+  - 要求：首屏项目图标整体居中，移动端无横向滚动，触控目标不低于 44px。
+
+- [x] 运行验证。
+  - 命令：关键章节与链接 `rg` 检查。
+  - 命令：禁用能力误导声明检查。
+  - 命令：`git diff --check`。
+  - 命令：本地静态服务检查 `/` 与 `/docs/`。
+  - 命令：浏览器桌面与移动端渲染检查。
+
+- [ ] 提交、推送并验证线上。
+  - 推送：`origin/codex/milestone-1-cli`、`origin/main`、`origin/gh-pages`。
+  - 验证：`https://zcxggmu.github.io/hermes-hip/` 和 `/docs/` 返回 200 且包含新内容。
+
+## Review
+
+- 已将首页从项目说明页扩展为更完整的产品型开源入口：新增 What’s New、Observe / Scrub / Deliver 方法论、Evidence & Boundaries、Docs Hub preview。
+- 已把首屏项目图标拆成独立 `hero__icon-frame`，并通过浏览器几何检查确认桌面首屏 icon 中心点与 viewport 中心点偏差为 `0px`。
+- 已新增 `site/docs/index.html`，汇总 README、English README、ARCHITECTURE、Operations、Hermes Event Contract、Live Verification、Observer Plugin 和 development status。
+- 已保持真实能力边界：Slack sink 不在默认范围、GitHub API polling 仍是后续范围、observer plugin 不自动启用、真实 Discord/Hermes live verification pass 未获得。
+- 已验证：关键章节与链接 `rg` 检查、边界声明 `rg` 检查、CSS 响应式断点检查、`git diff --check`、本地静态服务 `/` 与 `/docs/` 内容检查、HTML 相对资源路径检查、浏览器桌面几何检查无横向溢出。
+- 验证限制：本地环境没有 Playwright/Chromium 包，内置浏览器 viewport override 未实际切换到移动宽度；移动端通过 CSS 断点静态检查和本地 HTML/CSS 路径检查覆盖，最终仍需线上或真实浏览器抽查。
+- 待补：提交、推送 `main` / `gh-pages`，并验证线上 `https://zcxggmu.github.io/hermes-hip/` 与 `/docs/`。

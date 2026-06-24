@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="Hermeship 文档索引：快速上手、架构、事件契约、运维、live verification 和 observer plugin 边界。"
+  />
+  <meta name="theme-color" content="#090b10" />
+  <title>Hermeship Docs Hub</title>
+  <link rel="icon" href="../assets/branding/hermeship-icon.png" />
+  <link rel="apple-touch-icon" href="../assets/branding/hermeship-icon.png" />
+  <link rel="stylesheet" href="../css/styles.css?v=20260624-1" />
+  <script src="../js/main.js?v=20260623-2" defer></script>
+</head>
+<body class="docs-page">
+  <a class="skip-link" href="#main">跳到内容</a>
+
+  <header class="site-header site-header--compact" id="top">
+    <nav class="nav" aria-label="主要导航">
+      <div class="container nav__inner">
+        <a class="brand" href="../" aria-label="Hermeship 首页">
+          <img class="brand__icon" src="../assets/branding/hermeship-icon.png" alt="" width="64" height="64" />
+          <span class="brand__text">
+            <span class="brand__name">Hermeship</span>
+            <span class="brand__meta">docs hub</span>
+          </span>
+        </a>
+
+        <button class="nav__toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="打开导航">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <div class="nav__panel" id="primary-nav">
+          <a href="../#whats-new">更新</a>
+          <a href="../#method">方法</a>
+          <a href="../#quickstart">试跑</a>
+          <a href="../#evidence">证据</a>
+          <a class="is-active" href="./" aria-current="page">文档</a>
+          <a class="nav__button" href="https://github.com/zcxGGmu/hermes-hip/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
+          <a class="nav__button nav__button--ghost" href="https://github.com/zcxGGmu/hermes-hip" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
+      </div>
+      <div class="nav__scrim" hidden></div>
+    </nav>
+
+    <section class="docs-hero">
+      <div class="container docs-hero__inner">
+        <span class="hero__icon-frame hero__icon-frame--small" aria-hidden="true">
+          <img
+            class="hero__icon"
+            src="../assets/branding/hermeship-icon.png"
+            alt=""
+            width="512"
+            height="512"
+            loading="eager"
+            decoding="async"
+          />
+        </span>
+        <p class="eyebrow">Docs Hub</p>
+        <h1>Hermeship 文档索引</h1>
+        <p>
+          从这里进入安装、架构、事件契约、运维、live verification 和 observer plugin 文档。首页负责判断方向，文档负责给出可审查细节。
+        </p>
+      </div>
+    </section>
+  </header>
+
+  <main id="main">
+    <section class="section">
+      <div class="container docs-page-grid">
+        <a class="doc-card" href="https://github.com/zcxGGmu/hermes-hip/blob/main/README.md" target="_blank" rel="noreferrer">
+          <span>Getting Started</span>
+          <strong>README 中文入口</strong>
+          <p>安装、配置、30 秒本地试跑、能力矩阵和常见问题。</p>
+        </a>
+        <a class="doc-card" href="https://github.com/zcxGGmu/hermes-hip/blob/main/README.en.md" target="_blank" rel="noreferrer">
+          <span>Getting Started</span>
+          <strong>English README</strong>
+          <p>English entry point for project scope, quickstart, capability matrix, and limitations.</p>
+        </a>
+        <a class="doc-card" href="https://github.com/zcxGGmu/hermes-hip/blob/main/ARCHITECTURE.md" target="_blank" rel="noreferrer">
+          <span>Architecture</span>
+          <strong>Daemon-first 架构</strong>
+          <p>了解 ingress、typed envelope、privacy scrub、router、renderer 和 sink 的职责边界。</p>
+        </a>
+        <a class="doc-card" href="https://github.com/zcxGGmu/hermes-hip/blob/main/docs/hermes-event-contract.md" target="_blank" rel="noreferrer">
+          <span>Contract</span>
+          <strong>Hermes 事件契约</strong>
+          <p>查看 canonical event、metadata、payload 和兼容策略。</p>
+        </a>
+        <a class="doc-card" href="https://github.com/zcxGGmu/hermes-hip/blob/main/docs/operations.md" target="_blank" rel="noreferrer">
+          <span>Operations</span>
+          <strong>运维指南</strong>
+          <p>查看 daemon、配置、service manager 模板和操作边界。</p>
+        </a>
+        <a class="doc-card" href="https://github.com/zcxGGmu/hermes-hip/blob/main/docs/live-verification.md" target="_blank" rel="noreferrer">
+          <span>Verification</span>
+          <strong>Live verification runbook</strong>
+          <p>真实 Discord/Hermes live check 的记录方式、未执行项和剩余风险。</p>
+        </a>
+        <a class="doc-card" href="https://github.com/zcxGGmu/hermes-hip/blob/main/docs/observer-plugin.md" target="_blank" rel="noreferrer">
+          <span>Observer</span>
+          <strong>Observer plugin 边界</strong>
+          <p>查看 hook mapping、safe fields、fail-open、POST /event ingress 和隐私边界。</p>
+        </a>
+        <a class="doc-card" href="https://github.com/zcxGGmu/hermes-hip/blob/main/docs/development-status.md" target="_blank" rel="noreferrer">
+          <span>Status</span>
+          <strong>开发状态记录</strong>
+          <p>查看当前阶段、已完成里程碑和后续真实 live verification 风险。</p>
+        </a>
+      </div>
+    </section>
+
+    <section class="section section--alt">
+      <div class="container section__grid">
+        <div class="section__intro">
+          <p class="eyebrow">Boundary</p>
+          <h2>文档入口不扩大能力声明</h2>
+          <p>Docs hub 只是把已有文档串起来，不表示真实 GitHub polling、Slack sink 或 Discord/Hermes live pass 已经完成。</p>
+        </div>
+
+        <div class="panel">
+          <ul class="boundary-list">
+            <li>Observer plugin 仍需 operator 显式安装并手动启用。</li>
+            <li>Slack sink 不在默认范围。</li>
+            <li>GitHub API polling 仍是后续范围。</li>
+            <li>真实 Discord/Hermes live verification pass 未获得。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container site-footer__inner">
+      <p>Hermeship Docs Hub</p>
+      <div class="site-footer__links">
+        <a href="../">首页</a>
+        <a href="https://github.com/zcxGGmu/hermes-hip/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
+        <a href="https://github.com/zcxGGmu/hermes-hip/blob/main/ARCHITECTURE.md" target="_blank" rel="noreferrer">ARCHITECTURE</a>
+        <a href="https://github.com/zcxGGmu/hermes-hip" target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
