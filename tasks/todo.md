@@ -225,9 +225,9 @@
   - 命令：禁用能力误导声明检查。
   - 命令：`git diff --check`。
   - 命令：本地静态服务检查 `/` 与 `/docs/`。
-  - 命令：浏览器桌面与移动端渲染检查。
+  - 命令：浏览器桌面几何检查，移动端 CSS 断点与资源路径静态检查。
 
-- [ ] 提交、推送并验证线上。
+- [x] 提交、推送并验证线上。
   - 推送：`origin/codex/milestone-1-cli`、`origin/main`、`origin/gh-pages`。
   - 验证：`https://zcxggmu.github.io/hermes-hip/` 和 `/docs/` 返回 200 且包含新内容。
 
@@ -237,6 +237,8 @@
 - 已把首屏项目图标拆成独立 `hero__icon-frame`，并通过浏览器几何检查确认桌面首屏 icon 中心点与 viewport 中心点偏差为 `0px`。
 - 已新增 `site/docs/index.html`，汇总 README、English README、ARCHITECTURE、Operations、Hermes Event Contract、Live Verification、Observer Plugin 和 development status。
 - 已保持真实能力边界：Slack sink 不在默认范围、GitHub API polling 仍是后续范围、observer plugin 不自动启用、真实 Discord/Hermes live verification pass 未获得。
+- 已提交并推送实现：`42b4036 site: 提升 Hermeship 官网成熟度` 已推送到 `origin/codex/milestone-1-cli` 和 `origin/main`。
+- 已推送 Pages：`site/` subtree commit `b5503ae1e8b6fb923aeca4ad2d5ad4104fa8c19b` 已推送到 `origin/gh-pages`。
 - 已验证：关键章节与链接 `rg` 检查、边界声明 `rg` 检查、CSS 响应式断点检查、`git diff --check`、本地静态服务 `/` 与 `/docs/` 内容检查、HTML 相对资源路径检查、浏览器桌面几何检查无横向溢出。
+- 已验证线上：首页 `https://zcxggmu.github.io/hermes-hip/` 返回新首页内容，包含 `What’s New`、`Observe · Scrub · Deliver`、`Evidence & Boundaries` 和 `Docs Hub`；文档页 `https://zcxggmu.github.io/hermes-hip/docs/` 返回 `Hermeship 文档索引`；`/css/styles.css?v=20260624-1` 返回 HTTP 200。
 - 验证限制：本地环境没有 Playwright/Chromium 包，内置浏览器 viewport override 未实际切换到移动宽度；移动端通过 CSS 断点静态检查和本地 HTML/CSS 路径检查覆盖，最终仍需线上或真实浏览器抽查。
-- 待补：提交、推送 `main` / `gh-pages`，并验证线上 `https://zcxggmu.github.io/hermes-hip/` 与 `/docs/`。
