@@ -45,7 +45,7 @@
 **Files:**
 - Modify: `tasks/todo.md`
 
-- [ ] Run `rg` checks confirming homepage has exactly one `hero__icon-frame`, no `hero__lockup`, and no `brand__icon`.
-- [ ] Run `git diff --check`.
-- [ ] Run local static smoke checks for `/`.
-- [ ] Commit, push `codex/milestone-1-cli`, push `main`, update `gh-pages`, and verify the public URL.
+- [x] Run `rg` checks confirming homepage has exactly one `hero__icon-frame`, no `hero__lockup`, and no `brand__icon`.
+- [x] Run `git diff --check`.
+- [x] Run local static smoke checks for `/`.
+- [x] Commit, push `codex/milestone-1-cli`, push `main`, update `gh-pages`, and verify the public URL.

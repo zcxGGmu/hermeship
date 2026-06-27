@@ -276,7 +276,7 @@
   - 调整：text-only brand、hero icon spacing。
   - 保留：移动端无横向滚动、触控目标不低于 44px。
 
-- [ ] 验证、提交并发布。
+- [x] 验证、提交并发布。
   - 命令：`rg` 检查首页项目标识数量。
   - 命令：`git diff --check`。
   - 命令：本地静态服务检查 `/`。
@@ -285,4 +285,13 @@
 
 ## Review
 
-- 待补。
+- 已将首页 nav brand 改为文字品牌，移除首页 nav 小图标，避免开头位置出现第二个项目图标。
+- 已移除首页 hero lockup 图和可见重复 `Hermeship` 标题；页面语义保留隐藏 `h1 class="sr-only"`。
+- 已保留首页 hero 中唯一的 `hero__icon-frame`，并把图标尺寸从 `clamp(96px, 11vw, 136px)` 调整为 `clamp(112px, 12vw, 152px)`，让单一图标更像主视觉。
+- 已更新 CSS cache key 到 `styles.css?v=20260627-1`，并同步 `site/docs/index.html` 使用同一版本。
+- 已提交并推送实现：`7e5a569 site: 精简官网首屏项目标识` 已推送到 `origin/codex/milestone-1-cli` 和 `origin/main`。
+- 已推送 Pages：`site/` subtree commit `d9f383118091e83994e15b3057e5180133cd4214` 已推送到 `origin/gh-pages`。
+- 已验证：主页 HTML 断言 `hero__icon-frame: 1`、`hero__lockup: 0`、`brand__icon: 0`、可见 `h1: 0`、隐藏 `h1: 1`；`git diff --check` 通过；本地静态服务 `/` 与 `/docs/` 返回预期内容；`/css/styles.css?v=20260627-1` 返回 HTTP 200。
+- 已验证线上：GitHub Actions 的 `pages build and deployment` for `gh-pages` commit `d9f3831` completed success；公开首页 `https://zcxggmu.github.io/hermes-hip/?cachebust=20260627-hero-dedupe` 返回新内容，包含 `styles.css?v=20260627-1` 和 `brand brand--text`，不包含 `brand__icon` / `hero__lockup` / 可见 `<h1>Hermeship</h1>`，`hero__icon-frame` 数量为 1。
+- 已记录教训：`tasks/lessons.md` 新增“官网首屏项目标识只能有一个主视觉”。
+- 剩余风险：`Deploy Hermeship Pages` artifact workflow 在 main 上失败，但 `gh-pages` 分支的 Pages build/deployment 成功，当前线上站点由 `gh-pages` 成功发布内容提供。
