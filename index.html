@@ -11,7 +11,7 @@
   <title>Hermeship — daemon-first 事件通知路由器</title>
   <link rel="icon" href="./assets/branding/hermeship-icon.png" />
   <link rel="apple-touch-icon" href="./assets/branding/hermeship-icon.png" />
-  <link rel="stylesheet" href="./css/styles.css?v=20260624-1" />
+  <link rel="stylesheet" href="./css/styles.css?v=20260627-1" />
   <script src="./js/main.js?v=20260623-2" defer></script>
 </head>
 <body>
@@ -20,8 +20,7 @@
   <header class="site-header" id="top">
     <nav class="nav" aria-label="主要导航">
       <div class="container nav__inner">
-        <a class="brand" href="#top" aria-label="Hermeship 首页">
-          <img class="brand__icon" src="./assets/branding/hermeship-icon.png" alt="" width="64" height="64" />
+        <a class="brand brand--text" href="#top" aria-label="Hermeship 首页">
           <span class="brand__text">
             <span class="brand__name">Hermeship</span>
             <span class="brand__meta">daemon-first router</span>
@@ -50,6 +49,7 @@
 
     <section class="hero">
       <div class="container hero__identity">
+        <h1 class="sr-only">Hermeship</h1>
         <p class="eyebrow">Hermes-native / daemon-first / evidence-led</p>
         <span class="hero__icon-frame" aria-hidden="true">
           <img
@@ -62,18 +62,8 @@
             decoding="async"
           />
         </span>
-        <img
-          class="hero__lockup"
-          src="./assets/branding/hermeship-lockup.png"
-          alt="Hermeship"
-          width="1280"
-          height="360"
-          loading="eager"
-          decoding="async"
-        />
-        <h1>Hermeship</h1>
         <p class="hero__lede">
-          面向 Hermes 的 daemon-first 事件通知路由器。它把 gateway hooks、可选 observer plugin、CLI 和本地 deterministic source 事件，
+          Hermeship 是面向 Hermes 的 daemon-first 事件通知路由器。它把 gateway hooks、可选 observer plugin、CLI 和本地 deterministic source 事件，
           变成可清洗、可路由、可验证的通知交付路径。
         </p>
 

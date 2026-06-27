@@ -143,6 +143,18 @@ pre {
   transform: translateY(0);
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  padding: 0;
+  margin: -1px;
+}
+
 .site-header {
   position: relative;
   min-height: 100dvh;
@@ -200,6 +212,10 @@ pre {
   color: var(--subtle);
   font-family: var(--mono);
   font-size: 0.72rem;
+}
+
+.brand--text {
+  min-height: 44px;
 }
 
 .nav__toggle {
@@ -329,10 +345,10 @@ pre {
 
 .hero__icon-frame {
   display: grid;
-  width: clamp(96px, 11vw, 136px);
+  width: clamp(112px, 12vw, 152px);
   aspect-ratio: 1;
   place-items: center;
-  margin-bottom: 18px;
+  margin-bottom: 26px;
   border: 1px solid rgba(248, 200, 74, 0.34);
   border-radius: var(--radius);
   background:
@@ -373,14 +389,6 @@ pre {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-}
-
-.hero__lockup {
-  width: min(420px, 100%);
-  height: auto;
-  margin: 0 auto 18px;
-  border: 1px solid rgba(248, 200, 74, 0.14);
-  border-radius: var(--radius);
 }
 
 .hero__lede {
