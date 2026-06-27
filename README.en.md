@@ -11,6 +11,10 @@
   <strong><kbd>English</kbd></strong>
 </p>
 
+<p align="center">
+  Product website: <a href="https://zcxggmu.github.io/hermes-hip/">https://zcxggmu.github.io/hermes-hip/</a>
+</p>
+
 Hermeship is an independent, Hermes-native, daemon-first event notification router. It owns its Hermes event contracts, Rust daemon, routing, rendering, delivery runtime, and release verification flow.
 
 ## Contents

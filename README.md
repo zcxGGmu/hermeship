@@ -11,6 +11,10 @@
   <a href="./README.en.md"><kbd>English</kbd></a>
 </p>
 
+<p align="center">
+  产品官网：<a href="https://zcxggmu.github.io/hermes-hip/">https://zcxggmu.github.io/hermes-hip/</a>
+</p>
+
 Hermeship 是一个面向 Hermes 运行环境的独立、daemon-first 事件通知路由器。它拥有自己的 Hermes 事件契约、Rust daemon、路由、渲染、投递和发布验证流程。
 
 ## 目录
